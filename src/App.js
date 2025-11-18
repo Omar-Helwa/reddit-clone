@@ -1,5 +1,8 @@
 import logo from './logo.svg';
 import './App.css';
+import Navbar from './layout/Navbar';
+import HomePage from './pages/HomePage';
+import CommunityPage from './pages/CommunityPage';
 
 function App() {
   return (
