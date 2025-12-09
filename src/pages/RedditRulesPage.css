@@ -1,0 +1,48 @@
+.rules-page {
+  padding: 24px;
+  max-width: 950px;
+  margin: 0 auto;
+  color: #1a1a1b;
+}
+
+.rules-hero {
+  background: linear-gradient(135deg, #1a1a1b, #d93900);
+  color: #ffffff;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 10px 24px rgba(217, 57, 0, 0.22);
+}
+
+.subtitle {
+  margin-top: 8px;
+  color: #ffd7c2;
+}
+
+.rules-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.rule-card {
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.footer-note {
+  margin-top: 14px;
+  background: #fff7f2;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+@media (max-width: 900px) {
+  .rules-page {
+    padding: 16px;
+  }
+}

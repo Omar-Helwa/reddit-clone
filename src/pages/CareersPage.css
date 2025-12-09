@@ -1,0 +1,94 @@
+.careers-page {
+  padding: 24px;
+  max-width: 1050px;
+  margin: 0 auto;
+  color: #1a1a1b;
+}
+
+.careers-hero {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  background: linear-gradient(135deg, #0c6cf5, #46d160);
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 12px 28px rgba(12, 108, 245, 0.22);
+}
+
+.subtitle {
+  margin: 10px 0 16px;
+  line-height: 1.6;
+  color: #e8f5ff;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.primary-btn,
+.ghost-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary-btn {
+  background: #ffffff;
+  color: #0c6cf5;
+}
+
+.ghost-btn {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.benefits-card {
+  background: #ffffff;
+  color: #1a1a1b;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.benefits-card ul {
+  padding-left: 18px;
+  line-height: 1.6;
+}
+
+.teams {
+  margin-top: 28px;
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.team-card {
+  border: 1px solid #e6e6e6;
+  border-radius: 12px;
+  padding: 14px;
+  background: #f6fbff;
+}
+
+@media (max-width: 900px) {
+  .careers-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .careers-page {
+    padding: 16px;
+  }
+}

@@ -1,0 +1,95 @@
+.help-page {
+  padding: 24px;
+  max-width: 1050px;
+  margin: 0 auto;
+  color: #1a1a1b;
+}
+
+.help-hero {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  background: linear-gradient(135deg, #0045ac, #1a1a1b);
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 12px 26px rgba(0, 69, 172, 0.22);
+}
+
+.subtitle {
+  margin: 8px 0 16px;
+  line-height: 1.6;
+  color: #dbe7ff;
+}
+
+.search-box {
+  display: flex;
+  gap: 8px;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 6px;
+}
+
+.search-box input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.search-box button {
+  border: none;
+  background: #0045ac;
+  color: #ffffff;
+  padding: 0 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.contact-card {
+  background: #ffffff;
+  color: #1a1a1b;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.contact-card .primary-btn {
+  margin-top: 10px;
+}
+
+.primary-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  background: #0045ac;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.topic-grid {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.topic-card {
+  border: 1px solid #e6e6e6;
+  border-radius: 12px;
+  padding: 14px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+@media (max-width: 900px) {
+  .help-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .help-page {
+    padding: 16px;
+  }
+}

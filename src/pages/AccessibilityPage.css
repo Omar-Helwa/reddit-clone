@@ -1,0 +1,260 @@
+.accessibility-page {
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+  color: #1a1a1b;
+}
+
+.accessibility-hero {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  background: linear-gradient(135deg, #0c6cf5, #0045ac);
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 12px 30px rgba(0, 69, 172, 0.25);
+}
+
+.hero-text h1 {
+  margin: 8px 0;
+  font-size: 32px;
+}
+
+.hero-text .subtitle {
+  margin: 8px 0 16px;
+  line-height: 1.5;
+  color: #e6ecf5;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  margin: 12px 0 20px;
+}
+
+.primary-btn,
+.ghost-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary-btn {
+  background: #ffb000;
+  color: #1a1a1b;
+}
+
+.ghost-btn {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.stat-label {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.hero-card {
+  background: #ffffff;
+  color: #1a1a1b;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.hero-card ul {
+  padding-left: 18px;
+  line-height: 1.5;
+  margin: 12px 0;
+}
+
+.badge-row {
+  display: flex;
+  gap: 8px;
+}
+
+.badge {
+  background: #f0f4ff;
+  color: #0045ac;
+  border-radius: 12px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.badge-green {
+  background: #e8f7ef;
+  color: #1f9754;
+}
+
+.commitments,
+.feature-list,
+.shortcut-section,
+.support-section,
+.roadmap {
+  margin-top: 32px;
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.section-header p {
+  margin: 6px 0 14px;
+  color: #5c6066;
+}
+
+.commitment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.commitment-card {
+  border: 1px solid #e6e6e6;
+  border-radius: 12px;
+  padding: 16px;
+  background: #f9fbff;
+}
+
+.feature-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.feature-items li {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e6e6e6;
+  background: #fdfdfd;
+}
+
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.shortcut-card {
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  background: #f7f9fc;
+}
+
+.shortcut-key {
+  font-weight: 800;
+  color: #0045ac;
+}
+
+.shortcut-action {
+  color: #4a4d52;
+}
+
+.support-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.support-card {
+  border: 1px solid #e6e6e6;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.text-btn {
+  margin-top: 10px;
+  background: none;
+  border: none;
+  color: #0045ac;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.roadmap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.roadmap-card {
+  border: 1px solid #e6e6e6;
+  border-radius: 12px;
+  padding: 14px;
+  background: #fafafa;
+}
+
+.chip {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f2f4f7;
+  color: #4a4d52;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.chip-green {
+  background: #e8f7ef;
+  color: #1f9754;
+}
+
+.chip-gray {
+  background: #eef0f2;
+  color: #5c6066;
+}
+
+@media (max-width: 900px) {
+  .accessibility-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .accessibility-page {
+    padding: 16px;
+  }
+}

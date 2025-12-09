@@ -1,0 +1,68 @@
+.press-page {
+  padding: 24px;
+  max-width: 1050px;
+  margin: 0 auto;
+  color: #1a1a1b;
+}
+
+.press-hero {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  background: linear-gradient(135deg, #1a1a1b, #4c4f56);
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 12px 26px rgba(26, 26, 27, 0.25);
+}
+
+.subtitle {
+  margin: 8px 0 16px;
+  line-height: 1.6;
+  color: #e2e2e2;
+}
+
+.kit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.kit-card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.contact-card {
+  background: #ffffff;
+  color: #1a1a1b;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.contact-card ul {
+  padding-left: 18px;
+  line-height: 1.5;
+}
+
+.text-btn {
+  background: none;
+  border: none;
+  color: #ff4500;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+@media (max-width: 900px) {
+  .press-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .press-page {
+    padding: 16px;
+  }
+}

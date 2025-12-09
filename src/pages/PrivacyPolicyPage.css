@@ -1,0 +1,53 @@
+.privacy-page {
+  padding: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+  color: #1a1a1b;
+}
+
+.privacy-hero {
+  background: linear-gradient(135deg, #1a1a1b, #0c6cf5);
+  color: #ffffff;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+}
+
+.subtitle {
+  margin-top: 8px;
+  color: #d7e4ff;
+}
+
+.policy-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.policy-card {
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.policy-card ul {
+  padding-left: 16px;
+  line-height: 1.5;
+}
+
+.footer-note {
+  margin-top: 16px;
+  background: #f7f9fc;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+@media (max-width: 900px) {
+  .privacy-page {
+    padding: 16px;
+  }
+}
