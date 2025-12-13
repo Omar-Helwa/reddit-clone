@@ -17,6 +17,13 @@ import PressPage from './pages/PressPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import RedditRulesPage from './pages/RedditRulesPage';
 import UserAgreementPage from './pages/UserAgreementPage';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import CommunityPage from './pages/CommunityPage';
+import MyCommunityPage from './pages/MyCommunityPage';
+import CreatePostPage from './pages/CreatePostPage';
+import PostPage from './pages/PostPage';
+import ChatPage from './pages/ChatPage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -56,6 +63,20 @@ function App() {
       setCurrentPage('rules');
     } else if (path.includes('/user-agreement')) {
       setCurrentPage('user-agreement');
+    } else if (path.includes('/login')) {
+      setCurrentPage('login');
+    } else if (path.includes('/signup')) {
+      setCurrentPage('signup');
+    } else if (path.includes('/chat')) {
+      setCurrentPage('chat');
+    } else if (path.includes('/my-community')) {
+      setCurrentPage('my-community');
+    } else if (path.includes('/r/') && path.includes('/submit')) {
+      setCurrentPage('create-post');
+    } else if (path.includes('/r/') && path.includes('/comments/')) {
+      setCurrentPage('post');
+    } else if (path.includes('/r/') || path.includes('/community')) {
+      setCurrentPage('community');
     } else {
       setCurrentPage('home');
     }
@@ -95,6 +116,20 @@ function App() {
         setCurrentPage('rules');
       } else if (newPath.includes('/user-agreement')) {
         setCurrentPage('user-agreement');
+      } else if (newPath.includes('/login')) {
+        setCurrentPage('login');
+      } else if (newPath.includes('/signup')) {
+        setCurrentPage('signup');
+      } else if (newPath.includes('/chat')) {
+        setCurrentPage('chat');
+      } else if (newPath.includes('/my-community')) {
+        setCurrentPage('my-community');
+      } else if (newPath.includes('/r/') && newPath.includes('/submit')) {
+        setCurrentPage('create-post');
+      } else if (newPath.includes('/r/') && newPath.includes('/comments/')) {
+        setCurrentPage('post');
+      } else if (newPath.includes('/r/') || newPath.includes('/community')) {
+        setCurrentPage('community');
       } else {
         setCurrentPage('home');
       }
@@ -116,7 +151,7 @@ function App() {
       case 'popular':
         return <PopularPage />;
       case 'create-community':
-        return <StartCommunityPage />;
+        return <StartCommunityPage onNavigate={handleNavigate} />;
       case 'accessibility':
         return <AccessibilityPage />;
       case 'developer-platform':
@@ -143,6 +178,20 @@ function App() {
         return <RedditRulesPage />;
       case 'user-agreement':
         return <UserAgreementPage />;
+      case 'login':
+        return <LoginPage />;
+      case 'signup':
+        return <SignupPage />;
+      case 'my-community':
+        return <MyCommunityPage onNavigate={handleNavigate} />;
+      case 'community':
+        return <CommunityPage />;
+      case 'create-post':
+        return <CreatePostPage />;
+      case 'post':
+        return <PostPage />;
+      case 'chat':
+        return <ChatPage />;
       default:
         return <HomePage />;
     }

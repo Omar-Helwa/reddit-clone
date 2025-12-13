@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import './CommunityList.css';
 
 const CommunityList = () => {
+  const primaryNav = [
+    { label: 'Home', href: '/', icon: '🏠' },
+    { label: 'Popular', href: '/popular', icon: '🔥' },
+    { label: 'Explore', href: '/explore', icon: '🔍' },
+    { label: 'All', href: '/communities', icon: '🧭' },
+    { label: 'Start a community', href: '/create-community', icon: '➕' },
+  ];
+
   const [communities, setCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -77,10 +85,19 @@ const CommunityList = () => {
   return (
     <div className="community-list-container">
       <div className="community-list-header">
-        <h2>Communities</h2>
+        <h2>Home</h2>
         <a href="/explore" className="explore-link" title="Explore communities">
           🔍
         </a>
+      </div>
+
+      <div className="primary-nav">
+        {primaryNav.map((item) => (
+          <a key={item.label} href={item.href} className="nav-pill">
+            <span className="pill-icon" aria-hidden="true">{item.icon}</span>
+            <span className="pill-label">{item.label}</span>
+          </a>
+        ))}
       </div>
 
       {/* Quick Links */}

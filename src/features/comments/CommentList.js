@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './CommentList.css';
 
-const CommentList = ({ postId, comments = [] }) => {
+const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply, autoFocus = false }) => {
   const [expandedComments, setExpandedComments] = useState({});
   const [newComment, setNewComment] = useState('');
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    if (autoFocus && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [autoFocus]);
 
   const toggleReply = (commentId) => {
     setExpandedComments(prev => ({
@@ -14,13 +21,13 @@ const CommentList = ({ postId, comments = [] }) => {
 
   const handleSubmitComment = (commentId = null) => {
     if (!newComment.trim()) return;
-
-    console.log('Submit comment:', {
-      postId,
-      parentCommentId: commentId,
-      text: newComment
-    });
-
+    if (commentId && typeof onSubmitReply === 'function') {
+      onSubmitReply(commentId, newComment);
+    } else if (typeof onSubmitNewComment === 'function') {
+      onSubmitNewComment(newComment);
+    } else {
+      console.log('Submit comment:', { postId, parentCommentId: commentId, text: newComment });
+    }
     setNewComment('');
   };
 
@@ -93,6 +100,7 @@ const CommentList = ({ postId, comments = [] }) => {
           placeholder="What are your thoughts?"
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
+          ref={textareaRef}
           rows="4"
         />
         <div className="form-buttons">

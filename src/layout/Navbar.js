@@ -25,28 +25,69 @@ function AppNavbar({ onNavigate }) {
           >
             ☰
           </button>
-          <div className="navbar-logo">
-            <span className="logo-icon">r/</span>
-            <span className="logo-text">Reddit Clone</span>
+          <div 
+            className="navbar-logo"
+            onClick={() => handleNavClick('home', '/')}
+            style={{ cursor: 'pointer' }}
+          >
+            <span className="reddit-wordmark">reddit</span>
           </div>
         </div>
 
         {/* Center Section: Search */}
         <div className="navbar-center">
           <div className="search-container">
+            <div className="search-left">
+              <span className="search-mascot" aria-hidden="true">👽</span>
+            </div>
             <input
               type="text"
               className="search-input"
-              placeholder="Search communities and posts..."
+              placeholder="Find anything"
+              aria-label="Search"
             />
-            <button className="search-btn">🔍</button>
+            <div className="search-right">
+              <span className="search-divider" aria-hidden="true" />
+              <button className="ask-btn" title="Ask">Ask</button>
+            </div>
           </div>
         </div>
 
         {/* Right Section: Auth Buttons */}
         <div className="navbar-right">
-          <button className="navbar-btn login-btn">Log In</button>
-          <button className="navbar-btn signup-btn">Sign Up</button>
+          <button className="navbar-icon-btn" title="Ads" aria-label="Ads">🄰🄳</button>
+          <button 
+            className="navbar-icon-btn chat-btn"
+            onClick={() => handleNavClick('chat', '/chat')}
+            title="Chat"
+            aria-label="Open Chat"
+          >
+            💬
+          </button>
+          <button 
+            className="navbar-icon-btn" 
+            onClick={() => handleNavClick('create', '/create-community')}
+            title="Create"
+            aria-label="Create"
+          >
+            ➕
+          </button>
+          <button className="navbar-icon-btn" title="Notifications" aria-label="Notifications">🔔</button>
+          <div className="navbar-avatar" title="Profile" aria-label="Profile">
+            <img src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png" alt="avatar" />
+          </div>
+          <button 
+            className="navbar-btn login-btn"
+            onClick={() => handleNavClick('login', '/login')}
+          >
+            Log In
+          </button>
+          <button 
+            className="navbar-btn signup-btn"
+            onClick={() => handleNavClick('signup', '/signup')}
+          >
+            Sign Up
+          </button>
         </div>
       </div>
 
@@ -75,6 +116,13 @@ function AppNavbar({ onNavigate }) {
               onClick={(e) => { e.preventDefault(); handleNavClick('popular', '/popular'); }}
             >
               ⭐ Popular
+            </a>
+            <a 
+              href="/chat" 
+              className="menu-link"
+              onClick={(e) => { e.preventDefault(); handleNavClick('chat', '/chat'); }}
+            >
+              💬 Chat
             </a>
             <a 
               href="/accessibility" 
@@ -173,12 +221,38 @@ function AppNavbar({ onNavigate }) {
             </a>
             <a href="#r/all" className="menu-link">r/all</a>
             <a href="#r/popular" className="menu-link">r/popular</a>
-            <a href="#r/gaming" className="menu-link">r/gaming</a>
-            <a href="#r/memes" className="menu-link">r/memes</a>
+            <div 
+              className="menu-link"
+              onClick={(e) => { e.preventDefault(); handleNavClick('community', '/r/hackthebox'); }}
+              style={{ cursor: 'pointer' }}
+            >
+              r/hackthebox
+            </div>
+            <div 
+              className="menu-link"
+              onClick={(e) => { e.preventDefault(); handleNavClick('community', '/r/gaming'); }}
+              style={{ cursor: 'pointer' }}
+            >
+              r/gaming
+            </div>
+            <div 
+              className="menu-link"
+              onClick={(e) => { e.preventDefault(); handleNavClick('community', '/r/memes'); }}
+              style={{ cursor: 'pointer' }}
+            >
+              r/memes
+            </div>
           </div>
           <div className="menu-section">
             <h4>Account</h4>
             <a href="#profile" className="menu-link">👤 Profile</a>
+            <div 
+              className="menu-link"
+              onClick={(e) => { e.preventDefault(); handleNavClick('my-community', '/my-community'); }}
+              style={{ cursor: 'pointer' }}
+            >
+              🏠 My Communities
+            </div>
             <a href="#settings" className="menu-link">⚙️ Settings</a>
             <a href="#logout" className="menu-link">🚪 Log Out</a>
           </div>

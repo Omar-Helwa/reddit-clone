@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Post from './Post';
 import './PostList.css';
+import { navigate } from '../../utils/helpers';
 
 const PostList = () => {
   const [posts, setPosts] = useState([]);
@@ -110,9 +111,14 @@ const PostList = () => {
     ));
   };
 
-  const handleCommentClick = (postId) => {
-    // Navigate to post detail page or open comments modal
-    console.log(`Navigate to post ${postId}`);
+  const handleCommentClick = (post) => {
+    const slug = post.subreddit?.replace(/^r\//, '') || 'general';
+    navigate(`/r/${slug}/comments/${post.postId}?comment=1`);
+  };
+
+  const handleSubredditClick = (subreddit) => {
+    const slug = subreddit.replace(/^r\//, '');
+    navigate(`/r/${slug}`);
   };
 
   if (loading) {
@@ -154,7 +160,8 @@ const PostList = () => {
               textBody={post.textBody}
               authorIcon={post.authorIcon}
               subredditIcon={post.subredditIcon}
-              onCommentClick={() => handleCommentClick(post.postId)}
+              onCommentClick={() => handleCommentClick(post)}
+              onSubredditClick={() => handleSubredditClick(post.subreddit)}
               onUpvote={() => handleUpvote(post.postId)}
               onDownvote={() => handleDownvote(post.postId)}
             />

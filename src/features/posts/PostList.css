@@ -1,18 +1,19 @@
 .post-list-container {
-  max-width: 756px;
+  max-width: 780px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 0 4px 24px 4px;
 }
 
 .sort-controls {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
-  padding: 12px;
-  background: var(--neutral-background, #ffffff);
-  border: 1px solid var(--neutral-border, #ccc);
-  border-radius: 4px;
+  margin: 8px 0 14px 0;
+  padding: 12px 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
 }
 
 .sort-controls label {
@@ -22,21 +23,21 @@
 
 .sort-select {
   padding: 6px 12px;
-  border: 1px solid var(--neutral-border, #ccc);
-  border-radius: 4px;
-  background: var(--neutral-background, #ffffff);
-  color: var(--text-primary, #1a1a1b);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 14px;
 }
 
 .sort-select:hover {
-  border-color: var(--text-secondary, #818384);
+  border-color: #d5dae0;
 }
 
 .sort-select:focus {
   outline: none;
-  border-color: var(--primary-color, #0079d3);
+  border-color: var(--blue);
   box-shadow: 0 0 0 3px rgba(0, 121, 211, 0.1);
 }
 

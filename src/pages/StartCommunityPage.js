@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './StartCommunityPage.css';
 
-function StartCommunityPage() {
+function StartCommunityPage({ onNavigate }) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
@@ -34,6 +34,10 @@ function StartCommunityPage() {
     console.log('Creating community:', formData);
     // API call would go here
     alert(`Community r/${formData.name} created successfully!`);
+    // Navigate to the new community dashboard
+    if (onNavigate) {
+      onNavigate('my-community', '/my-community');
+    }
   };
 
   const isStepValid = () => {
