@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import './CommunityList.css';
-import { communities as communityData } from '../../data/mockData';
+import useCommunities from '../../hooks/useCommunities';
 
 const CommunityList = () => {
   const primaryNav = [
@@ -11,32 +11,7 @@ const CommunityList = () => {
     { label: 'Start a community', href: '/create-community', icon: '➕' },
   ];
 
-  const [communities, setCommunities] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchCommunities();
-  }, []);
-
-  const fetchCommunities = async () => {
-    try {
-      setLoading(true);
-      // Map from shared data source
-      const communityList = Object.keys(communityData).map(key => ({
-        id: key,
-        name: communityData[key].name,
-        icon: communityData[key].icon,
-        members: communityData[key].members,
-        description: communityData[key].description
-      }));
-      setCommunities(communityList);
-    } catch (error) {
-      console.error('Error fetching communities:', error);
-      setCommunities([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { communities, loading, error } = useCommunities();
 
   const handleJoinCommunity = (communityId) => {
     console.log(`Joined community: ${communityId}`);
@@ -45,6 +20,10 @@ const CommunityList = () => {
 
   if (loading) {
     return <div className="community-list loading">Loading communities...</div>;
+  }
+
+  if (error) {
+    return <div className="community-list error">Failed to load communities.</div>;
   }
 
   return (
@@ -98,22 +77,22 @@ const CommunityList = () => {
 
       <div className="community-list">
         {communities.length > 0 ? (
-          communities.map(community => (
-            <div key={community.id} className="community-item">
+          communities.map((community) => (
+            <div key={community._id || community.name} className="community-item">
               <a href={`/${community.name}`} className="community-link">
                 <img 
-                  src={community.icon} 
+                  src={community.icon || 'https://via.placeholder.com/40'} 
                   alt={community.name}
                   className="community-icon"
                 />
                 <div className="community-info">
                   <h3 className="community-name">{community.name}</h3>
-                  <p className="community-members">{community.members} members</p>
+                  <p className="community-members">{community.members ?? 0} members</p>
                 </div>
               </a>
               <button 
                 className="join-button"
-                onClick={() => handleJoinCommunity(community.id)}
+                onClick={() => handleJoinCommunity(community._id || community.name)}
               >
                 Join
               </button>

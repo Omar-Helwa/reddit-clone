@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './CommunityPage.css';
 import Post from '../features/posts/Post';
-import { communities as communityData, ensureSeeded } from '../data/mockData';
+import { ensureSeeded } from '../data/mockData';
+import useCommunities from '../hooks/useCommunities';
+import { deleteCommunity } from '../api/communitiesApi';
 import { getPosts, isJoined as isJoinedStore, joinCommunity, leaveCommunity, navigate } from '../utils/helpers';
 
 function CommunityPage() {
@@ -9,6 +11,8 @@ function CommunityPage() {
   const [activeTab, setActiveTab] = useState('posts');
   const [sortBy, setSortBy] = useState('hot');
   const [communityName, setCommunityName] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { communities: communityList, loading: communitiesLoading } = useCommunities(200);
 
   // Extract community name from URL
   useEffect(() => {
@@ -26,250 +30,23 @@ function CommunityPage() {
     ensureSeeded();
   }, []);
 
-  // Community database - different communities with their own data
-  const communityDataLocal = {
-    hackthebox: {
-      name: 'r/hackthebox',
-      displayName: 'HackTheBox',
-      description: 'Discussion about hackthebox.com machines, challenges, and cybersecurity learning!',
-      icon: 'https://styles.redditmedia.com/t5_3kc4k/styles/communityIcon_awrm7y13mg851.jpg',
-      banner: 'https://via.placeholder.com/1200x200/0045ac/ffffff?text=HackTheBox',
-      members: '101K',
-      online: '2.3K',
-      createdDate: 'Created Jan 15, 2018',
+  const community = useMemo(() => {
+    const slug = communityName || '';
+    const found = communityList.find((c) => c.name === slug || c.displayName === slug || c.name === `r/${slug}` || c.displayName === `r/${slug}`);
+    return found || {
+      name: `r/${slug || 'community'}`,
+      displayName: `r/${slug || 'community'}`,
+      description: 'Community details coming soon.',
+      icon: 'https://via.placeholder.com/80',
+      banner: 'https://via.placeholder.com/1200x200',
+      members: 0,
+      online: 0,
+      createdDate: new Date().toDateString(),
       type: 'Public',
-      rules: [
-        'Be respectful and civil',
-        'No spoilers in post titles',
-        'No asking for solutions directly',
-        'Search before posting',
-        'Only HackTheBox related content'
-      ],
-      moderators: ['u/admin', 'u/moduser1', 'u/moduser2']
-    },
-    gaming: {
-      name: 'r/gaming',
-      displayName: 'Gaming',
-      description: 'A subreddit for (almost) anything related to games - video games, board games, card games, etc.',
-      icon: 'https://via.placeholder.com/120/ff4500/ffffff?text=G',
-      banner: 'https://via.placeholder.com/1200x200/ff4500/ffffff?text=Gaming',
-      members: '35M',
-      online: '45K',
-      createdDate: 'Created Sep 25, 2008',
-      type: 'Public',
-      rules: [
-        'No bandwagon or direct reply posts',
-        'No spoilers in titles',
-        'No general URL shorteners',
-        'No spam or personal blog content',
-        'Be civil and respectful'
-      ],
-      moderators: ['u/gamemod', 'u/admin_gaming', 'u/moderator3']
-    },
-    memes: {
-      name: 'r/memes',
-      displayName: 'Memes',
-      description: 'Memes! A way of describing cultural information being shared. An element of a culture or system of behavior.',
-      icon: 'https://via.placeholder.com/120/46d160/ffffff?text=M',
-      banner: 'https://via.placeholder.com/1200x200/46d160/ffffff?text=Memes',
-      members: '28M',
-      online: '32K',
-      createdDate: 'Created Dec 1, 2008',
-      type: 'Public',
-      rules: [
-        'All posts must be memes',
-        'No spam or watermarks',
-        'No hate speech',
-        'No asking for upvotes',
-        'No memes about violent tragedies'
-      ],
-      moderators: ['u/mememaster', 'u/funnymod', 'u/lolmod']
-    },
-    mynewcommunity: {
-      name: 'r/mynewcommunity',
-      displayName: 'My New Community',
-      description: 'A fresh community ready to grow! Join us to discuss technology and innovation.',
-      icon: 'https://via.placeholder.com/120/0079d3/ffffff?text=MNC',
-      banner: 'https://via.placeholder.com/1200x200/0079d3/ffffff?text=My+New+Community',
-      members: '1',
-      online: '1',
-      createdDate: 'Created Dec 12, 2024',
-      type: 'Public',
-      rules: [
-        'Be respectful and kind',
-        'Stay on topic',
-        'No spam or self-promotion',
-        'Follow Reddit content policy',
-        'Have fun and engage!'
-      ],
-      moderators: ['u/creator']
-    },
-    general: {
-      name: 'r/general',
-      displayName: 'General',
-      description: 'A general community for discussions about anything and everything!',
-      icon: 'https://via.placeholder.com/120/7c4dff/ffffff?text=G',
-      banner: 'https://via.placeholder.com/1200x200/7c4dff/ffffff?text=General',
-      members: '500K',
-      online: '5K',
-      createdDate: 'Created Jan 1, 2015',
-      type: 'Public',
-      rules: [
-        'Be respectful',
-        'No spam',
-        'Stay civil',
-        'No personal attacks',
-        'Follow site-wide rules'
-      ],
-      moderators: ['u/generalmod', 'u/admin', 'u/moderator']
-    }
-  };
-
-  // Posts database - different posts for each community
-  const postsData = {
-    hackthebox: [
-      {
-        id: 1,
-        title: 'Just rooted my first HTB machine! Any tips for privilege escalation?',
-        author: 'u/newbie_hacker',
-        subreddit: 'r/hackthebox',
-        score: 245,
-        comments: 42,
-        timePosted: '5 hours ago',
-        content: 'Feeling awesome after getting root on my first box. Looking for resources to improve my privesc skills.',
-        flair: 'Achievement'
-      },
-      {
-        id: 2,
-        title: 'Weekly Machine Discussion - "Forest"',
-        author: 'u/htb_mod',
-        subreddit: 'r/hackthebox',
-        score: 189,
-        comments: 67,
-        timePosted: '1 day ago',
-        isPinned: true,
-        flair: 'Discussion'
-      },
-      {
-        id: 3,
-        title: 'Best methodology for initial enumeration?',
-        author: 'u/security_enthusiast',
-        subreddit: 'r/hackthebox',
-        score: 312,
-        comments: 89,
-        timePosted: '2 days ago',
-        flair: 'Question'
-      }
-    ],
-    gaming: [
-      {
-        id: 1,
-        title: 'What game are you currently playing?',
-        author: 'u/gamer123',
-        subreddit: 'r/gaming',
-        score: 1842,
-        comments: 523,
-        timePosted: '3 hours ago',
-        content: 'Drop your current favorites!',
-        flair: 'Discussion'
-      },
-      {
-        id: 2,
-        title: 'Just finished God of War Ragnarök - What a masterpiece!',
-        author: 'u/playstation_fan',
-        subreddit: 'r/gaming',
-        score: 3421,
-        comments: 189,
-        timePosted: '8 hours ago',
-        isPinned: false,
-        flair: 'Achievement'
-      },
-      {
-        id: 3,
-        title: 'Looking for co-op game recommendations for 2 players',
-        author: 'u/coop_seeker',
-        subreddit: 'r/gaming',
-        score: 672,
-        comments: 234,
-        timePosted: '12 hours ago',
-        flair: 'Question'
-      }
-    ],
-    memes: [
-      {
-        id: 1,
-        title: 'When you finally understand the meme',
-        author: 'u/meme_lord_420',
-        subreddit: 'r/memes',
-        score: 8234,
-        comments: 156,
-        timePosted: '2 hours ago',
-        content: '[Image]',
-        flair: 'Funny'
-      },
-      {
-        id: 2,
-        title: 'POV: You just got paid',
-        author: 'u/broke_student',
-        subreddit: 'r/memes',
-        score: 5621,
-        comments: 98,
-        timePosted: '6 hours ago',
-        isPinned: false,
-        flair: 'Relatable'
-      },
-      {
-        id: 3,
-        title: 'Programmers be like',
-        author: 'u/coder_memes',
-        subreddit: 'r/memes',
-        score: 4532,
-        comments: 201,
-        timePosted: '10 hours ago',
-        flair: 'Tech'
-      }
-    ],
-    mynewcommunity: [
-      {
-        id: 1,
-        title: 'Welcome to our new community! 🎉',
-        author: 'u/creator',
-        subreddit: 'r/mynewcommunity',
-        score: 1,
-        comments: 0,
-        timePosted: '1 hour ago',
-        content: 'Excited to build this community together!',
-        isPinned: true,
-        flair: 'Announcement'
-      }
-    ],
-    general: [
-      {
-        id: 1,
-        title: 'What\'s everyone up to this weekend?',
-        author: 'u/casual_user',
-        subreddit: 'r/general',
-        score: 423,
-        comments: 145,
-        timePosted: '4 hours ago',
-        content: 'Share your plans!',
-        flair: 'Discussion'
-      },
-      {
-        id: 2,
-        title: 'TIL: Interesting fact about the universe',
-        author: 'u/science_nerd',
-        subreddit: 'r/general',
-        score: 892,
-        comments: 67,
-        timePosted: '9 hours ago',
-        flair: 'TIL'
-      }
-    ]
-  };
-
-  // Get current community data
-  const community = communityData[communityName] || communityDataLocal[communityName] || communityDataLocal.general;
+      rules: [],
+      moderators: []
+    };
+  }, [communityList, communityName]);
   const mockPosts = getPosts(communityName);
 
   useEffect(() => {
@@ -285,6 +62,23 @@ function CommunityPage() {
     } else {
       joinCommunity(communityName);
       setIsJoined(true);
+    }
+  };
+
+  const handleDeleteCommunity = async () => {
+    if (!window.confirm(`Are you sure you want to delete r/${communityName}? This cannot be undone.`)) {
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      await deleteCommunity(community._id);
+      alert(`Community r/${communityName} has been deleted.`);
+      navigate('/');
+    } catch (err) {
+      alert('Failed to delete community: ' + err.message);
+      console.error('Error deleting community:', err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -310,6 +104,15 @@ function CommunityPage() {
               {isJoined ? '✓ Joined' : '+ Join'}
             </button>
             <button className="notify-btn" title="Turn on notifications">🔔</button>
+            <button 
+              className="delete-btn" 
+              title="Delete community" 
+              onClick={handleDeleteCommunity}
+              disabled={isDeleting}
+              style={{ background: 'red', color: 'white', padding: '8px 12px', borderRadius: '20px', cursor: isDeleting ? 'not-allowed' : 'pointer' }}
+            >
+              {isDeleting ? '⏳ Deleting...' : '🗑️ Delete'}
+            </button>
           </div>
         </div>
       </div>

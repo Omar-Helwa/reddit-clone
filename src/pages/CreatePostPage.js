@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './CreatePostPage.css';
-import { ensureSeeded, communities } from '../data/mockData';
-import { addPost, isJoined, joinCommunity, navigate, getJoinedCommunities } from '../utils/helpers';
+import { ensureSeeded } from '../data/mockData';
+import { addPost, joinCommunity, navigate, getJoinedCommunities } from '../utils/helpers';
+import useCommunities from '../hooks/useCommunities';
 
 function CreatePostPage() {
   const [communityName, setCommunityName] = useState('');
@@ -20,36 +21,40 @@ function CreatePostPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [joinedCommunities, setJoinedCommunities] = useState([]);
 
+  const { communities: communityList, loading: communitiesLoading } = useCommunities(200);
+
   useEffect(() => { ensureSeeded(); }, []);
 
   useEffect(() => {
     const path = window.location.pathname;
     const match = path.match(/\/r\/(.+?)\/submit/);
     const name = match ? match[1] : null;
-    
-    // Get joined communities
+
     const joined = getJoinedCommunities();
     setJoinedCommunities(joined);
 
     if (name && name !== 'general') {
-      // If URL specifies a community, use it
       setCommunityName(name);
-      setCanPost(isJoined(name));
+      setCanPost(true);
       setShowCommunitySelector(false);
     } else {
-      // If no community in URL or it's 'general', show selector if user has joined communities
       if (joined.length > 0) {
         setShowCommunitySelector(true);
         setCommunityName('');
         setCanPost(false);
       } else {
-        // Fallback to general if no communities joined
         setCommunityName('general');
-        setCanPost(isJoined('general'));
+        setCanPost(true);
         setShowCommunitySelector(false);
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (communityList.length > 0 && joinedCommunities.length === 0) {
+      setJoinedCommunities(communityList.map((c) => c.name));
+    }
+  }, [communityList, joinedCommunities.length]);
 
   const remaining = useMemo(() => Math.max(0, 300 - title.length), [title]);
 
@@ -84,9 +89,11 @@ function CreatePostPage() {
     setSearchTerm('');
   };
 
-  const filteredCommunities = joinedCommunities.filter(comm => 
-    comm.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCommunities = (communityList.length > 0 ? communityList : joinedCommunities.map((name) => ({ name })))
+    .filter(comm => {
+      const value = (comm.name || comm.displayName || '').toLowerCase();
+      return value.includes(searchTerm.toLowerCase());
+    });
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -203,35 +210,31 @@ function CreatePostPage() {
             </div>
 
             <div className="community-list">
-              {filteredCommunities.length > 0 ? (
+              {communitiesLoading ? (
+                <div className="no-communities">Loading communities...</div>
+              ) : filteredCommunities.length > 0 ? (
                 filteredCommunities.map((comm) => {
-                  const communityData = communities[comm];
+                  const icon = comm.icon || 'https://via.placeholder.com/40';
+                  const display = comm.displayName || comm.name || 'Community';
+                  const desc = comm.description || 'No description provided.';
                   return (
                     <button
-                      key={comm}
+                      key={comm._id || comm.name}
                       className="community-list-item"
-                      onClick={() => handleSelectCommunity(comm)}
+                      onClick={() => handleSelectCommunity(comm.name)}
                     >
                       <div className="community-item-avatar">
-                        {communityData?.icon ? (
-                          <img src={communityData.icon} alt={comm} />
-                        ) : (
-                          <div className="avatar-placeholder">{communityData?.name?.charAt(0)}</div>
-                        )}
+                        <img src={icon} alt={display} />
                       </div>
                       <div className="community-item-info">
-                        <div className="community-item-name">r/{comm}</div>
-                        <div className="community-item-meta">
-                          {communityData?.members || '0'} members · Subscribed
-                        </div>
+                        <div className="community-item-name">{display}</div>
+                        <div className="community-item-desc">{desc}</div>
                       </div>
                     </button>
                   );
                 })
               ) : (
-                <div className="no-communities">
-                  {searchTerm ? 'No communities found' : 'No joined communities'}
-                </div>
+                <div className="no-communities">No communities found</div>
               )}
             </div>
           </div>

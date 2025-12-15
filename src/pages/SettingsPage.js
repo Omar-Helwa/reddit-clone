@@ -3,6 +3,7 @@ import './SettingsPage.css';
 
 function SettingsPage({ onNavigate }) {
   const [activeTab, setActiveTab] = useState('account');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formData, setFormData] = useState({
     email: 'user@example.com',
     displayName: 'Nemo',
@@ -24,6 +25,50 @@ function SettingsPage({ onNavigate }) {
 
   const handleSave = () => {
     alert('Settings saved!');
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      // Import auth utils
+      const { getCurrentUserId, clearCurrentUser } = await import('../utils/auth');
+      const { deleteUser } = await import('../api/usersApi');
+      
+      // Get the current user's ID
+      const userId = getCurrentUserId();
+      
+      if (!userId) {
+        alert('No user logged in');
+        return;
+      }
+
+      // Delete user from MongoDB
+      await deleteUser(userId);
+      
+      console.log('Account deleted successfully');
+      
+      // Clear user data from localStorage
+      clearCurrentUser();
+      
+      alert('Your account has been deleted. We\'re sorry to see you go!');
+      
+      // Redirect to home page
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+      alert('Failed to delete account: ' + error.message);
+    }
+  };
+
+  const confirmDelete = () => {
+    const confirmation = window.prompt(
+      'Type "DELETE" to permanently delete your account. This action cannot be undone.'
+    );
+    
+    if (confirmation === 'DELETE') {
+      handleDeleteAccount();
+    } else {
+      alert('Account deletion cancelled');
+    }
   };
 
   return (
@@ -115,9 +160,11 @@ function SettingsPage({ onNavigate }) {
                 </div>
 
                 <div className="settings-group">
-                  <button className="btn-danger">Delete Account</button>
+                  <button className="btn-danger" onClick={confirmDelete}>
+                    Delete Account
+                  </button>
                   <p className="settings-help">
-                    Once you delete your account, there is no going back.
+                    Once you delete your account, there is no going back. All your posts, comments, and data will be permanently removed.
                   </p>
                 </div>
               </div>
