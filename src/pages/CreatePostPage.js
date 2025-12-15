@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import './CreatePostPage.css';
 import { ensureSeeded, communities } from '../data/mockData';
 import { addPost, isJoined, joinCommunity, navigate, getJoinedCommunities } from '../utils/helpers';
+import { useCreatePost } from '../hooks/usePosts';
 
 function CreatePostPage() {
+  const { createPost, loading: creatingPost, error: createError } = useCreatePost();
   const [communityName, setCommunityName] = useState('');
   const [canPost, setCanPost] = useState(false);
   const [title, setTitle] = useState('');
@@ -124,7 +126,7 @@ function CreatePostPage() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     if (!canPost) {
@@ -137,9 +139,16 @@ function CreatePostPage() {
     }
 
     const payload = {
+      postId: `${Date.now()}`,
       title: title.trim(),
       author: 'u/demo_user',
-      type: postType
+      subreddit: communityName,
+      type: postType,
+      upvotes: 0,
+      downvotes: 0,
+      score: 0,
+      commentCount: 0,
+      createdAt: new Date().toISOString(),
     };
 
     if (postType === 'text') {
@@ -179,8 +188,17 @@ function CreatePostPage() {
       }));
     }
 
-    const newPost = addPost(communityName, payload);
-    navigate(`/r/${communityName}/comments/${newPost.id}`);
+    try {
+      // Create post via API (saves to database)
+      const newPost = await createPost(payload);
+      
+      // Also save to localStorage for fallback display
+      addPost(communityName, payload);
+      
+      navigate(`/r/${communityName}/comments/${newPost.postId}`);
+    } catch (err) {
+      setError(err.message || 'Failed to create post. Please try again.');
+    }
   };
 
   if (showCommunitySelector) {
@@ -404,10 +422,13 @@ function CreatePostPage() {
           )}
 
           {error && <div className="error-msg">{error}</div>}
+          {createError && <div className="error-msg">{createError}</div>}
 
           <div className="form-actions">
-            <button type="button" className="cancel-btn" onClick={() => navigate(`/r/${communityName}`)}>Cancel</button>
-            <button type="submit" className="post-btn" disabled={!canPost}>Post</button>
+            <button type="button" className="cancel-btn" onClick={() => navigate(`/r/${communityName}`)} disabled={creatingPost}>Cancel</button>
+            <button type="submit" className="post-btn" disabled={!canPost || creatingPost}>
+              {creatingPost ? 'Posting...' : 'Post'}
+            </button>
           </div>
         </form>
       </div>
