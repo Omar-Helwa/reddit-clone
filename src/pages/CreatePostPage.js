@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './CreatePostPage.css';
-import { ensureSeeded } from '../data/mockData';
-import { addPost, isJoined, joinCommunity, navigate } from '../utils/helpers';
+import { ensureSeeded, communities } from '../data/mockData';
+import { addPost, isJoined, joinCommunity, navigate, getJoinedCommunities } from '../utils/helpers';
 
 function CreatePostPage() {
   const [communityName, setCommunityName] = useState('');
@@ -16,21 +16,49 @@ function CreatePostPage() {
   ]);
   const [postType, setPostType] = useState('text');
   const [error, setError] = useState('');
+  const [showCommunitySelector, setShowCommunitySelector] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [joinedCommunities, setJoinedCommunities] = useState([]);
 
   useEffect(() => { ensureSeeded(); }, []);
 
   useEffect(() => {
     const path = window.location.pathname;
-    // Expect: /r/:name/submit or fallback to general
     const match = path.match(/\/r\/(.+?)\/submit/);
-    const name = match ? match[1] : 'general';
-    setCommunityName(name);
-    setCanPost(isJoined(name));
+    const name = match ? match[1] : null;
+    
+    // Get joined communities
+    const joined = getJoinedCommunities();
+    setJoinedCommunities(joined);
+
+    if (name && name !== 'general') {
+      // If URL specifies a community, use it
+      setCommunityName(name);
+      setCanPost(isJoined(name));
+      setShowCommunitySelector(false);
+    } else {
+      // If no community in URL or it's 'general', show selector if user has joined communities
+      if (joined.length > 0) {
+        setShowCommunitySelector(true);
+        setCommunityName('');
+        setCanPost(false);
+      } else {
+        // Fallback to general if no communities joined
+        setCommunityName('general');
+        setCanPost(isJoined('general'));
+        setShowCommunitySelector(false);
+      }
+    }
   }, []);
 
   const remaining = useMemo(() => Math.max(0, 300 - title.length), [title]);
 
   const isValidUrl = (value) => /^https?:\/\//i.test(value.trim());
+  const isValidImageInput = (value) => {
+    if (!value) return false;
+    const trimmed = value.trim();
+    return trimmed.startsWith('data:') || /^https?:\/\//i.test(trimmed);
+  };
 
   const handlePollOptionChange = (id, value) => {
     setPollOptions((opts) => opts.map(o => o.id === id ? { ...o, text: value } : o));
@@ -47,6 +75,53 @@ function CreatePostPage() {
   const handleJoin = () => {
     joinCommunity(communityName);
     setCanPost(true);
+  };
+
+  const handleSelectCommunity = (community) => {
+    setCommunityName(community);
+    setCanPost(true);
+    setShowCommunitySelector(false);
+    setSearchTerm('');
+  };
+
+  const filteredCommunities = joinedCommunities.filter(comm => 
+    comm.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setImageUrl(event.target.result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setError('Please drop an image file');
+      }
+    }
+  };
+
+  const handleFileInput = (e) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setImageUrl(event.target.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setError('Please select an image file');
+    }
   };
 
   const handleSubmit = (e) => {
@@ -81,8 +156,8 @@ function CreatePostPage() {
     }
 
     if (postType === 'image') {
-      if (!imageUrl.trim() || !isValidUrl(imageUrl)) {
-        setError('Enter a valid image URL (must start with http or https).');
+      if (!isValidImageInput(imageUrl)) {
+        setError('Please upload an image or provide a valid image URL.');
         return;
       }
       payload.imageUrl = imageUrl.trim();
@@ -108,12 +183,75 @@ function CreatePostPage() {
     navigate(`/r/${communityName}/comments/${newPost.id}`);
   };
 
+  if (showCommunitySelector) {
+    return (
+      <div className="create-post-page">
+        <div className="create-post-container">
+          <h1 className="create-post-title">Create a post</h1>
+          
+          <div className="community-selector">
+            <div className="selector-search">
+              <span className="search-icon">🔍</span>
+              <input
+                type="text"
+                className="community-search-input"
+                placeholder="Select a community"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div className="community-list">
+              {filteredCommunities.length > 0 ? (
+                filteredCommunities.map((comm) => {
+                  const communityData = communities[comm];
+                  return (
+                    <button
+                      key={comm}
+                      className="community-list-item"
+                      onClick={() => handleSelectCommunity(comm)}
+                    >
+                      <div className="community-item-avatar">
+                        {communityData?.icon ? (
+                          <img src={communityData.icon} alt={comm} />
+                        ) : (
+                          <div className="avatar-placeholder">{communityData?.name?.charAt(0)}</div>
+                        )}
+                      </div>
+                      <div className="community-item-info">
+                        <div className="community-item-name">r/{comm}</div>
+                        <div className="community-item-meta">
+                          {communityData?.members || '0'} members · Subscribed
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="no-communities">
+                  {searchTerm ? 'No communities found' : 'No joined communities'}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="create-post-page">
       <div className="create-post-container">
         <div className="create-post-header">
           <h1>Create a post</h1>
-          <span className="community-chip">r/{communityName}</span>
+          <button 
+            className="community-chip"
+            onClick={() => setShowCommunitySelector(true)}
+            title="Change community"
+          >
+            r/{communityName}
+          </button>
         </div>
 
         {!canPost && (
@@ -186,14 +324,41 @@ function CreatePostPage() {
 
           {postType === 'image' && (
             <>
-              <input
-                type="url"
-                className="title-input"
-                placeholder="Image URL"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                disabled={!canPost}
-              />
+              {!imageUrl ? (
+                <div 
+                  className="image-dropzone"
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  <div className="dropzone-content">
+                    <span className="dropzone-icon">📁</span>
+                    <div className="dropzone-text">
+                      <p className="dropzone-main">Drag and Drop or upload media</p>
+                      <label className="dropzone-label">
+                        Click to upload
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileInput}
+                          style={{ display: 'none' }}
+                          disabled={!canPost}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="image-preview">
+                  <img src={imageUrl} alt="preview" />
+                  <button
+                    type="button"
+                    className="remove-image"
+                    onClick={() => setImageUrl('')}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
               <textarea 
                 className="text-input"
                 placeholder="Optional caption"

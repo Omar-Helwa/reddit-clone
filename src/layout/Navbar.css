@@ -188,6 +188,10 @@
   font-size: 18px;
 }
 
+.profile-dropdown-wrapper {
+  position: relative;
+}
+
 .navbar-avatar {
   width: 36px;
   height: 36px;
@@ -195,12 +199,140 @@
   overflow: hidden;
   border: 1px solid #d3d7de;
   display: inline-flex;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navbar-avatar:hover {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 2px rgba(0, 121, 211, 0.1);
 }
 
 .navbar-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.dropdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  background: transparent;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 260px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: dropdownSlide 0.2s ease-out;
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-section {
+  padding: 8px 0;
+}
+
+.dropdown-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.dropdown-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--card-border);
+}
+
+.dropdown-user-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.dropdown-username {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-karma {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--card-border);
+  margin: 4px 0;
+}
+
+.dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background: var(--hover);
+}
+
+.dropdown-icon {
+  width: 20px;
+  text-align: center;
+  font-size: 16px;
+}
+
+.dropdown-toggle {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.logout-item {
+  color: #d93900;
+}
+
+.logout-item:hover {
+  background: rgba(217, 57, 0, 0.08);
 }
 
 .login-btn {

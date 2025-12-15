@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Post from './Post';
 import './PostList.css';
 import { navigate } from '../../utils/helpers';
+import { communities, initialPosts, ensureSeeded } from '../../data/mockData';
 
 const PostList = () => {
   const [posts, setPosts] = useState([]);
@@ -16,83 +17,67 @@ const PostList = () => {
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      // Replace with your actual API endpoint
-      const response = await fetch(`/api/posts?sort=${sortBy}`);
-      const data = await response.json();
-      setPosts(data);
+      // Ensure data is seeded
+      ensureSeeded();
+      
+      // Aggregate posts from all communities
+      const allPosts = [];
+      Object.keys(communities).forEach(communityKey => {
+        const storageKey = `posts:${communityKey}`;
+        const postsRaw = localStorage.getItem(storageKey);
+        if (postsRaw) {
+          const communityPosts = JSON.parse(postsRaw);
+          const community = communities[communityKey];
+          
+          communityPosts.forEach(post => {
+            allPosts.push({
+              postId: post.id,
+              communityKey: communityKey,
+              uniqueKey: `${communityKey}_${post.id}`,
+              title: post.title,
+              author: post.author,
+              subreddit: community.name,
+              timestamp: post.timestamp,
+              score: post.score,
+              commentCount: post.commentCount,
+              textBody: post.textBody || '',
+              type: post.type || 'text',
+              imageUrl: post.imageUrl,
+              linkUrl: post.linkUrl,
+              pollOptions: post.pollOptions,
+              subredditIcon: community.icon,
+              authorIcon: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_4.png'
+            });
+          });
+        }
+      });
+      
+      // Sort posts based on sortBy
+      const sorted = sortPosts(allPosts, sortBy);
+      setPosts(sorted);
     } catch (error) {
       console.error('Error fetching posts:', error);
-      // Set mock data for development
-      setMockPosts();
+      setPosts([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const setMockPosts = () => {
-    const mockData = [
-      {
-        postId: 't3_1pfxsd1',
-        title: 'Web testing before pentesting pathos?',
-        author: 'SecurityEnthusiast',
-        subreddit: 'r/hackthebox',
-        timestamp: '7 hr. ago',
-        score: 24,
-        commentCount: 5,
-        textBody: 'I am planning on doing the CPTS though I\'ve noticed that colleagues spend more time using Burp Suite than testing AD or windows systems.',
-        subredditIcon: 'https://styles.redditmedia.com/t5_3kc4k/styles/communityIcon_awrm7y13mg851.jpg',
-        authorIcon: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_4.png'
-      },
-      {
-        postId: 't3_1pha1jz',
-        title: 'Role of open source in digital forensics',
-        author: 'CountryElegant5758',
-        subreddit: 'r/digitalforensics',
-        timestamp: '7 hr. ago',
-        score: 7,
-        commentCount: 12,
-        textBody: 'Hello everyone, I wish to collect knowledge about the role of open source tools in digital forensics through this thread.',
-        subredditIcon: 'https://styles.redditmedia.com/t5_2r6up/styles/communityIcon.jpg',
-        authorIcon: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_4.png'
-      },
-      {
-        postId: 't3_1pf34vx',
-        title: 'CPTS vs OSCP',
-        author: 'SpeedPositive1224',
-        subreddit: 'r/hackthebox',
-        timestamp: '3 days ago',
-        score: 9,
-        commentCount: 16,
-        textBody: 'Hey everyone, I\'m a dev with 4 years experience and recently passed the eJPT. I have been doing the CPTS path on HTB but think I\'ll switch to OSCP.',
-        subredditIcon: 'https://styles.redditmedia.com/t5_3kc4k/styles/communityIcon_awrm7y13mg851.jpg',
-        authorIcon: 'https://preview.redd.it/snoovatar/avatars/d39464a6-da7c-4279-83bf-a3232d7edb42-headshot.png'
-      },
-      {
-        postId: 't3_1pgyak4',
-        title: 'OMG, you CAN convert handwriting on iPad to Text in One Note',
-        author: 'Janknitz',
-        subreddit: 'r/OneNote',
-        timestamp: '18 hr. ago',
-        score: 25,
-        commentCount: 11,
-        textBody: 'Am I the only idiot who couldn\'t figure this out after more than a year??? I\'ve even seen Microsoft sources that said it can\'t be done. But it CAN.',
-        subredditIcon: 'https://styles.redditmedia.com/t5_2uhau/styles/communityIcon_lez0y8el927b1.png',
-        authorIcon: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_1.png'
-      },
-      {
-        postId: 't3_1peaohi',
-        title: 'Has TryHackMe gotten worse?',
-        author: 'crashmace',
-        subreddit: 'r/tryhackme',
-        timestamp: '4 days ago',
-        score: 69,
-        commentCount: 27,
-        textBody: 'Hello, I am a TryHackMe user since 2023 and was a subscriber for the majority of that time. I don\'t like the direction this platform is heading',
-        subredditIcon: 'https://styles.redditmedia.com/t5_ygv5g/styles/communityIcon_kr7d3dc0a9vf1.png',
-        authorIcon: 'https://preview.redd.it/snoovatar/avatars/fa6a7b16-312e-4d8c-8ba5-724df20152b3-headshot.png'
-      }
-    ];
-    setPosts(mockData);
+  const sortPosts = (postsArray, sort) => {
+    switch (sort) {
+      case 'NEW':
+        return [...postsArray].sort((a, b) => {
+          // Simple timestamp sorting (newer first)
+          return 0; // Keep original order for now
+        });
+      case 'TOP':
+        return [...postsArray].sort((a, b) => b.score - a.score);
+      case 'HOT':
+      case 'BEST':
+      default:
+        // Score + recency blend
+        return [...postsArray].sort((a, b) => b.score - a.score);
+    }
   };
 
   const handleUpvote = (postId) => {
@@ -149,8 +134,9 @@ const PostList = () => {
         {posts.length > 0 ? (
           posts.map(post => (
             <Post
-              key={post.postId}
+              key={post.uniqueKey}
               postId={post.postId}
+              communityKey={post.communityKey}
               title={post.title}
               author={post.author}
               subreddit={post.subreddit}
@@ -162,8 +148,8 @@ const PostList = () => {
               subredditIcon={post.subredditIcon}
               onCommentClick={() => handleCommentClick(post)}
               onSubredditClick={() => handleSubredditClick(post.subreddit)}
-              onUpvote={() => handleUpvote(post.postId)}
-              onDownvote={() => handleDownvote(post.postId)}
+              onUpvote={() => handleUpvote(post.uniqueKey)}
+              onDownvote={() => handleDownvote(post.uniqueKey)}
             />
           ))
         ) : (

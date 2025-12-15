@@ -3,6 +3,7 @@ import './Post.css';
 
 const Post = ({ 
   postId, 
+  communityKey,
   title, 
   author, 
   subreddit, 
@@ -70,7 +71,7 @@ const Post = ({
         </div>
 
         {/* Post Title */}
-        <a href={`/r/${subreddit}/comments/${postId}`} className="post-title-link">
+        <a href={`/r/${communityKey}/comments/${postId}`} className="post-title-link">
           <h2 className="post-title">{title}</h2>
         </a>
 

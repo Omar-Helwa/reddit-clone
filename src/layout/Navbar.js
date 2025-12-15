@@ -3,9 +3,11 @@ import './Navbar.css';
 
 function AppNavbar({ onNavigate }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
   const handleNavClick = (page, path) => {
     setShowMenu(false);
+    setShowProfileDropdown(false);
     if (onNavigate) {
       onNavigate(page, path);
     } else {
@@ -66,15 +68,96 @@ function AppNavbar({ onNavigate }) {
           </button>
           <button 
             className="navbar-icon-btn" 
-            onClick={() => handleNavClick('create', '/create-community')}
-            title="Create"
-            aria-label="Create"
+            onClick={() => handleNavClick('create-post', '/r/general/submit')}
+            title="Create Post"
+            aria-label="Create Post"
           >
             ➕
           </button>
           <button className="navbar-icon-btn" title="Notifications" aria-label="Notifications">🔔</button>
-          <div className="navbar-avatar" title="Profile" aria-label="Profile">
-            <img src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png" alt="avatar" />
+          <div className="profile-dropdown-wrapper">
+            <button 
+              className="navbar-avatar" 
+              title="Profile" 
+              aria-label="Profile"
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+            >
+              <img src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png" alt="avatar" />
+            </button>
+            
+            {showProfileDropdown && (
+              <>
+                <div className="dropdown-overlay" onClick={() => setShowProfileDropdown(false)} />
+                <div className="profile-dropdown">
+                  <div className="dropdown-section">
+                    <div className="dropdown-user-info">
+                      <img 
+                        src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png" 
+                        alt="avatar" 
+                        className="dropdown-avatar"
+                      />
+                      <div className="dropdown-user-details">
+                        <div className="dropdown-username">u/demo_user</div>
+                        <div className="dropdown-karma">1,234 karma</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="dropdown-divider" />
+                  
+                  <div className="dropdown-section">
+                    <button className="dropdown-item" onClick={() => handleNavClick('profile', '/profile')}>
+                      <span className="dropdown-icon">👤</span>
+                      <span>Profile</span>
+                    </button>
+                    <button className="dropdown-item" onClick={() => handleNavClick('create-post', '/r/general/submit')}>
+                      <span className="dropdown-icon">➕</span>
+                      <span>Create Post</span>
+                    </button>
+                    <button className="dropdown-item">
+                      <span className="dropdown-icon">💾</span>
+                      <span>Saved</span>
+                    </button>
+                    <button className="dropdown-item">
+                      <span className="dropdown-icon">📊</span>
+                      <span>Reddit Recap</span>
+                    </button>
+                  </div>
+                  
+                  <div className="dropdown-divider" />
+                  
+                  <div className="dropdown-section">
+                    <button className="dropdown-item" onClick={() => handleNavClick('settings', '/settings')}>
+                      <span className="dropdown-icon">⚙️</span>
+                      <span>Settings</span>
+                    </button>
+                    <button className="dropdown-item">
+                      <span className="dropdown-icon">❓</span>
+                      <span>Help Center</span>
+                    </button>
+                  </div>
+                  
+                  <div className="dropdown-divider" />
+                  
+                  <div className="dropdown-section">
+                    <button className="dropdown-item">
+                      <span className="dropdown-icon">🌙</span>
+                      <span>Dark Mode</span>
+                      <span className="dropdown-toggle">Off</span>
+                    </button>
+                  </div>
+                  
+                  <div className="dropdown-divider" />
+                  
+                  <div className="dropdown-section">
+                    <button className="dropdown-item logout-item">
+                      <span className="dropdown-icon">🚪</span>
+                      <span>Log Out</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
           <button 
             className="navbar-btn login-btn"

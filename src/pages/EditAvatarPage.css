@@ -1,0 +1,330 @@
+.edit-avatar-page {
+  min-height: 100vh;
+  background-color: var(--app-bg);
+  padding: 24px 0;
+}
+
+.edit-avatar-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header */
+.edit-avatar-header {
+  margin-bottom: 32px;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 8px 0;
+  margin-bottom: 16px;
+  transition: color 0.2s;
+}
+
+.back-button:hover {
+  color: #0066b8;
+}
+
+.edit-avatar-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.edit-avatar-subtitle {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Layout */
+.edit-avatar-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+}
+
+/* Preview Section */
+.avatar-preview-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.preview-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.preview-card h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 20px;
+}
+
+.avatar-preview-large {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80px;
+  margin: 0 auto 16px;
+  border: 3px solid var(--card-border);
+  transition: all 0.3s;
+}
+
+.preview-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Color Picker */
+.color-picker-section {
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.color-picker-section h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+}
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.color-option {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: white;
+  transition: all 0.2s;
+  border: none;
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+}
+
+.color-option.selected {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 3px var(--blue);
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-save {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-save:hover {
+  background-color: #ff5722;
+}
+
+.btn-cancel {
+  width: 100%;
+  padding: 12px;
+  background: none;
+  color: var(--text-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  background-color: var(--app-bg);
+  color: var(--text-primary);
+}
+
+/* Avatar Selection Section */
+.avatar-selection-section {
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Avatar Tabs */
+.avatar-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--card-border);
+  overflow-x: auto;
+  background-color: var(--card-bg);
+}
+
+.avatar-tab {
+  padding: 16px 20px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.avatar-tab:hover {
+  color: var(--text-primary);
+}
+
+.avatar-tab.active {
+  color: var(--blue);
+}
+
+.avatar-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--blue);
+}
+
+/* Avatar Grid */
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 8px;
+  padding: 20px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.avatar-option {
+  aspect-ratio: 1;
+  background-color: var(--app-bg);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  font-size: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.avatar-option:hover {
+  transform: scale(1.1);
+  background-color: rgba(0, 121, 211, 0.1);
+}
+
+.avatar-option.selected {
+  border-color: var(--blue);
+  background-color: rgba(0, 121, 211, 0.15);
+  transform: scale(1.1);
+}
+
+/* Custom Scrollbar */
+.avatar-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.avatar-grid::-webkit-scrollbar-track {
+  background: var(--app-bg);
+  border-radius: 4px;
+}
+
+.avatar-grid::-webkit-scrollbar-thumb {
+  background: var(--card-border);
+  border-radius: 4px;
+}
+
+.avatar-grid::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+  .edit-avatar-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .avatar-preview-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .action-buttons {
+    grid-column: 1 / -1;
+    flex-direction: row;
+  }
+}
+
+@media (max-width: 640px) {
+  .avatar-preview-section {
+    grid-template-columns: 1fr;
+  }
+
+  .avatar-tabs {
+    flex-wrap: wrap;
+  }
+
+  .avatar-tab {
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .avatar-grid {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    max-height: 400px;
+  }
+
+  .avatar-option {
+    font-size: 28px;
+  }
+
+  .avatar-preview-large {
+    width: 120px;
+    height: 120px;
+    font-size: 60px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+}

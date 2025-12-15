@@ -1,0 +1,101 @@
+// MongoAPI seed script
+// Usage: mongosh "${MONGODB_URI:-mongodb://127.0.0.1:27017}" schemas/sample_data.mongosh.txt
+
+'use strict';
+
+const targetDb = 'library';
+
+db = db.getSiblingDB(targetDb);
+
+print(`Switched to database: ${db.getName()}`);
+
+// Reset collections for idempotent runs
+const collectionsToReset = ['authors', 'books'];
+
+collectionsToReset.forEach((collection) => {
+  const exists = db.getCollectionInfos({ name: collection }).length > 0;
+  if (!exists) {
+    db.createCollection(collection);
+    print(`Created collection: ${collection}`);
+  }
+
+  db[collection].deleteMany({});
+
+  try {
+    db[collection].dropIndexes();
+  } catch (error) {
+    // NamespaceNotFound happens if the collection was just created and has no data yet.
+    if (error?.codeName !== 'NamespaceNotFound') {
+      throw error;
+    }
+  }
+});
+
+// Seed authors
+const authorDocs = [
+  {
+    firstName: 'Robert',
+    lastName: 'Martin',
+    nationality: 'United States',
+    birthYear: 1952,
+    notableWorks: ['Clean Code', 'Clean Architecture', 'Agile Software Development']
+  },
+  {
+    firstName: 'Mary',
+    lastName: 'Shelley',
+    nationality: 'United Kingdom',
+    birthYear: 1797,
+    deathYear: 1851,
+    notableWorks: ['Frankenstein', 'The Last Man']
+  },
+  {
+    firstName: 'Haruki',
+    lastName: 'Murakami',
+    nationality: 'Japan',
+    birthYear: 1949,
+    notableWorks: ['Norwegian Wood', 'Kafka on the Shore', '1Q84']
+  }
+];
+
+const authorResult = db.authors.insertMany(authorDocs);
+print(`Inserted ${authorResult.insertedCount} authors`);
+
+// Build helper map for author ObjectIds
+const authorMap = {};
+db.authors.find().forEach((doc) => {
+  const key = `${doc.firstName} ${doc.lastName}`;
+  authorMap[key] = doc._id.toHexString();
+});
+
+// Seed books referencing author ObjectIds
+const bookDocs = [
+  {
+    title: 'Clean Code',
+    author: 'Robert Martin',
+    authorId: authorMap['Robert Martin'],
+    publishedYear: 2008
+  },
+  {
+    title: 'Frankenstein',
+    author: 'Mary Shelley',
+    authorId: authorMap['Mary Shelley'],
+    publishedYear: 1818
+  },
+  {
+    title: 'Kafka on the Shore',
+    author: 'Haruki Murakami',
+    authorId: authorMap['Haruki Murakami'],
+    publishedYear: 2002
+  }
+];
+
+const bookResult = db.books.insertMany(bookDocs);
+print(`Inserted ${bookResult.insertedCount} books`);
+
+// Optional: helpful indexes for queries
+
+db.authors.createIndex({ lastName: 1, firstName: 1 });
+db.books.createIndex({ authorId: 1 });
+db.books.createIndex({ title: 1 });
+
+print('Seeding complete.');

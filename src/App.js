@@ -24,6 +24,10 @@ import MyCommunityPage from './pages/MyCommunityPage';
 import CreatePostPage from './pages/CreatePostPage';
 import PostPage from './pages/PostPage';
 import ChatPage from './pages/ChatPage';
+import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
+import AchievementsPage from './pages/AchievementsPage';
+import EditAvatarPage from './pages/EditAvatarPage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -69,6 +73,14 @@ function App() {
       setCurrentPage('signup');
     } else if (path.includes('/chat')) {
       setCurrentPage('chat');
+    } else if (path.includes('/profile')) {
+      setCurrentPage('profile');
+    } else if (path.includes('/settings')) {
+      setCurrentPage('settings');
+    } else if (path.includes('/achievements')) {
+      setCurrentPage('achievements');
+    } else if (path.includes('/edit-avatar')) {
+      setCurrentPage('edit-avatar');
     } else if (path.includes('/my-community')) {
       setCurrentPage('my-community');
     } else if (path.includes('/r/') && path.includes('/submit')) {
@@ -122,6 +134,14 @@ function App() {
         setCurrentPage('signup');
       } else if (newPath.includes('/chat')) {
         setCurrentPage('chat');
+      } else if (newPath.includes('/profile')) {
+        setCurrentPage('profile');
+      } else if (newPath.includes('/settings')) {
+        setCurrentPage('settings');
+      } else if (newPath.includes('/achievements')) {
+        setCurrentPage('achievements');
+      } else if (newPath.includes('/edit-avatar')) {
+        setCurrentPage('edit-avatar');
       } else if (newPath.includes('/my-community')) {
         setCurrentPage('my-community');
       } else if (newPath.includes('/r/') && newPath.includes('/submit')) {
@@ -192,6 +212,14 @@ function App() {
         return <PostPage />;
       case 'chat':
         return <ChatPage />;
+      case 'profile':
+        return <ProfilePage onNavigate={handleNavigate} />;
+      case 'settings':
+        return <SettingsPage onNavigate={handleNavigate} />;
+      case 'achievements':
+        return <AchievementsPage onNavigate={handleNavigate} />;
+      case 'edit-avatar':
+        return <EditAvatarPage onNavigate={handleNavigate} />;
       default:
         return <HomePage />;
     }

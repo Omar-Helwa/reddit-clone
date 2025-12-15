@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import './PostPage.css';
 import CommentList from '../features/comments/CommentList';
 import { ensureSeeded } from '../data/mockData';
-import { getPostById, addComment, votePollOption } from '../utils/helpers';
+import { getPostById, addComment, votePollOption, navigate } from '../utils/helpers';
 
 function PostPage() {
   const [communityName, setCommunityName] = useState('');
@@ -69,7 +69,12 @@ function PostPage() {
       <div className="post-container">
         <article className="post-card-full">
           <div className="post-header">
-            <div className="subreddit">r/{post.subreddit}</div>
+            <button 
+              className="subreddit" 
+              onClick={() => navigate(`/r/${communityName}`)}
+            >
+              r/{post.subreddit}
+            </button>
             <h1 className="title">{post.title}</h1>
             <div className="meta">Posted by {post.author} • {post.timestamp}</div>
           </div>

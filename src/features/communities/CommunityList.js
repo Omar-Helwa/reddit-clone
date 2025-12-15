@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './CommunityList.css';
+import { communities as communityData } from '../../data/mockData';
 
 const CommunityList = () => {
   const primaryNav = [
@@ -20,57 +21,21 @@ const CommunityList = () => {
   const fetchCommunities = async () => {
     try {
       setLoading(true);
-      // Replace with your actual API endpoint
-      const response = await fetch('/api/communities');
-      const data = await response.json();
-      setCommunities(data);
+      // Map from shared data source
+      const communityList = Object.keys(communityData).map(key => ({
+        id: key,
+        name: communityData[key].name,
+        icon: communityData[key].icon,
+        members: communityData[key].members,
+        description: communityData[key].description
+      }));
+      setCommunities(communityList);
     } catch (error) {
       console.error('Error fetching communities:', error);
-      setMockCommunities();
+      setCommunities([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const setMockCommunities = () => {
-    const mockData = [
-      {
-        id: 'r_hackthebox',
-        name: 'r/hackthebox',
-        icon: 'https://styles.redditmedia.com/t5_3kc4k/styles/communityIcon_awrm7y13mg851.jpg',
-        members: '101K',
-        description: 'Discussion about hackthebox.com machines!'
-      },
-      {
-        id: 'r_tryhackme',
-        name: 'r/tryhackme',
-        icon: 'https://styles.redditmedia.com/t5_ygv5g/styles/communityIcon_kr7d3dc0a9vf1.png',
-        members: '94K',
-        description: 'Level up your cyber security skills'
-      },
-      {
-        id: 'r_cybersecurity',
-        name: 'r/cybersecurity',
-        icon: 'https://styles.redditmedia.com/t5_4wiyk8/styles/communityIcon_j5sxctp4tgh71.png',
-        members: '45K',
-        description: 'Cybersecurity news, discussion, and guidance'
-      },
-      {
-        id: 'r_devsecops',
-        name: 'r/devsecops',
-        icon: 'https://styles.redditmedia.com/t5_3hhfv/styles/communityIcon.png',
-        members: '13K',
-        description: 'DevSecOps community and resources'
-      },
-      {
-        id: 'r_bugbounty',
-        name: 'r/bugbounty',
-        icon: 'https://styles.redditmedia.com/t5_2zisx/styles/communityIcon_j4ynb1c9sar21.png',
-        members: '72K',
-        description: 'Bug bounty and responsible disclosure'
-      }
-    ];
-    setCommunities(mockData);
   };
 
   const handleJoinCommunity = (communityId) => {
