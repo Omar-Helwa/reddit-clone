@@ -1,42 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Post from './Post';
 import './PostList.css';
 import { navigate } from '../../utils/helpers';
-import { communities, initialPosts, ensureSeeded } from '../../data/mockData';
+import { ensureSeeded } from '../../data/mockData';
+import useCommunities from '../../hooks/useCommunities';
 
 const PostList = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('BEST');
+  const { communities: communityList } = useCommunities(200);
+
+  const communityMap = useMemo(() => {
+    const map = {};
+    communityList.forEach((c) => {
+      const slug = (c.name || '').replace(/^r\//, '');
+      map[slug] = c;
+    });
+    return map;
+  }, [communityList]);
 
   useEffect(() => {
-    // Fetch posts from API
     fetchPosts();
-  }, [sortBy]);
+  }, [sortBy, communityMap]);
 
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      // Ensure data is seeded
+      // Seed mock posts (temporary until posts API exists)
       ensureSeeded();
       
-      // Aggregate posts from all communities
       const allPosts = [];
-      Object.keys(communities).forEach(communityKey => {
-        const storageKey = `posts:${communityKey}`;
+      const storageKeys = Object.keys(localStorage).filter((k) => k.startsWith('posts:'));
+      storageKeys.forEach((storageKey) => {
+        const communityKey = storageKey.replace('posts:', '');
         const postsRaw = localStorage.getItem(storageKey);
-        if (postsRaw) {
+        if (!postsRaw) return;
+        try {
           const communityPosts = JSON.parse(postsRaw);
-          const community = communities[communityKey];
-          
-          communityPosts.forEach(post => {
+          const community = communityMap[communityKey] || {};
+          const subredditName = community.name || `r/${communityKey}`;
+          communityPosts.forEach((post) => {
             allPosts.push({
               postId: post.id,
-              communityKey: communityKey,
+              communityKey,
               uniqueKey: `${communityKey}_${post.id}`,
               title: post.title,
               author: post.author,
-              subreddit: community.name,
+              subreddit: subredditName,
               timestamp: post.timestamp,
               score: post.score,
               commentCount: post.commentCount,
@@ -49,6 +60,8 @@ const PostList = () => {
               authorIcon: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_4.png'
             });
           });
+        } catch (err) {
+          console.error('Failed to parse posts for', communityKey, err);
         }
       });
       

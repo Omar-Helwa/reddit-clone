@@ -35,13 +35,34 @@ function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
-      console.log('Login attempt:', { username: formData.username });
-      // TODO: Implement actual login API call
-      alert('Login functionality will be connected to backend');
+      try {
+        // Import API client and auth utils
+        const { loginUser } = await import('../api/usersApi');
+        const { setCurrentUser } = await import('../utils/auth');
+        
+        // Authenticate user
+        const user = await loginUser(formData.username, formData.password);
+        
+        console.log('Login successful:', user);
+        
+        // Save user info to localStorage
+        setCurrentUser(user);
+        
+        alert(`Welcome back, ${user.username}!`);
+        
+        // Redirect to home page
+        window.location.href = '/';
+      } catch (error) {
+        console.error('Login failed:', error);
+        setErrors(prev => ({
+          ...prev,
+          submit: error.message || 'Login failed. Please try again.'
+        }));
+      }
     }
   };
 
@@ -135,6 +156,12 @@ function LoginPage() {
                 <a href="/forgot-password" className="forgot-link">Forgot password?</a>
               </div>
 
+              {errors.submit && (
+                <div className="error-message" style={{ color: 'red', marginBottom: '1rem', textAlign: 'center' }}>
+                  {errors.submit}
+                </div>
+              )}
+              
               <button type="submit" className="submit-btn">Log In</button>
             </form>
 

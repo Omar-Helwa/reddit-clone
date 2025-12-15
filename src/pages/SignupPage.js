@@ -65,16 +65,39 @@ function SignupPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
-      console.log('Signup attempt:', {
-        email: formData.email,
-        username: formData.username
-      });
-      // TODO: Implement actual signup API call
-      alert('Signup functionality will be connected to backend');
+      try {
+        // Import API client and auth utils
+        const { createUser } = await import('../api/usersApi');
+        const { setCurrentUser } = await import('../utils/auth');
+        
+        // Create new user in MongoDB
+        const newUser = await createUser({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          image: '', // Optional: add avatar upload later
+        });
+        
+        console.log('User created successfully:', newUser);
+        
+        // Save user info to localStorage
+        setCurrentUser(newUser);
+        
+        alert(`Welcome ${formData.username}! Your account has been created.`);
+        
+        // Redirect to home page after successful signup (user is now logged in)
+        window.location.href = '/';
+      } catch (error) {
+        console.error('Signup failed:', error);
+        setErrors(prev => ({
+          ...prev,
+          submit: error.message || 'Failed to create account. Please try again.'
+        }));
+      }
     }
   };
 
@@ -196,6 +219,12 @@ function SignupPage() {
                 {errors.agreeToTerms && <span className="error-text">{errors.agreeToTerms}</span>}
               </div>
 
+              {errors.submit && (
+                <div className="error-message" style={{ color: 'red', marginBottom: '1rem', textAlign: 'center' }}>
+                  {errors.submit}
+                </div>
+              )}
+              
               <button type="submit" className="submit-btn">Sign Up</button>
             </form>
 

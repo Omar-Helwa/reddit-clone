@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
 import './StartCommunityPage.css';
+import { createCommunity } from '../api/communitiesApi';
 
 function StartCommunityPage({ onNavigate }) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
     type: 'public',
+    displayName: '',
     nsfw: false,
     category: '',
     description: '',
+    icon: '',
+    banner: '',
     rules: []
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const categories = [
     { id: 'gaming', label: 'Gaming', icon: '🎮' },
@@ -29,14 +35,31 @@ function StartCommunityPage({ onNavigate }) {
     setFormData({ ...formData, [field]: value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Creating community:', formData);
-    // API call would go here
-    alert(`Community r/${formData.name} created successfully!`);
-    // Navigate to the new community dashboard
-    if (onNavigate) {
-      onNavigate('my-community', '/my-community');
+    setError('');
+    setLoading(true);
+    try {
+      const newCommunity = await createCommunity({
+        name: `r/${formData.name}`,
+        displayName: formData.displayName || formData.name,
+        description: formData.description,
+        icon: formData.icon,
+        banner: formData.banner,
+        type: formData.type === 'public' ? 'Public' : 'Private',
+        rules: formData.rules,
+        members: 1,
+        online: 1,
+      });
+      alert(`Community r/${formData.name} created successfully!`);
+      if (onNavigate) {
+        onNavigate('community', `/r/${formData.name}`);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to create community');
+      console.error('Error creating community:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -264,6 +287,8 @@ function StartCommunityPage({ onNavigate }) {
                   By creating a community, you agree to Reddit's Community Rules and Moderator Code of Conduct.
                 </p>
               </div>
+
+              {error && <div className="error-message" style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
             </div>
           )}
 
@@ -292,8 +317,9 @@ function StartCommunityPage({ onNavigate }) {
               <button
                 type="submit"
                 className="nav-btn primary submit"
+                disabled={loading}
               >
-                🚀 Create Community
+                {loading ? 'Creating...' : 'Create Community'}
               </button>
             )}
           </div>

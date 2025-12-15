@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import './ProfilePage.css';
-import { communities } from '../data/mockData';
-import { getPosts } from '../utils/helpers';
 
 function ProfilePage({ onNavigate }) {
   const [activeTab, setActiveTab] = useState('posts');
@@ -22,40 +20,42 @@ function ProfilePage({ onNavigate }) {
   useEffect(() => {
     // Aggregate posts and comments authored by the current user across all communities
     const author = user.fullUsername;
-    const keys = Object.keys(communities);
     const collectedPosts = [];
     const collectedComments = [];
-    keys.forEach((key) => {
-      const posts = getPosts(key);
-      posts.forEach((p) => {
-        // Posts authored by user
-        if (p.author === author) {
-          collectedPosts.push({
-            id: p.id,
-            community: `r/${key}`,
-            title: p.title,
-            text: p.textBody || '',
-            upvotes: p.score || 0,
-            comments: p.commentCount || (p.comments ? p.comments.length : 0),
-            time: p.timestamp || 'just now',
-          });
-        }
-        // Comments authored by user
-        (p.comments || []).forEach((c) => {
-          if (c.author === author) {
-            collectedComments.push({
-              id: c.id,
-              post: p.title,
-              community: `r/${key}`,
-              text: c.text,
-              upvotes: c.score || 0,
-              time: c.timestamp || 'just now',
+    const localKeys = Object.keys(localStorage).filter(k => k.startsWith('posts:'));
+    localKeys.forEach((key) => {
+      const community = key.replace('posts:', '');
+      try {
+        const posts = JSON.parse(localStorage.getItem(key) || '[]');
+        posts.forEach((p) => {
+          if (p.author === author) {
+            collectedPosts.push({
+              id: p.id,
+              community: `r/${community}`,
+              title: p.title,
+              text: p.textBody || '',
+              upvotes: p.score || 0,
+              comments: p.commentCount || (p.comments ? p.comments.length : 0),
+              time: p.timestamp || 'just now',
             });
           }
+          (p.comments || []).forEach((c) => {
+            if (c.author === author) {
+              collectedComments.push({
+                id: c.id,
+                post: p.title,
+                community: `r/${community}`,
+                text: c.text,
+                upvotes: c.score || 0,
+                time: c.timestamp || 'just now',
+              });
+            }
+          });
         });
-      });
+      } catch (err) {
+        console.error('Failed to parse posts for', community, err);
+      }
     });
-    // Newest first
     setUserPosts(collectedPosts.reverse());
     setUserComments(collectedComments.reverse());
   }, []);
