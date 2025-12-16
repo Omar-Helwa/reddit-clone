@@ -36,12 +36,14 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
     const timestamp = comment.createdAt 
       ? new Date(comment.createdAt).toLocaleDateString()
       : comment.timestamp || 'just now';
+    // Display userId as author since schema only stores userId
+    const author = comment.author || `User ${comment.userId?.substring(0, 8) || 'Unknown'}`;
     
     return (
       <div key={commentId} className="comment" style={{ marginLeft: `${depth * 24}px` }}>
         <div className="comment-header">
-          <a href={`/u/${comment.author}`} className="comment-author">
-            {comment.author}
+          <a href={`/u/${author}`} className="comment-author">
+            {author}
           </a>
           <span className="comment-score">{comment.score} points</span>
           <span className="comment-timestamp">{timestamp}</span>

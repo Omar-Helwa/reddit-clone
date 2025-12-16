@@ -16,9 +16,23 @@ const API_BASE_URL = '';
 async function fetchAPI(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  // Attach bearer token if available
+  let tokenHeaders = {};
+  try {
+    const token = localStorage.getItem('userToken');
+    const envToken = process.env.REACT_APP_API_TOKEN;
+    const bearer = token || envToken;
+    if (bearer) {
+      tokenHeaders = { Authorization: `Bearer ${bearer}` };
+    }
+  } catch (e) {
+    // localStorage might be unavailable; ignore
+  }
+
   const config = {
     headers: {
       'Content-Type': 'application/json',
+      ...tokenHeaders,
       ...options.headers,
     },
     ...options,
@@ -29,7 +43,11 @@ async function fetchAPI(endpoint, options = {}) {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      throw new Error(
+        errorData.error ||
+        errorData.message ||
+        `HTTP error! status: ${response.status}`
+      );
     }
     
     return await response.json();

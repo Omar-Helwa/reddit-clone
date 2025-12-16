@@ -10,9 +10,20 @@ export const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 export async function apiFetch(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  let tokenHeaders = {};
+  try {
+    const token = localStorage.getItem('userToken');
+    if (token) {
+      tokenHeaders = { Authorization: `Bearer ${token}` };
+    }
+  } catch (e) {
+    // ignore if localStorage unavailable
+  }
+
   const config = {
     headers: {
       'Content-Type': 'application/json',
+      ...tokenHeaders,
       ...options.headers,
     },
     ...options,

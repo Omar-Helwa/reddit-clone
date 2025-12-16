@@ -15,9 +15,20 @@ const API_BASE_URL = '';
 async function fetchAPI(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  let tokenHeaders = {};
+  try {
+    const token = localStorage.getItem('userToken');
+    if (token) {
+      tokenHeaders = { Authorization: `Bearer ${token}` };
+    }
+  } catch (e) {
+    // ignore
+  }
+
   const config = {
     headers: {
       'Content-Type': 'application/json',
+      ...tokenHeaders,
       ...options.headers,
     },
     ...options,
@@ -41,6 +52,12 @@ async function fetchAPI(endpoint, options = {}) {
 // ==================== COMMENTS API ====================
 
 export const commentsAPI = {
+  /**
+   * List all comments (fallback when server-side filter misbehaves)
+   * @returns {Promise<Array>} Array of comments
+   */
+  listAll: () => fetchAPI('/comments'),
+
   /**
    * Get all comments for a specific post
    * @param {string} postId - Post ID (ObjectId)
@@ -88,6 +105,7 @@ export const commentsAPI = {
       payload.parentCommentId = commentData.parentCommentId;
     }
     
+    console.log('Creating comment with payload:', payload);
     return fetchAPI(`/comments`, {
       method: 'POST',
       body: JSON.stringify(payload),

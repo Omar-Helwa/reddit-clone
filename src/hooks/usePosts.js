@@ -14,12 +14,13 @@ import postsAPI from '../api/postsAPI';
 function transformPost(post) {
   // Use Mongo _id as primary identifier for routing; keep original postId for display if needed
   const primaryId = post._id || post.postId;
+  const author = post.author || post.username || post.userId || 'Unknown';
   return {
     postId: primaryId,
     uniqueKey: primaryId,
     originalPostId: post.postId,
     title: post.title,
-    author: post.author,
+    author: author,
     subreddit: post.subreddit || 'r/general',
     type: post.type || 'text',
     

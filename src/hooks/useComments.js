@@ -12,10 +12,12 @@ import commentsAPI from '../api/commentsAPI';
  * @returns {Object} Transformed comment ready for components
  */
 function transformComment(comment) {
+  // Schema only stores userId, not author
+  // Author will be displayed from the userId reference
   return {
     commentId: comment._id,
     postId: comment.postId,
-    author: comment.author,
+    userId: comment.userId,
     text: comment.text,
     
     // Engagement
@@ -55,9 +57,26 @@ export function useComments(postId) {
       setLoading(true);
       setError(null);
       
+      const normalizeId = (id) => (typeof id === 'string' ? id : id?.toString?.() || '');
+
+      // Primary fetch by postId
       const result = await commentsAPI.getByPostId(postId);
       const commentsList = Array.isArray(result) ? result : (result?.items ?? []);
-      const transformedComments = commentsList.map(transformComment);
+      console.log('Comments fetch raw:', result);
+      console.log('Comments list length:', commentsList.length);
+
+      // If server-side filter returns nothing, fallback to list-all and filter client-side
+      let finalComments = commentsList;
+      if (commentsList.length === 0) {
+        const allResult = await commentsAPI.listAll();
+        const allComments = Array.isArray(allResult) ? allResult : (allResult?.items ?? []);
+        const filtered = allComments.filter(c => normalizeId(c.postId) === normalizeId(postId));
+        console.log('Fallback all comments length:', allComments.length, 'filtered:', filtered.length);
+        finalComments = filtered;
+      }
+
+      const transformedComments = finalComments.map(transformComment);
+      console.log('Comments transformed:', transformedComments);
       setComments(transformedComments);
     } catch (err) {
       setError(err.message || 'Failed to fetch comments');

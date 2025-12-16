@@ -3,6 +3,7 @@ import './CreatePostPage.css';
 import { isJoined, joinCommunity, navigate, getJoinedCommunities } from '../utils/helpers';
 import { useCreatePost } from '../hooks/usePosts';
 import useCommunities from '../hooks/useCommunities';
+import { getCurrentUserId } from '../utils/auth';
 
 function CreatePostPage() {
   const { createPost, loading: creatingPost, error: createError } = useCreatePost();
@@ -142,18 +143,29 @@ function CreatePostPage() {
       return;
     }
 
-    const subredditValue = communityName?.startsWith('r/') ? communityName : `r/${communityName}`;
+    if (postType === 'text' && !textBody.trim()) {
+      setError('Post body is required for text posts.');
+      return;
+    }
+
+    const subredditValue = (communityName || '').replace(/^r\//i, '');
+    const userId = getCurrentUserId();
+
+    if (!userId) {
+      setError('You must be logged in to post.');
+      return;
+    }
+
     const payload = {
-      postId: `${Date.now()}`,
       title: title.trim(),
-      author: 'u/demo_user',
+      userId,
       subreddit: subredditValue,
       type: postType,
+      // optional but accepted by backend
       upvotes: 0,
       downvotes: 0,
       score: 0,
       commentCount: 0,
-      createdAt: new Date().toISOString(),
     };
 
     if (postType === 'text') {
@@ -194,11 +206,14 @@ function CreatePostPage() {
     }
 
     try {
+      console.log('Creating post payload:', payload);
       // Create post via API (saves to database)
       const newPost = await createPost(payload);
+      console.log('Created post response:', newPost);
       
       navigate(`/r/${communityName}/comments/${newPost.postId}`);
     } catch (err) {
+      console.error('Create post failed:', err);
       setError(err.message || 'Failed to create post. Please try again.');
     }
   };

@@ -25,6 +25,10 @@ function LoginPage() {
       newErrors.username = 'Username is required';
     }
 
+    if (!formData.password.trim()) {
+      newErrors.password = 'Password is required';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -34,31 +38,33 @@ function LoginPage() {
     
     if (validateForm()) {
       try {
-        // Fetch test user from database
         const { setCurrentUser } = await import('../utils/auth');
-        const { listUsers } = await import('../api/usersApi');
+        const { loginUser } = await import('../api/usersApi');
 
-        const raw = formData.username.trim();
-        
-        // Fetch users from database
-        const usersResponse = await listUsers({ limit: 100 });
-        const users = usersResponse.items || usersResponse || [];
-        
-        // Find user by username or email
-        const isEmail = raw.includes('@');
-        const dbUser = users.find(u => 
-          (isEmail && u.email && u.email.toLowerCase() === raw.toLowerCase()) ||
-          (!isEmail && u.username && u.username.toLowerCase() === raw.toLowerCase())
-        );
-        
-        if (!dbUser) {
-          throw new Error(`User "${raw}" not found in database`);
+        const usernameOrEmail = formData.username.trim();
+        const password = formData.password;
+
+        // Call API to validate credentials against DB
+        const authResult = await loginUser(usernameOrEmail, password);
+        console.log('Auth result keys:', Object.keys(authResult || {}));
+
+        // Expected shape: { user, token }
+        if (!authResult?.user) {
+          throw new Error('Login response missing user');
         }
 
-        // Save actual user from database
-        setCurrentUser(dbUser);
+        if (!authResult?.token) {
+          console.warn('No token returned from login response');
+        }
 
-        alert(`Welcome back, ${dbUser.username}!`);
+        const userToStore = {
+          ...authResult.user,
+          token: authResult.token,
+        };
+
+        setCurrentUser(userToStore);
+
+        alert(`Welcome back, ${authResult.user.username}!`);
 
         // Redirect to home page
         window.location.href = '/';

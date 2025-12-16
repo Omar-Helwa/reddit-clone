@@ -51,8 +51,10 @@ function PostPage() {
         text: text.trim(),
         parentCommentId: null,
       });
+      console.log('Comment created, refetching comments...');
       refetchComments();
     } catch (err) {
+      console.error('Comment error:', err);
       alert('Failed to create comment: ' + err.message);
     }
   };
