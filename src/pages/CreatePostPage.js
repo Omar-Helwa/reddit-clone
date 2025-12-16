@@ -5,6 +5,9 @@ import { useCreatePost } from '../hooks/usePosts';
 import useCommunities from '../hooks/useCommunities';
 import { getCurrentUserId } from '../utils/auth';
 
+const DEFAULT_MAX_IMAGE_BYTES = 500 * 1024; // base64-in-JSON grows ~33%, keep this conservative
+const MAX_IMAGE_BYTES = Number(process.env.REACT_APP_MAX_IMAGE_BYTES) || DEFAULT_MAX_IMAGE_BYTES;
+
 function CreatePostPage() {
   const { createPost, loading: creatingPost, error: createError } = useCreatePost();
   const [communityName, setCommunityName] = useState('');
@@ -107,6 +110,14 @@ function CreatePostPage() {
     if (files && files[0]) {
       const file = files[0];
       if (file.type.startsWith('image/')) {
+        if (file.size > MAX_IMAGE_BYTES) {
+          setError(
+            `Image is too large (${Math.round(file.size / 1024)}KB). ` +
+            `Max allowed is ${Math.round(MAX_IMAGE_BYTES / 1024)}KB. ` +
+            `Use an image URL instead.`
+          );
+          return;
+        }
         const reader = new FileReader();
         reader.onload = (event) => {
           setImageUrl(event.target.result);
@@ -121,6 +132,14 @@ function CreatePostPage() {
   const handleFileInput = (e) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
+      if (file.size > MAX_IMAGE_BYTES) {
+        setError(
+          `Image is too large (${Math.round(file.size / 1024)}KB). ` +
+          `Max allowed is ${Math.round(MAX_IMAGE_BYTES / 1024)}KB. ` +
+          `Use an image URL instead.`
+        );
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (event) => {
         setImageUrl(event.target.result);
