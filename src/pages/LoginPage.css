@@ -12,7 +12,7 @@
   grid-template-columns: 1fr 1fr;
   max-width: 1000px;
   width: 100%;
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -41,23 +41,23 @@
 
 .login-right {
   padding: 50px 40px;
-  background: #ffffff;
+  background: var(--card-bg);
 }
 
 .login-box h2 {
   margin: 0 0 8px 0;
   font-size: 28px;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .login-subtitle {
   margin: 0 0 24px 0;
-  color: #6a6d6f;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 .signup-link {
-  color: #0c6cf5;
+  color: var(--blue);
   text-decoration: none;
   font-weight: 700;
 }
@@ -79,10 +79,10 @@
   justify-content: center;
   gap: 10px;
   padding: 12px;
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--card-border);
   border-radius: 10px;
-  background: #ffffff;
-  color: #1a1a1b;
+  background: var(--card-bg);
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -90,8 +90,8 @@
 }
 
 .social-btn:hover {
-  background: #f6f7f8;
-  border-color: #ccc;
+  background: var(--hover);
+  border-color: var(--card-border);
 }
 
 .social-icon {
@@ -102,7 +102,7 @@
   display: flex;
   align-items: center;
   margin: 20px 0;
-  color: #6a6d6f;
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 600;
 }
@@ -111,7 +111,7 @@
 .divider::after {
   content: '';
   flex: 1;
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid var(--card-border);
 }
 
 .divider span {
@@ -133,21 +133,23 @@
 .form-group label {
   font-size: 13px;
   font-weight: 700;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .form-group input {
   padding: 12px 14px;
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   font-size: 14px;
+  background: var(--app-bg);
+  color: var(--text-primary);
   transition: all 0.2s ease;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #0c6cf5;
-  box-shadow: 0 0 0 3px rgba(12, 108, 245, 0.1);
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--muted-blue);
 }
 
 .form-group input.input-error {
@@ -199,7 +201,7 @@
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #1a1a1b;
+  color: var(--text-primary);
   cursor: pointer;
 }
 
@@ -208,7 +210,7 @@
 }
 
 .forgot-link {
-  color: #0c6cf5;
+  color: var(--blue);
   text-decoration: none;
   font-size: 13px;
   font-weight: 600;
@@ -221,7 +223,7 @@
 .submit-btn {
   margin-top: 8px;
   padding: 14px;
-  background: #0c6cf5;
+  background: var(--blue);
   color: #ffffff;
   border: none;
   border-radius: 10px;
@@ -232,24 +234,24 @@
 }
 
 .submit-btn:hover {
-  background: #0a5ed2;
+  background: #0066b8;
 }
 
 .login-footer {
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px solid #e6e6e6;
+  border-top: 1px solid var(--card-border);
 }
 
 .login-footer p {
   font-size: 12px;
-  color: #6a6d6f;
+  color: var(--text-secondary);
   line-height: 1.5;
   margin: 0;
 }
 
 .login-footer a {
-  color: #0c6cf5;
+  color: var(--blue);
   text-decoration: none;
 }
 

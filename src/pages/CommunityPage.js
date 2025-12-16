@@ -5,9 +5,11 @@ import useCommunities from '../hooks/useCommunities';
 import { deleteCommunity } from '../api/communitiesApi';
 import { usePostsBySubreddit } from '../hooks/usePosts';
 import { isJoined as isJoinedStore, joinCommunity, leaveCommunity, navigate } from '../utils/helpers';
+import { isFavoriteCommunity, toggleFavoriteCommunity } from '../utils/favorites';
 
 function CommunityPage() {
   const [isJoined, setIsJoined] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
   const [activeTab, setActiveTab] = useState('posts');
   const [sortBy, setSortBy] = useState('hot');
   const [communityName, setCommunityName] = useState('');
@@ -49,6 +51,7 @@ function CommunityPage() {
   useEffect(() => {
     if (communityName) {
       setIsJoined(isJoinedStore(communityName));
+      setIsFavorite(isFavoriteCommunity(communityName));
     }
   }, [communityName]);
 
@@ -79,6 +82,11 @@ function CommunityPage() {
     }
   };
 
+  const handleToggleFavorite = () => {
+    const next = toggleFavoriteCommunity(communityName);
+    setIsFavorite(next);
+  };
+
   return (
     <div className="community-page">
       {/* Banner */}
@@ -100,13 +108,20 @@ function CommunityPage() {
             <button className={`join-btn ${isJoined ? 'joined' : ''}`} onClick={handleJoin}>
               {isJoined ? '✓ Joined' : '+ Join'}
             </button>
+            <button
+              className={`favorite-btn ${isFavorite ? 'favorited' : ''}`}
+              title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              onClick={handleToggleFavorite}
+              aria-label={isFavorite ? 'Unfavorite community' : 'Favorite community'}
+            >
+              {isFavorite ? '★' : '☆'}
+            </button>
             <button className="notify-btn" title="Turn on notifications">🔔</button>
             <button 
-              className="delete-btn" 
+              className="community-delete-btn" 
               title="Delete community" 
               onClick={handleDeleteCommunity}
               disabled={isDeleting}
-              style={{ background: 'red', color: 'white', padding: '8px 12px', borderRadius: '20px', cursor: isDeleting ? 'not-allowed' : 'pointer' }}
             >
               {isDeleting ? '⏳ Deleting...' : '🗑️ Delete'}
             </button>
@@ -177,9 +192,10 @@ function CommunityPage() {
                     {post.isPinned && <span className="pinned-badge">📌 Pinned by moderators</span>}
                     <Post 
                       postId={post.postId}
+                      communityKey={communityName}
                       title={post.title}
                       author={post.author}
-                      subreddit={communityName}
+                      subreddit={`r/${communityName}`}
                       timestamp={post.createdAt || post.timestamp}
                       score={post.score}
                       commentCount={post.commentCount}

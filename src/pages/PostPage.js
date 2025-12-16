@@ -5,11 +5,14 @@ import { navigate } from '../utils/helpers';
 import { usePost } from '../hooks/usePosts';
 import { useComments, useCreateComment } from '../hooks/useComments';
 import { getCurrentUserId, getCurrentUser } from '../utils/auth';
+import { summarizePost, isGeminiAvailable } from '../utils/gemini';
 
 function PostPage() {
   const [communityName, setCommunityName] = useState('');
   const [postId, setPostId] = useState('');
   const [focusComment, setFocusComment] = useState(false);
+  const [aiSummary, setAiSummary] = useState('');
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const { post, loading, error, refetch } = usePost(postId);
   const { comments, loading: commentsLoading, error: commentsError, refetch: refetchComments } = useComments(post?._id || post?.postId);
   const { createComment, loading: creatingComment, error: createCommentError } = useCreateComment();
@@ -59,6 +62,24 @@ function PostPage() {
 
   const handleVote = () => {
     alert('Poll voting is not yet connected to the API.');
+  };
+
+  const handleSummarize = async () => {
+    if (!post) return;
+    setAiSummaryLoading(true);
+    try {
+      const content =
+        post.textBody ||
+        post.content ||
+        (post.type === 'link' ? post.linkUrl : '') ||
+        '';
+      const summary = await summarizePost(post.title || 'Post', content);
+      setAiSummary(summary);
+    } catch (err) {
+      setAiSummary(err?.message || 'Failed to generate summary.');
+    } finally {
+      setAiSummaryLoading(false);
+    }
   };
 
   if (loading) {
@@ -149,6 +170,29 @@ function PostPage() {
               <div className="poll-total">Total votes: {totalPollVotes}</div>
             </div>
           )}
+
+          <div className="ai-summary">
+            <div className="ai-summary-row">
+              <button
+                className="ai-summary-btn"
+                type="button"
+                onClick={handleSummarize}
+                disabled={aiSummaryLoading}
+              >
+                {aiSummaryLoading ? 'Summarizing…' : 'Summarize with AI'}
+              </button>
+              {!isGeminiAvailable() && (
+                <span className="ai-summary-note">Using fallback summary (no API key)</span>
+              )}
+            </div>
+
+            {aiSummary && (
+              <div className="ai-summary-box">
+                <div className="ai-summary-title">Summary</div>
+                <div className="ai-summary-text">{aiSummary}</div>
+              </div>
+            )}
+          </div>
         </article>
 
         <section className="comments-section-full">

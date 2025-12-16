@@ -76,26 +76,31 @@ const PostList = () => {
       {/* Posts List */}
       <div className="post-list">
         {sortedPosts.length > 0 ? (
-          sortedPosts.map(post => (
-            <Post
-              key={post.uniqueKey}
-              postId={post.postId}
-              communityKey={post.communityKey}
-              title={post.title}
-              author={post.author}
-              subreddit={post.subreddit}
-              timestamp={post.timestamp}
-              score={post.score}
-              commentCount={post.commentCount}
-              textBody={post.textBody}
-              authorIcon={post.authorIcon}
-              subredditIcon={post.subredditIcon}
-              onCommentClick={() => handleCommentClick(post)}
-              onSubredditClick={() => handleSubredditClick(post.subreddit)}
-              onUpvote={() => handleUpvote(post.uniqueKey)}
-              onDownvote={() => handleDownvote(post.uniqueKey)}
-            />
-          ))
+          sortedPosts.map((post) => {
+            const subreddit = post.subreddit || 'r/general';
+            const communityKey = subreddit.replace(/^r\//, '') || 'general';
+            const timestamp = post.createdAt || post.timestamp;
+            return (
+              <Post
+                key={post.uniqueKey}
+                postId={post.postId}
+                communityKey={communityKey}
+                title={post.title}
+                author={post.author}
+                subreddit={subreddit}
+                timestamp={timestamp}
+                score={post.score}
+                commentCount={post.commentCount}
+                textBody={post.textBody}
+                authorIcon={post.authorIcon}
+                subredditIcon={post.subredditIcon}
+                onCommentClick={() => handleCommentClick(post)}
+                onSubredditClick={() => handleSubredditClick(post.subreddit)}
+                onUpvote={() => handleUpvote(post.uniqueKey)}
+                onDownvote={() => handleDownvote(post.uniqueKey)}
+              />
+            );
+          })
         ) : (
           <div className="no-posts">No posts found</div>
         )}

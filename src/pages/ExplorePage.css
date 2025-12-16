@@ -1,5 +1,5 @@
 .explore-page {
-  background: #ffffff;
+  background: var(--app-bg);
   min-height: 100vh;
   padding-top: 0;
 }
@@ -30,8 +30,8 @@
   gap: 12px;
   padding: 16px;
   overflow-x: auto;
-  background: #f6f7f8;
-  border-bottom: 1px solid #ccc;
+  background: var(--hover);
+  border-bottom: 1px solid var(--card-border);
   scrollbar-width: none;
 }
 
@@ -44,19 +44,19 @@
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: white;
-  border: 1px solid #d3d6da;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 24px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  color: #333d42;
+  color: var(--text-primary);
   white-space: nowrap;
   transition: all 0.2s ease;
 }
 
 .category-btn:hover {
-  background: #f6f7f8;
+  background: var(--hover);
   border-color: #0045ac;
 }
 
@@ -87,14 +87,14 @@
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 2px solid #d3d6da;
+  border-bottom: 2px solid var(--card-border);
 }
 
 .section-header h2 {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .view-all-link {
@@ -118,8 +118,8 @@
 }
 
 .topic-card {
-  background: white;
-  border: 1px solid #ccc;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 16px;
   display: flex;
@@ -148,13 +148,13 @@
   margin: 0 0 8px 0;
   font-size: 16px;
   font-weight: 700;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .topic-description {
   margin: 0 0 12px 0;
   font-size: 13px;
-  color: #818384;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
@@ -166,7 +166,7 @@
 }
 
 .topic-members {
-  color: #818384;
+  color: var(--text-secondary);
 }
 
 .trending-badge {
@@ -207,15 +207,15 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: white;
-  border: 1px solid #ccc;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   transition: all 0.2s ease;
 }
 
 .community-row:hover {
   border-color: #0045ac;
-  background: #f6f7f8;
+  background: var(--hover);
 }
 
 .community-row-icon {
@@ -233,18 +233,18 @@
   margin: 0 0 4px 0;
   font-size: 14px;
   font-weight: 700;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .community-row-desc {
   margin: 0 0 6px 0;
   font-size: 12px;
-  color: #818384;
+  color: var(--text-secondary);
 }
 
 .community-row-members {
   font-size: 12px;
-  color: #818384;
+  color: var(--text-secondary);
 }
 
 .join-community-btn {

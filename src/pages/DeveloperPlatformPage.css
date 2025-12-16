@@ -2,7 +2,7 @@
   padding: 24px;
   max-width: 1100px;
   margin: 0 auto;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .dev-hero {
@@ -141,11 +141,11 @@
 .tooling,
 .changelog-section {
   margin-top: 30px;
-  background: #ffffff;
-  border: 1px solid #e6e6e6;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 14px;
   padding: 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-soft);
 }
 
 .section-header h2 {
@@ -155,7 +155,7 @@
 
 .section-header p {
   margin: 6px 0 16px;
-  color: #5c6066;
+  color: var(--text-secondary);
 }
 
 .resource-grid {
@@ -167,10 +167,10 @@
 .resource-card,
 .tool-card,
 .changelog-card {
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--card-border);
   border-radius: 12px;
   padding: 14px;
-  background: #fdfdfd;
+  background: var(--card-bg);
 }
 
 .tool-grid {
@@ -181,7 +181,7 @@
 
 .text-btn {
   background: none;
-  color: #0c6cf5;
+  color: var(--blue);
   padding: 0;
 }
 
@@ -199,7 +199,7 @@
 }
 
 .date {
-  color: #7a7d83;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 

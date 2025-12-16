@@ -1,5 +1,5 @@
 .start-community-page {
-  background: #f6f7f8;
+  background: var(--app-bg);
   min-height: 100vh;
 }
 
@@ -50,20 +50,20 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: white;
-  border: 2px solid #ccc;
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  color: #818384;
+  color: var(--text-secondary);
   transition: all 0.3s;
 }
 
 .progress-step.active .step-number {
-  background: #0045ac;
+  background: var(--blue);
   color: white;
-  border-color: #0045ac;
+  border-color: var(--blue);
 }
 
 .progress-step.completed .step-number {
@@ -75,26 +75,26 @@
 .step-label {
   font-size: 12px;
   font-weight: 600;
-  color: #818384;
+  color: var(--text-secondary);
 }
 
 .progress-step.active .step-label,
 .progress-step.completed .step-label {
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .progress-line {
   flex: 1;
   height: 2px;
-  background: #ccc;
+  background: var(--card-border);
   margin: 0 -10px;
   margin-bottom: 28px;
 }
 
 /* Form */
 .community-form {
-  background: white;
-  border: 1px solid #ccc;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 32px;
 }
@@ -103,13 +103,13 @@
   margin: 0 0 8px 0;
   font-size: 24px;
   font-weight: 700;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .step-description {
   margin: 0 0 24px 0;
   font-size: 14px;
-  color: #818384;
+  color: var(--text-secondary);
 }
 
 .form-group {
@@ -121,30 +121,30 @@
   margin-bottom: 8px;
   font-weight: 600;
   font-size: 14px;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 /* Name Input */
 .name-input-wrapper {
   display: flex;
   align-items: center;
-  border: 2px solid #ccc;
+  border: 2px solid var(--card-border);
   border-radius: 4px;
   overflow: hidden;
-  background: white;
+  background: var(--card-bg);
   transition: border-color 0.2s;
 }
 
 .name-input-wrapper:focus-within {
-  border-color: #0045ac;
+  border-color: var(--blue);
 }
 
 .name-prefix {
   padding: 12px 0 12px 12px;
   font-weight: 600;
-  color: #1a1a1b;
-  background: #f6f7f8;
-  border-right: 2px solid #ccc;
+  color: var(--text-primary);
+  background: var(--hover);
+  border-right: 2px solid var(--card-border);
 }
 
 .name-input-wrapper input {
@@ -153,12 +153,14 @@
   border: none;
   font-size: 16px;
   outline: none;
+  background: transparent;
+  color: var(--text-primary);
 }
 
 .input-hint {
   margin-top: 6px;
   font-size: 12px;
-  color: #818384;
+  color: var(--text-secondary);
 }
 
 /* Radio Group */
@@ -173,15 +175,15 @@
   align-items: flex-start;
   gap: 12px;
   padding: 16px;
-  border: 2px solid #ccc;
+  border: 2px solid var(--card-border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .radio-option:hover {
-  border-color: #0045ac;
-  background: #f6f7f8;
+  border-color: var(--blue);
+  background: var(--hover);
 }
 
 .radio-option input[type="radio"] {
@@ -190,7 +192,7 @@
 }
 
 .radio-option input[type="radio"]:checked ~ .radio-content {
-  color: #0045ac;
+  color: var(--blue);
 }
 
 .radio-content {
@@ -213,7 +215,7 @@
 .radio-content p {
   margin: 0;
   font-size: 13px;
-  color: #818384;
+  color: var(--text-secondary);
 }
 
 /* Checkbox */
@@ -244,21 +246,21 @@
   align-items: center;
   gap: 8px;
   padding: 20px;
-  background: white;
-  border: 2px solid #ccc;
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .category-card:hover {
-  border-color: #0045ac;
-  background: #f6f7f8;
+  border-color: var(--blue);
+  background: var(--hover);
 }
 
 .category-card.selected {
-  border-color: #0045ac;
-  background: #e8f0fe;
+  border-color: var(--blue);
+  background: rgba(0, 121, 211, 0.12);
 }
 
 .category-icon {
@@ -275,23 +277,25 @@
 textarea {
   width: 100%;
   padding: 12px;
-  border: 2px solid #ccc;
+  border: 2px solid var(--card-border);
   border-radius: 4px;
   font-family: inherit;
   font-size: 14px;
   resize: vertical;
   transition: border-color 0.2s;
+  background: var(--card-bg);
+  color: var(--text-primary);
 }
 
 textarea:focus {
   outline: none;
-  border-color: #0045ac;
+  border-color: var(--blue);
 }
 
 /* Review */
 .review-card {
-  background: #f6f7f8;
-  border: 1px solid #ccc;
+  background: var(--hover);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 24px;
   margin-bottom: 24px;
@@ -310,13 +314,13 @@ textarea:focus {
 
 .review-item strong {
   min-width: 120px;
-  color: #1a1a1b;
+  color: var(--text-primary);
   font-size: 14px;
 }
 
 .review-item span,
 .review-item p {
-  color: #1a1a1b;
+  color: var(--text-primary);
   font-size: 14px;
   margin: 0;
 }
@@ -347,7 +351,7 @@ textarea:focus {
   gap: 12px;
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid #ccc;
+  border-top: 1px solid var(--card-border);
 }
 
 .nav-btn {
@@ -361,27 +365,27 @@ textarea:focus {
 }
 
 .nav-btn.secondary {
-  background: white;
-  color: #1a1a1b;
-  border: 1px solid #ccc;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
 }
 
 .nav-btn.secondary:hover {
-  background: #f6f7f8;
+  background: var(--hover);
 }
 
 .nav-btn.primary {
-  background: #0045ac;
+  background: var(--blue);
   color: white;
   margin-left: auto;
 }
 
 .nav-btn.primary:hover {
-  background: #003d8f;
+  background: rgba(0, 121, 211, 0.88);
 }
 
 .nav-btn.primary:disabled {
-  background: #ccc;
+  background: rgba(255, 255, 255, 0.18);
   cursor: not-allowed;
   opacity: 0.6;
 }

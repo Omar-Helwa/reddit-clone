@@ -2,7 +2,7 @@
   padding: 24px;
   max-width: 1050px;
   margin: 0 auto;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .help-hero {
@@ -25,7 +25,7 @@
 .search-box {
   display: flex;
   gap: 8px;
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 10px;
   padding: 6px;
 }
@@ -36,6 +36,8 @@
   outline: none;
   padding: 8px;
   border-radius: 8px;
+  background: var(--app-bg);
+  color: var(--text-primary);
 }
 
 .search-box button {
@@ -48,11 +50,11 @@
 }
 
 .contact-card {
-  background: #ffffff;
-  color: #1a1a1b;
+  background: var(--card-bg);
+  color: var(--text-primary);
   border-radius: 14px;
   padding: 20px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-soft);
 }
 
 .contact-card .primary-btn {
@@ -64,7 +66,7 @@
   border-radius: 10px;
   padding: 10px 14px;
   font-weight: 700;
-  background: #0045ac;
+  background: var(--blue);
   color: #ffffff;
   cursor: pointer;
 }
@@ -77,10 +79,10 @@
 }
 
 .topic-card {
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--card-border);
   border-radius: 12px;
   padding: 14px;
-  background: #ffffff;
+  background: var(--card-bg);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 

@@ -2,7 +2,7 @@
   padding: 24px;
   max-width: 1050px;
   margin: 0 auto;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .communities-hero {
@@ -36,11 +36,11 @@
 }
 
 .tool-card {
-  background: #ffffff;
-  color: #1a1a1b;
+  background: var(--card-bg);
+  color: var(--text-primary);
   border-radius: 14px;
   padding: 20px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-soft);
 }
 
 .tool-card ul {
@@ -51,7 +51,7 @@
 .text-btn {
   background: none;
   border: none;
-  color: #0c6cf5;
+  color: var(--blue);
   font-weight: 700;
   cursor: pointer;
   padding: 0;

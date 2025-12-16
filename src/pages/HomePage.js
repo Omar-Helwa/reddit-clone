@@ -4,6 +4,7 @@ import CommunityList from '../features/communities/CommunityList';
 import './HomePage.css';
 import { usePosts } from '../hooks/usePosts';
 import { navigate } from '../utils/helpers';
+import { isLoggedIn } from '../utils/auth';
 
 function HomePage() {
   const { posts, loading, error } = usePosts();
@@ -57,7 +58,16 @@ function HomePage() {
             <h1 className="home-title">Home</h1>
             <p className="home-subtitle">Your personalized front page based on communities you follow.</p>
           </div>
-          <button className="create-btn" onClick={() => window.location.href = '/create-community'}>
+          <button
+            className="create-btn"
+            onClick={() => {
+              if (!isLoggedIn()) {
+                navigate('/login');
+                return;
+              }
+              navigate('/create-community');
+            }}
+          >
             ✨ Create Community
           </button>
         </div>

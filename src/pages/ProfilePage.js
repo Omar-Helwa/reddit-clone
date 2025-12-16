@@ -12,19 +12,31 @@ function ProfilePage({ onNavigate }) {
     const loadUserData = async () => {
       try {
         const storedUser = getCurrentUser();
-        if (storedUser) {
-          // Fetch full user data from API
-          const userData = await getUser(storedUser.userId);
-          setUser({
-            username: userData.username || storedUser.username,
-            fullUsername: `u/${userData.username || storedUser.username}`,
-            karma: 0,
-            cakeDay: new Date(userData.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-            avatar: userData.image || '👽',
-            bio: userData.bio || 'Just another Redditor exploring the internet',
-            email: userData.email,
-          });
-        }
+        const path = window.location.pathname;
+        const match = path.match(/\/user\/([^/]+)/);
+        const userFromPath = match ? match[1] : null;
+        const query = new URLSearchParams(window.location.search);
+        const userFromQuery = query.get('user');
+
+        const userIdToLoad = userFromPath || userFromQuery || storedUser?._id;
+        if (!userIdToLoad) return;
+
+        // Fetch full user data from API
+        const userData = await getUser(userIdToLoad);
+        setUser({
+          username: userData.username || storedUser?.username || 'User',
+          fullUsername: `u/${userData.username || storedUser?.username || 'user'}`,
+          karma: 0,
+          cakeDay: new Date(userData.createdAt || Date.now()).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+          avatar: userData.image || storedUser?.image || '👽',
+          bio: userData.bio || 'Just another Redditor exploring the internet',
+          email: userData.email,
+          _id: userIdToLoad,
+        });
       } catch (error) {
         console.error('Failed to load user:', error);
         const storedUser = getCurrentUser();
@@ -34,7 +46,7 @@ function ProfilePage({ onNavigate }) {
             fullUsername: `u/${storedUser.username}`,
             karma: 0,
             cakeDay: new Date().toLocaleDateString(),
-            avatar: storedUser.userImage || '👽',
+            avatar: storedUser.image || '👽',
             bio: 'Just another Redditor exploring the internet',
           });
         }

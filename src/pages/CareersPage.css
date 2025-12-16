@@ -2,7 +2,7 @@
   padding: 24px;
   max-width: 1050px;
   margin: 0 auto;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .careers-hero {
@@ -38,7 +38,7 @@
 }
 
 .primary-btn {
-  background: #ffffff;
+  background: var(--card-bg);
   color: #0c6cf5;
 }
 
@@ -49,11 +49,11 @@
 }
 
 .benefits-card {
-  background: #ffffff;
-  color: #1a1a1b;
+  background: var(--card-bg);
+  color: var(--text-primary);
   border-radius: 14px;
   padding: 20px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-soft);
 }
 
 .benefits-card ul {
@@ -63,11 +63,11 @@
 
 .teams {
   margin-top: 28px;
-  background: #ffffff;
-  border: 1px solid #e6e6e6;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 14px;
   padding: 20px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-soft);
 }
 
 .team-grid {
@@ -77,10 +77,10 @@
 }
 
 .team-card {
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--card-border);
   border-radius: 12px;
   padding: 14px;
-  background: #f6fbff;
+  background: var(--hover);
 }
 
 @media (max-width: 900px) {
