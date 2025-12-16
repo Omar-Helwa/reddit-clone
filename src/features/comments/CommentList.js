@@ -32,14 +32,19 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
   };
 
   const renderComment = (comment, depth = 0) => {
+    const commentId = comment.commentId || comment._id || comment.id;
+    const timestamp = comment.createdAt 
+      ? new Date(comment.createdAt).toLocaleDateString()
+      : comment.timestamp || 'just now';
+    
     return (
-      <div key={comment.id} className="comment" style={{ marginLeft: `${depth * 24}px` }}>
+      <div key={commentId} className="comment" style={{ marginLeft: `${depth * 24}px` }}>
         <div className="comment-header">
           <a href={`/u/${comment.author}`} className="comment-author">
             {comment.author}
           </a>
           <span className="comment-score">{comment.score} points</span>
-          <span className="comment-timestamp">{comment.timestamp}</span>
+          <span className="comment-timestamp">{timestamp}</span>
         </div>
 
         <div className="comment-body">
@@ -51,7 +56,7 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
           <button className="action-button downvote">⬇</button>
           <button 
             className="action-button reply"
-            onClick={() => toggleReply(comment.id)}
+            onClick={() => toggleReply(commentId)}
           >
             Reply
           </button>
@@ -68,13 +73,13 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
             <div className="reply-buttons">
               <button 
                 className="reply-submit"
-                onClick={() => handleSubmitComment(comment.id)}
+                onClick={() => handleSubmitComment(commentId)}
               >
                 Comment
               </button>
               <button 
                 className="reply-cancel"
-                onClick={() => toggleReply(comment.id)}
+                onClick={() => toggleReply(commentId)}
               >
                 Cancel
               </button>

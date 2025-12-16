@@ -46,7 +46,7 @@ export const commentsAPI = {
    * @param {string} postId - Post ID (ObjectId)
    * @returns {Promise<Array>} Array of comments for the post
    */
-  getByPostId: (postId) => fetchAPI(`/posts/${postId}/comments`),
+  getByPostId: (postId) => fetchAPI(`/comments?postId=${postId}`),
   
   /**
    * Get single comment by ID
@@ -66,15 +66,33 @@ export const commentsAPI = {
    * Create new comment on a post
    * @param {string} postId - Post ID
    * @param {object} commentData - Comment data
-   * @param {string} commentData.author - Author username
+   * @param {string} commentData.userId - Author user ID (ObjectId)
    * @param {string} commentData.text - Comment text content
-   * @param {string} [commentData.parentCommentId] - Parent comment ID (for nested replies)
+   * @param {string} [commentData.parentCommentId] - Parent comment ID for nested replies
    * @returns {Promise<Object>} Created comment
    */
-  create: (postId, commentData) => fetchAPI(`/posts/${postId}/comments`, {
-    method: 'POST',
-    body: JSON.stringify(commentData),
-  }),
+  create: (postId, commentData) => {
+    // Backend schema requires: userId, postId, text, createdAt
+    const payload = {
+      userId: commentData.userId,
+      postId: postId,
+      text: commentData.text,
+      upvotes: 0,
+      downvotes: 0,
+      score: 0,
+      createdAt: new Date().toISOString(),
+    };
+    
+    // Only include parentCommentId if provided
+    if (commentData.parentCommentId) {
+      payload.parentCommentId = commentData.parentCommentId;
+    }
+    
+    return fetchAPI(`/comments`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
   
   /**
    * Create a reply to an existing comment (nested comment)

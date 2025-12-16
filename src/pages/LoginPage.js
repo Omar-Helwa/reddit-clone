@@ -24,12 +24,6 @@ function LoginPage() {
     if (!formData.username.trim()) {
       newErrors.username = 'Username is required';
     }
-    
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -40,20 +34,32 @@ function LoginPage() {
     
     if (validateForm()) {
       try {
-        // Import API client and auth utils
-        const { loginUser } = await import('../api/usersApi');
+        // Fetch test user from database
         const { setCurrentUser } = await import('../utils/auth');
+        const { listUsers } = await import('../api/usersApi');
+
+        const raw = formData.username.trim();
         
-        // Authenticate user
-        const user = await loginUser(formData.username, formData.password);
+        // Fetch users from database
+        const usersResponse = await listUsers({ limit: 100 });
+        const users = usersResponse.items || usersResponse || [];
         
-        console.log('Login successful:', user);
+        // Find user by username or email
+        const isEmail = raw.includes('@');
+        const dbUser = users.find(u => 
+          (isEmail && u.email && u.email.toLowerCase() === raw.toLowerCase()) ||
+          (!isEmail && u.username && u.username.toLowerCase() === raw.toLowerCase())
+        );
         
-        // Save user info to localStorage
-        setCurrentUser(user);
-        
-        alert(`Welcome back, ${user.username}!`);
-        
+        if (!dbUser) {
+          throw new Error(`User "${raw}" not found in database`);
+        }
+
+        // Save actual user from database
+        setCurrentUser(dbUser);
+
+        alert(`Welcome back, ${dbUser.username}!`);
+
         // Redirect to home page
         window.location.href = '/';
       } catch (error) {

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import './CommunityPage.css';
 import Post from '../features/posts/Post';
-import { ensureSeeded } from '../data/mockData';
 import useCommunities from '../hooks/useCommunities';
 import { deleteCommunity } from '../api/communitiesApi';
-import { getPosts, isJoined as isJoinedStore, joinCommunity, leaveCommunity, navigate } from '../utils/helpers';
+import { usePostsBySubreddit } from '../hooks/usePosts';
+import { isJoined as isJoinedStore, joinCommunity, leaveCommunity, navigate } from '../utils/helpers';
 
 function CommunityPage() {
   const [isJoined, setIsJoined] = useState(false);
@@ -25,11 +25,6 @@ function CommunityPage() {
     }
   }, []);
 
-  // Seed posts storage once
-  useEffect(() => {
-    ensureSeeded();
-  }, []);
-
   const community = useMemo(() => {
     const slug = communityName || '';
     const found = communityList.find((c) => c.name === slug || c.displayName === slug || c.name === `r/${slug}` || c.displayName === `r/${slug}`);
@@ -47,7 +42,9 @@ function CommunityPage() {
       moderators: []
     };
   }, [communityList, communityName]);
-  const mockPosts = getPosts(communityName);
+  // Pass full subreddit name with r/ prefix to match database format
+  const subredditKey = communityName ? `r/${communityName}` : '';
+  const { posts, loading: postsLoading, error: postsError, refetch } = usePostsBySubreddit(subredditKey);
 
   useEffect(() => {
     if (communityName) {
@@ -165,19 +162,29 @@ function CommunityPage() {
               </div>
 
               <div className="posts-feed">
-                {mockPosts.map(post => (
-                  <div key={post.id} className="post-wrapper">
+                {postsLoading && <div className="loading">Loading posts...</div>}
+                {postsError && (
+                  <div className="error">
+                    Failed to load posts: {postsError}
+                    <button onClick={refetch} className="retry-btn">Retry</button>
+                  </div>
+                )}
+                {!postsLoading && !postsError && posts.length === 0 && (
+                  <div className="no-posts">No posts yet.</div>
+                )}
+                {!postsLoading && !postsError && posts.length > 0 && posts.map(post => (
+                  <div key={post.postId} className="post-wrapper">
                     {post.isPinned && <span className="pinned-badge">📌 Pinned by moderators</span>}
                     <Post 
-                      postId={post.id}
+                      postId={post.postId}
                       title={post.title}
                       author={post.author}
                       subreddit={communityName}
-                      timestamp={post.timestamp}
+                      timestamp={post.createdAt || post.timestamp}
                       score={post.score}
                       commentCount={post.commentCount}
                       textBody={post.textBody}
-                      onCommentClick={() => navigate(`/r/${communityName}/comments/${post.id}?comment=1`)}
+                      onCommentClick={() => navigate(`/r/${communityName}/comments/${post.postId}?comment=1`)}
                     />
                   </div>
                 ))}

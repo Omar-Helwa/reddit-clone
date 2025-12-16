@@ -1,7 +1,7 @@
 // Example Component: Display Users from MongoDB
 // This demonstrates how to fetch and display users in your React app
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { listUsers } from '../api/usersApi';
 import './UsersDemo.css';
 
@@ -12,11 +12,7 @@ function UsersDemo() {
   const [page, setPage] = useState(0);
   const pageSize = 10;
 
-  useEffect(() => {
-    fetchUsers();
-  }, [page]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -33,7 +29,11 @@ function UsersDemo() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   if (loading) {
     return (

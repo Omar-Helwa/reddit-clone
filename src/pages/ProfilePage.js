@@ -1,64 +1,60 @@
 import React, { useEffect, useState } from 'react';
 import './ProfilePage.css';
+import { getCurrentUser, getCurrentUserId } from '../utils/auth';
+import { getUser } from '../api/usersApi';
 
 function ProfilePage({ onNavigate }) {
   const [activeTab, setActiveTab] = useState('posts');
-  
-  // Mock user data
-  const user = {
-    username: 'Nemo',
-    fullUsername: 'u/Sad-Royal-2019',
-    karma: 1234,
-    cakeDay: 'January 15, 2024',
-    avatar: '👽',
-    bio: 'Just another Redditor exploring the internet',
-  };
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const storedUser = getCurrentUser();
+        if (storedUser) {
+          // Fetch full user data from API
+          const userData = await getUser(storedUser.userId);
+          setUser({
+            username: userData.username || storedUser.username,
+            fullUsername: `u/${userData.username || storedUser.username}`,
+            karma: 0,
+            cakeDay: new Date(userData.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+            avatar: userData.image || '👽',
+            bio: userData.bio || 'Just another Redditor exploring the internet',
+            email: userData.email,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load user:', error);
+        const storedUser = getCurrentUser();
+        if (storedUser) {
+          setUser({
+            username: storedUser.username,
+            fullUsername: `u/${storedUser.username}`,
+            karma: 0,
+            cakeDay: new Date().toLocaleDateString(),
+            avatar: storedUser.userImage || '👽',
+            bio: 'Just another Redditor exploring the internet',
+          });
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadUserData();
+  }, []);
 
   const [userPosts, setUserPosts] = useState([]);
   const [userComments, setUserComments] = useState([]);
 
-  useEffect(() => {
-    // Aggregate posts and comments authored by the current user across all communities
-    const author = user.fullUsername;
-    const collectedPosts = [];
-    const collectedComments = [];
-    const localKeys = Object.keys(localStorage).filter(k => k.startsWith('posts:'));
-    localKeys.forEach((key) => {
-      const community = key.replace('posts:', '');
-      try {
-        const posts = JSON.parse(localStorage.getItem(key) || '[]');
-        posts.forEach((p) => {
-          if (p.author === author) {
-            collectedPosts.push({
-              id: p.id,
-              community: `r/${community}`,
-              title: p.title,
-              text: p.textBody || '',
-              upvotes: p.score || 0,
-              comments: p.commentCount || (p.comments ? p.comments.length : 0),
-              time: p.timestamp || 'just now',
-            });
-          }
-          (p.comments || []).forEach((c) => {
-            if (c.author === author) {
-              collectedComments.push({
-                id: c.id,
-                post: p.title,
-                community: `r/${community}`,
-                text: c.text,
-                upvotes: c.score || 0,
-                time: c.timestamp || 'just now',
-              });
-            }
-          });
-        });
-      } catch (err) {
-        console.error('Failed to parse posts for', community, err);
-      }
-    });
-    setUserPosts(collectedPosts.reverse());
-    setUserComments(collectedComments.reverse());
-  }, []);
+  if (loading) {
+    return <div className="profile-page"><div className="loading">Loading profile...</div></div>;
+  }
+
+  if (!user) {
+    return <div className="profile-page"><div className="error">Please log in to view your profile</div></div>;
+  }
 
   return (
     <div className="profile-page">

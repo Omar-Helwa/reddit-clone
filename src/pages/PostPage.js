@@ -1,16 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './PostPage.css';
 import CommentList from '../features/comments/CommentList';
-import { ensureSeeded } from '../data/mockData';
-import { getPostById, addComment, votePollOption, navigate } from '../utils/helpers';
+import { navigate } from '../utils/helpers';
+import { usePost } from '../hooks/usePosts';
+import { useComments, useCreateComment } from '../hooks/useComments';
+import { getCurrentUserId, getCurrentUser } from '../utils/auth';
 
 function PostPage() {
   const [communityName, setCommunityName] = useState('');
   const [postId, setPostId] = useState('');
-  const [post, setPost] = useState(null);
   const [focusComment, setFocusComment] = useState(false);
-
-  useEffect(() => { ensureSeeded(); }, []);
+  const { post, loading, error, refetch } = usePost(postId);
+  const { comments, loading: commentsLoading, error: commentsError, refetch: refetchComments } = useComments(post?._id || post?.postId);
+  const { createComment, loading: creatingComment, error: createCommentError } = useCreateComment();
 
   useEffect(() => {
     const path = window.location.pathname; // /r/:name/comments/:postId
@@ -25,32 +27,56 @@ function PostPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (communityName && postId) {
-      const p = getPostById(communityName, postId);
-      setPost(p || null);
-    }
-  }, [communityName, postId]);
-
-  const comments = useMemo(() => (post?.comments || []), [post]);
-
   const totalPollVotes = useMemo(() => {
     if (!post?.pollOptions) return 0;
     return post.pollOptions.reduce((sum, opt) => sum + (opt.votes || 0), 0);
   }, [post]);
 
-  const handleSubmitNewComment = (text) => {
-    if (!text?.trim()) return;
-    addComment(communityName, postId, text.trim());
-    const updated = getPostById(communityName, postId);
-    setPost(updated);
+  const handleSubmitNewComment = async (text) => {
+    if (!text?.trim()) {
+      alert('Comment cannot be empty');
+      return;
+    }
+
+    const userId = getCurrentUserId();
+    const user = getCurrentUser();
+    if (!userId) {
+      alert('You must be logged in to comment');
+      return;
+    }
+
+    try {
+      await createComment(post._id || post.postId, {
+        userId: userId,
+        text: text.trim(),
+        parentCommentId: null,
+      });
+      refetchComments();
+    } catch (err) {
+      alert('Failed to create comment: ' + err.message);
+    }
   };
 
-  const handleVote = (optionId) => {
-    votePollOption(communityName, postId, optionId);
-    const updated = getPostById(communityName, postId);
-    setPost(updated);
+  const handleVote = () => {
+    alert('Poll voting is not yet connected to the API.');
   };
+
+  if (loading) {
+    return <div className="post-page"><div className="post-container"><div className="post-card-full">Loading post...</div></div></div>;
+  }
+
+  if (error) {
+    return (
+      <div className="post-page">
+        <div className="post-container">
+          <div className="post-card-full">
+            <p>Failed to load post: {error}</p>
+            <button onClick={refetch}>Retry</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!post) {
     return (
@@ -126,12 +152,21 @@ function PostPage() {
         </article>
 
         <section className="comments-section-full">
-          <CommentList 
-            postId={post.id} 
-            comments={comments} 
-            onSubmitNewComment={handleSubmitNewComment}
-            autoFocus={focusComment}
-          />
+          {commentsLoading && <div className="loading">Loading comments...</div>}
+          {commentsError && (
+            <div className="error">
+              Failed to load comments: {commentsError}
+              <button onClick={refetchComments} className="retry-btn">Retry</button>
+            </div>
+          )}
+          {!commentsLoading && !commentsError && (
+            <CommentList 
+              postId={post.postId || post._id} 
+              comments={comments} 
+              onSubmitNewComment={handleSubmitNewComment}
+              autoFocus={focusComment}
+            />
+          )}
         </section>
       </div>
     </div>

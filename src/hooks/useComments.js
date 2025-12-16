@@ -56,7 +56,8 @@ export function useComments(postId) {
       setError(null);
       
       const result = await commentsAPI.getByPostId(postId);
-      const transformedComments = result.map(transformComment);
+      const commentsList = Array.isArray(result) ? result : (result?.items ?? []);
+      const transformedComments = commentsList.map(transformComment);
       setComments(transformedComments);
     } catch (err) {
       setError(err.message || 'Failed to fetch comments');

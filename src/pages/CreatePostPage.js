@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './CreatePostPage.css';
-import { ensureSeeded, communities } from '../data/mockData';
-import { addPost, isJoined, joinCommunity, navigate, getJoinedCommunities } from '../utils/helpers';
+import { isJoined, joinCommunity, navigate, getJoinedCommunities } from '../utils/helpers';
 import { useCreatePost } from '../hooks/usePosts';
+import useCommunities from '../hooks/useCommunities';
 
 function CreatePostPage() {
   const { createPost, loading: creatingPost, error: createError } = useCreatePost();
@@ -23,8 +23,6 @@ function CreatePostPage() {
   const [joinedCommunities, setJoinedCommunities] = useState([]);
 
   const { communities: communityList, loading: communitiesLoading } = useCommunities(200);
-
-  useEffect(() => { ensureSeeded(); }, []);
 
   useEffect(() => {
     const path = window.location.pathname;
@@ -144,11 +142,12 @@ function CreatePostPage() {
       return;
     }
 
+    const subredditValue = communityName?.startsWith('r/') ? communityName : `r/${communityName}`;
     const payload = {
       postId: `${Date.now()}`,
       title: title.trim(),
       author: 'u/demo_user',
-      subreddit: communityName,
+      subreddit: subredditValue,
       type: postType,
       upvotes: 0,
       downvotes: 0,
@@ -197,9 +196,6 @@ function CreatePostPage() {
     try {
       // Create post via API (saves to database)
       const newPost = await createPost(payload);
-      
-      // Also save to localStorage for fallback display
-      addPost(communityName, payload);
       
       navigate(`/r/${communityName}/comments/${newPost.postId}`);
     } catch (err) {

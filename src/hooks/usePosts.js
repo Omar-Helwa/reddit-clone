@@ -109,7 +109,8 @@ export function usePostsBySubreddit(subreddit) {
       const result = await postsAPI.getBySubreddit(subreddit);
       const list = Array.isArray(result) ? result : (result?.items ?? []);
       const transformedPosts = list.map(transformPost);
-      setPosts(transformedPosts);
+      const filteredPosts = transformedPosts.filter(p => p.subreddit === subreddit);
+      setPosts(filteredPosts);
     } catch (err) {
       setError(err.message || 'Failed to fetch posts');
       console.error('Posts by subreddit fetch error:', err);

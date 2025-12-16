@@ -35,32 +35,30 @@ export async function loginUser(usernameOrEmail, password) {
   const response = await listUsers({ limit: 1000 });
   const users = response.items || [];
   
-  console.log('Login attempt:', { usernameOrEmail, password });
+  console.log('Login attempt:', { usernameOrEmail });
   console.log('Total users found:', users.length);
   
   // Trim whitespace and do case-insensitive comparison for email
   const normalizedInput = usernameOrEmail.trim().toLowerCase();
-  const normalizedPassword = password.trim();
   
+  // TEMPORARY: Only check username/email, skip password validation
   const user = users.find(u => {
     const matchUsername = u.username && u.username.trim() === usernameOrEmail.trim();
     const matchEmail = u.email && u.email.trim().toLowerCase() === normalizedInput;
-    const matchPassword = u.password && u.password.trim() === normalizedPassword;
     
     console.log('Checking user:', { 
       username: u.username, 
       email: u.email, 
       matchUsername, 
-      matchEmail, 
-      matchPassword 
+      matchEmail
     });
     
-    return (matchUsername || matchEmail) && matchPassword;
+    return matchUsername || matchEmail;
   });
   
   if (!user) {
     console.error('No matching user found');
-    throw new Error('Invalid username/email or password');
+    throw new Error('Invalid username/email');
   }
   
   console.log('Login successful:', user);

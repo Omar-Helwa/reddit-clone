@@ -1,80 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import Post from './Post';
 import './PostList.css';
 import { navigate } from '../../utils/helpers';
-import { ensureSeeded } from '../../data/mockData';
-import useCommunities from '../../hooks/useCommunities';
+import { usePosts } from '../../hooks/usePosts';
 
 const PostList = () => {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('BEST');
-  const { communities: communityList } = useCommunities(200);
-
-  const communityMap = useMemo(() => {
-    const map = {};
-    communityList.forEach((c) => {
-      const slug = (c.name || '').replace(/^r\//, '');
-      map[slug] = c;
-    });
-    return map;
-  }, [communityList]);
-
-  useEffect(() => {
-    fetchPosts();
-  }, [sortBy, communityMap]);
-
-  const fetchPosts = async () => {
-    try {
-      setLoading(true);
-      // Seed mock posts (temporary until posts API exists)
-      ensureSeeded();
-      
-      const allPosts = [];
-      const storageKeys = Object.keys(localStorage).filter((k) => k.startsWith('posts:'));
-      storageKeys.forEach((storageKey) => {
-        const communityKey = storageKey.replace('posts:', '');
-        const postsRaw = localStorage.getItem(storageKey);
-        if (!postsRaw) return;
-        try {
-          const communityPosts = JSON.parse(postsRaw);
-          const community = communityMap[communityKey] || {};
-          const subredditName = community.name || `r/${communityKey}`;
-          communityPosts.forEach((post) => {
-            allPosts.push({
-              postId: post.id,
-              communityKey,
-              uniqueKey: `${communityKey}_${post.id}`,
-              title: post.title,
-              author: post.author,
-              subreddit: subredditName,
-              timestamp: post.timestamp,
-              score: post.score,
-              commentCount: post.commentCount,
-              textBody: post.textBody || '',
-              type: post.type || 'text',
-              imageUrl: post.imageUrl,
-              linkUrl: post.linkUrl,
-              pollOptions: post.pollOptions,
-              subredditIcon: community.icon,
-              authorIcon: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_4.png'
-            });
-          });
-        } catch (err) {
-          console.error('Failed to parse posts for', communityKey, err);
-        }
-      });
-      
-      // Sort posts based on sortBy
-      const sorted = sortPosts(allPosts, sortBy);
-      setPosts(sorted);
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      setPosts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { posts, loading, error, refetch } = usePosts();
 
   const sortPosts = (postsArray, sort) => {
     switch (sort) {
@@ -93,21 +25,11 @@ const PostList = () => {
     }
   };
 
-  const handleUpvote = (postId) => {
-    setPosts(posts.map(post => 
-      post.postId === postId 
-        ? { ...post, score: post.score + 1 }
-        : post
-    ));
-  };
+  const sortedPosts = useMemo(() => sortPosts(posts, sortBy), [posts, sortBy]);
 
-  const handleDownvote = (postId) => {
-    setPosts(posts.map(post => 
-      post.postId === postId 
-        ? { ...post, score: Math.max(0, post.score - 1) }
-        : post
-    ));
-  };
+  const handleUpvote = () => {};
+
+  const handleDownvote = () => {};
 
   const handleCommentClick = (post) => {
     const slug = post.subreddit?.replace(/^r\//, '') || 'general';
@@ -121,6 +43,15 @@ const PostList = () => {
 
   if (loading) {
     return <div className="post-list loading">Loading posts...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="post-list loading">
+        <div>Error loading posts: {error}</div>
+        <button onClick={refetch}>Retry</button>
+      </div>
+    );
   }
 
   return (
@@ -144,8 +75,8 @@ const PostList = () => {
 
       {/* Posts List */}
       <div className="post-list">
-        {posts.length > 0 ? (
-          posts.map(post => (
+        {sortedPosts.length > 0 ? (
+          sortedPosts.map(post => (
             <Post
               key={post.uniqueKey}
               postId={post.postId}

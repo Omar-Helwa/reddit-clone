@@ -53,7 +53,7 @@ export const postsAPI = {
    * @param {string} subreddit - Subreddit name (e.g., 'r/hackthebox')
    * @returns {Promise<Array>} Array of posts from the community
    */
-  getBySubreddit: (subreddit) => fetchAPI(`/posts?subreddit=${subreddit}`),
+  getBySubreddit: (subreddit) => fetchAPI(`/posts?subreddit=${encodeURIComponent(subreddit)}`),
   
   /**
    * Get single post by ID

@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './SettingsPage.css';
+import { getCurrentUserId } from '../utils/auth';
+import { updateUser, getUser } from '../api/usersApi';
 
 function SettingsPage({ onNavigate }) {
   const [activeTab, setActiveTab] = useState('account');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
   const [formData, setFormData] = useState({
-    email: 'user@example.com',
-    displayName: 'Nemo',
+    email: '',
+    displayName: '',
     about: 'Just another Redditor exploring the internet',
     nsfw: false,
     activityVisible: true,
@@ -17,14 +21,71 @@ function SettingsPage({ onNavigate }) {
     pushNotifications: false,
     chatRequests: 'everyone',
     autoplay: true,
+    image: '',
   });
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const userId = getCurrentUserId();
+        
+        if (userId) {
+          const userData = await getUser(userId);
+          setFormData((prev) => ({
+            ...prev,
+            email: userData.email || '',
+            displayName: userData.username || '',
+            image: userData.image || '',
+            about: userData.bio || '',
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to load user data:', error);
+      }
+    };
+    loadUserData();
+  }, []);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    alert('Settings saved!');
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setSaveMessage('');
+      
+      const userId = getCurrentUserId();
+      if (!userId) {
+        alert('No user logged in');
+        return;
+      }
+
+      // Prepare update payload (only send fields the schema accepts)
+      const updatePayload = {
+        username: formData.displayName,
+        email: formData.email,
+        image: formData.image,
+      };
+
+      // Update to API
+      await updateUser(userId, updatePayload);
+      
+      // Update localStorage so navbar and profile reflect changes immediately
+      localStorage.setItem('username', formData.displayName);
+      localStorage.setItem('userEmail', formData.email);
+      if (formData.image) {
+        localStorage.setItem('userImage', formData.image);
+      }
+      
+      setSaveMessage('✅ Settings saved to database!');
+      setTimeout(() => setSaveMessage(''), 4000);
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      setSaveMessage('❌ Failed to save: ' + error.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -203,13 +264,19 @@ function SettingsPage({ onNavigate }) {
                 <div className="settings-group">
                   <label className="settings-label">Avatar</label>
                   <div className="avatar-preview">
-                    <div className="avatar-display">👽</div>
-                    <button 
-                      className="settings-button"
-                      onClick={() => onNavigate('/edit-avatar')}
-                    >
-                      Edit Avatar
-                    </button>
+                    <div className="avatar-display">{formData.image || '👽'}</div>
+                    <div className="avatar-inputs">
+                      <input
+                        type="text"
+                        className="settings-input"
+                        placeholder="Enter emoji or image URL"
+                        value={formData.image}
+                        onChange={(e) => handleChange('image', e.target.value)}
+                      />
+                      <p className="settings-help">
+                        Enter an emoji or URL to an image
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -409,12 +476,13 @@ function SettingsPage({ onNavigate }) {
             )}
 
             <div className="settings-actions">
-              <button className="btn-save" onClick={handleSave}>
-                Save Changes
+              <button className="btn-save" onClick={handleSave} disabled={saving}>
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
               <button className="btn-cancel" onClick={() => onNavigate('/')}>
                 Cancel
               </button>
+              {saveMessage && <p className="save-message">{saveMessage}</p>}
             </div>
           </div>
         </div>

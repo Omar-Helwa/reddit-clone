@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Navbar.css';
+import { getCurrentUser, clearCurrentUser } from '../utils/auth';
 
 function AppNavbar({ onNavigate }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    setCurrentUser(user);
+  }, []);
 
   const handleNavClick = (page, path) => {
     setShowMenu(false);
@@ -14,6 +21,15 @@ function AppNavbar({ onNavigate }) {
       window.location.href = path;
     }
   };
+
+  const handleLogout = () => {
+    clearCurrentUser();
+    setCurrentUser(null);
+    setShowProfileDropdown(false);
+    window.location.href = '/';
+  };
+
+  
 
   return (
     <header className="navbar">
@@ -82,29 +98,48 @@ function AppNavbar({ onNavigate }) {
               aria-label="Profile"
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
             >
-              <img src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png" alt="avatar" />
+              <img 
+                src={(currentUser && currentUser.image) ? currentUser.image : "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png"} 
+                alt="avatar" 
+              />
             </button>
             
             {showProfileDropdown && (
               <>
                 <div className="dropdown-overlay" onClick={() => setShowProfileDropdown(false)} />
                 <div className="profile-dropdown">
-                  <div className="dropdown-section">
-                    <div className="dropdown-user-info">
-                      <img 
-                        src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png" 
-                        alt="avatar" 
-                        className="dropdown-avatar"
-                      />
-                      <div className="dropdown-user-details">
-                        <div className="dropdown-username">u/demo_user</div>
-                        <div className="dropdown-karma">1,234 karma</div>
+                  {currentUser && (
+                    <>
+                      <div className="dropdown-section">
+                        <div className="dropdown-user-info">
+                          <img 
+                            src={currentUser.image || "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png"} 
+                            alt="avatar" 
+                            className="dropdown-avatar"
+                          />
+                          <div className="dropdown-user-details">
+                            <div className="dropdown-username">{currentUser.username ? `u/${currentUser.username}` : 'u/user'}</div>
+                            <div className="dropdown-karma">0 karma</div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  
+                    </>
+                  )}
+                  {!currentUser && (
+                    <>
+                      <div className="dropdown-section">
+                        <button className="dropdown-item" onClick={() => handleNavClick('login', '/login')}>
+                          <span className="dropdown-icon">🔓</span>
+                          <span>Log In</span>
+                        </button>
+                        <button className="dropdown-item" onClick={() => handleNavClick('signup', '/signup')}>
+                          <span className="dropdown-icon">✍️</span>
+                          <span>Sign Up</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
                   <div className="dropdown-divider" />
-                  
                   <div className="dropdown-section">
                     <button className="dropdown-item" onClick={() => handleNavClick('profile', '/profile')}>
                       <span className="dropdown-icon">👤</span>
@@ -123,7 +158,6 @@ function AppNavbar({ onNavigate }) {
                       <span>Reddit Recap</span>
                     </button>
                   </div>
-                  
                   <div className="dropdown-divider" />
                   
                   <div className="dropdown-section">
@@ -147,30 +181,37 @@ function AppNavbar({ onNavigate }) {
                     </button>
                   </div>
                   
-                  <div className="dropdown-divider" />
-                  
-                  <div className="dropdown-section">
-                    <button className="dropdown-item logout-item">
-                      <span className="dropdown-icon">🚪</span>
-                      <span>Log Out</span>
-                    </button>
-                  </div>
+                  {currentUser && (
+                    <>
+                      <div className="dropdown-divider" />
+                      <div className="dropdown-section">
+                        <button className="dropdown-item logout-item" onClick={handleLogout}>
+                          <span className="dropdown-icon">🚪</span>
+                          <span>Log Out</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </>
             )}
           </div>
-          <button 
-            className="navbar-btn login-btn"
-            onClick={() => handleNavClick('login', '/login')}
-          >
-            Log In
-          </button>
-          <button 
-            className="navbar-btn signup-btn"
-            onClick={() => handleNavClick('signup', '/signup')}
-          >
-            Sign Up
-          </button>
+          {!currentUser && (
+            <>
+              <button 
+                className="navbar-btn login-btn"
+                onClick={() => handleNavClick('login', '/login')}
+              >
+                Log In
+              </button>
+              <button 
+                className="navbar-btn signup-btn"
+                onClick={() => handleNavClick('signup', '/signup')}
+              >
+                Sign Up
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -337,7 +378,6 @@ function AppNavbar({ onNavigate }) {
               🏠 My Communities
             </div>
             <a href="#settings" className="menu-link">⚙️ Settings</a>
-            <a href="#logout" className="menu-link">🚪 Log Out</a>
           </div>
         </div>
       )}
