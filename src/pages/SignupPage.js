@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import './SignupPage.css';
+import { signInWithGoogle } from '../utils/googleOAuth';
+import { setCurrentUser } from '../utils/auth';
 
 function SignupPage() {
   const [formData, setFormData] = useState({
@@ -102,9 +104,41 @@ function SignupPage() {
   };
 
   const handleGoogleSignup = () => {
-    console.log('Google signup clicked');
-    // TODO: Implement Google OAuth
-    alert('Google signup will be implemented');
+    (async () => {
+      try {
+        const payload = await signInWithGoogle();
+        const email = payload.email || '';
+        const username = (email && email.includes('@')) ? email.split('@')[0] : (payload.name || 'google_user');
+        const user = {
+          _id: payload.sub ? `google-${payload.sub}` : `google-${Date.now()}`,
+          username,
+          email,
+          image: payload.picture || '',
+        };
+
+        // Try to create the user in the backend if available; fall back to local session.
+        try {
+          const { createUser } = await import('../api/usersApi');
+          const created = await createUser({
+            username: user.username,
+            email: user.email,
+            password: `google-oauth-${user._id}`,
+            image: user.image,
+          });
+          setCurrentUser(created);
+        } catch (_) {
+          setCurrentUser(user);
+        }
+
+        window.location.href = '/';
+      } catch (error) {
+        console.error('Google signup failed:', error);
+        setErrors((prev) => ({
+          ...prev,
+          submit: error.message || 'Google signup failed. Please try again.',
+        }));
+      }
+    })();
   };
 
   const handleAppleSignup = () => {

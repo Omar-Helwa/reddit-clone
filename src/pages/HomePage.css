@@ -54,8 +54,8 @@
 
 .create-btn {
   border: 1px solid var(--card-border);
-  background: #fff7f0;
-  color: #c93a00;
+  background: var(--card-bg);
+  color: var(--accent);
   border-radius: 20px;
   padding: 10px 14px;
   font-weight: 700;
@@ -64,7 +64,7 @@
 }
 
 .create-btn:hover {
-  border-color: #ffc7aa;
+  border-color: var(--accent);
   box-shadow: var(--shadow-soft);
 }
 
@@ -137,7 +137,7 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #8fafd2;
+  background: var(--muted-blue);
   margin-top: 2px;
 }
 

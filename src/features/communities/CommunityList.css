@@ -39,7 +39,7 @@
   gap: 6px;
   padding: 12px 12px 16px 12px;
   border-bottom: 1px solid var(--card-border);
-  background: #fafafa;
+  background: var(--card-bg);
 }
 
 .nav-pill {
@@ -78,7 +78,7 @@
 }
 
 .nav-section {
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid var(--card-border);
   padding-bottom: 10px;
 }
 
@@ -92,14 +92,14 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #6a6d6f;
+  color: var(--text-secondary);
   margin-bottom: 10px;
 }
 
 .nav-link {
   display: block;
   padding: 8px 0;
-  color: #1a1a1b;
+  color: var(--text-primary);
   text-decoration: none;
   font-size: 14px;
   font-weight: 600;
@@ -107,7 +107,7 @@
 }
 
 .nav-link:hover {
-  color: #0c6cf5;
+  color: var(--blue);
 }
 
 .community-list {
@@ -140,7 +140,7 @@
 }
 
 .community-item:hover {
-  background-color: var(--neutral-background-hover, #f6f6f6);
+  background-color: var(--hover);
 }
 
 .community-link {
@@ -169,14 +169,14 @@
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary, #1a1a1b);
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .community-link:hover .community-name {
-  color: var(--primary-color, #0079d3);
+  color: var(--blue);
   text-decoration: underline;
 }
 
@@ -189,8 +189,8 @@
 .join-button {
   padding: 4px 12px;
   background: transparent;
-  border: 1px solid var(--primary-color, #0079d3);
-  color: var(--primary-color, #0079d3);
+  border: 1px solid var(--blue);
+  color: var(--blue);
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
@@ -200,8 +200,19 @@
 }
 
 .join-button:hover {
-  background: var(--primary-color, #0079d3);
+  background: var(--blue);
   color: white;
+}
+
+.join-button.joined {
+  border-color: var(--card-border);
+  color: var(--text-primary);
+  background: var(--hover);
+}
+
+.join-button.joined:hover {
+  background: var(--hover);
+  color: var(--text-primary);
 }
 
 .no-communities {
@@ -216,16 +227,16 @@
   display: block;
   padding: 12px 16px;
   text-align: center;
-  color: var(--primary-color, #0079d3);
+  color: var(--blue);
   text-decoration: none;
   font-size: 13px;
   font-weight: 600;
-  border-top: 1px solid var(--neutral-border, #ccc);
+  border-top: 1px solid var(--card-border);
   transition: all 0.2s ease;
 }
 
 .view-all-link:hover {
-  background: var(--neutral-background-hover, #f6f6f6);
+  background: var(--hover);
   text-decoration: underline;
 }
 

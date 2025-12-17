@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './CommunityList.css';
 import useCommunities from '../../hooks/useCommunities';
+import { getJoinedCommunities, isJoined as isJoinedStore, joinCommunity, leaveCommunity } from '../../utils/helpers';
 
 const CommunityList = () => {
   const primaryNav = [
@@ -13,9 +14,18 @@ const CommunityList = () => {
 
   const { communities, loading, error } = useCommunities();
 
-  const handleJoinCommunity = (communityId) => {
-    console.log(`Joined community: ${communityId}`);
-    // Update API to add to user's subscriptions
+  const [joined, setJoined] = useState(() => getJoinedCommunities());
+
+  const handleJoinCommunity = (communityName) => {
+    const slug = (communityName || '').replace(/^r\//, '');
+    if (!slug) return;
+
+    if (isJoinedStore(slug)) {
+      leaveCommunity(slug);
+    } else {
+      joinCommunity(slug);
+    }
+    setJoined(getJoinedCommunities());
   };
 
   if (loading) {
@@ -91,10 +101,10 @@ const CommunityList = () => {
                 </div>
               </a>
               <button 
-                className="join-button"
-                onClick={() => handleJoinCommunity(community._id || community.name)}
+                className={`join-button ${joined.includes((community.name || '').replace(/^r\//, '')) ? 'joined' : ''}`}
+                onClick={() => handleJoinCommunity(community.name)}
               >
-                Join
+                {joined.includes((community.name || '').replace(/^r\//, '')) ? 'Joined' : 'Join'}
               </button>
             </div>
           ))

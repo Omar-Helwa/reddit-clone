@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './StartCommunityPage.css';
 import { createCommunity } from '../api/communitiesApi';
+import { joinCommunity } from '../utils/helpers';
 
 function StartCommunityPage({ onNavigate }) {
   const [step, setStep] = useState(1);
@@ -51,6 +52,7 @@ function StartCommunityPage({ onNavigate }) {
         members: 1,
         online: 1,
       });
+      joinCommunity(formData.name);
       alert(`Community r/${formData.name} created successfully!`);
       if (onNavigate) {
         onNavigate('community', `/r/${formData.name}`);

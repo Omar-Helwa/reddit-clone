@@ -35,26 +35,16 @@ function CreatePostPage() {
 
     if (name && name !== 'general') {
       setCommunityName(name);
-      setCanPost(true);
+      setCanPost(isJoined(name));
       setShowCommunitySelector(false);
     } else {
-      if (joined.length > 0) {
-        setShowCommunitySelector(true);
-        setCommunityName('');
-        setCanPost(false);
-      } else {
-        setCommunityName('general');
-        setCanPost(true);
-        setShowCommunitySelector(false);
-      }
+      setShowCommunitySelector(true);
+      setCommunityName('');
+      setCanPost(false);
     }
   }, []);
 
-  useEffect(() => {
-    if (communityList.length > 0 && joinedCommunities.length === 0) {
-      setJoinedCommunities(communityList.map((c) => c.name));
-    }
-  }, [communityList, joinedCommunities.length]);
+  const normalizeCommunityName = (value) => (value || '').replace(/^r\//, '');
 
   const remaining = useMemo(() => Math.max(0, 300 - title.length), [title]);
 
@@ -89,11 +79,17 @@ function CreatePostPage() {
     setSearchTerm('');
   };
 
-  const filteredCommunities = (communityList.length > 0 ? communityList : joinedCommunities.map((name) => ({ name })))
-    .filter(comm => {
+  const filteredCommunities = (() => {
+    const joinedSet = new Set((joinedCommunities || []).map(normalizeCommunityName));
+    const base = communityList.length > 0
+      ? communityList.filter((c) => joinedSet.has(normalizeCommunityName(c.name)) || joinedSet.has(normalizeCommunityName(c.displayName)))
+      : joinedCommunities.map((name) => ({ name }));
+
+    return base.filter((comm) => {
       const value = (comm.name || comm.displayName || '').toLowerCase();
       return value.includes(searchTerm.toLowerCase());
     });
+  })();
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -240,6 +236,11 @@ function CreatePostPage() {
             <div className="community-list">
               {communitiesLoading ? (
                 <div className="no-communities">Loading communities...</div>
+              ) : joinedCommunities.length === 0 ? (
+                <div className="no-communities">
+                  <p>You haven’t joined any communities yet.</p>
+                  <button type="button" className="post-btn" onClick={() => navigate('/explore')}>Explore communities</button>
+                </div>
               ) : filteredCommunities.length > 0 ? (
                 filteredCommunities.map((comm) => {
                   const icon = comm.icon || 'https://via.placeholder.com/40';
@@ -249,7 +250,7 @@ function CreatePostPage() {
                     <button
                       key={comm._id || comm.name}
                       className="community-list-item"
-                      onClick={() => handleSelectCommunity(comm.name)}
+                      onClick={() => handleSelectCommunity(normalizeCommunityName(comm.name || comm.displayName))}
                     >
                       <div className="community-item-avatar">
                         <img src={icon} alt={display} />

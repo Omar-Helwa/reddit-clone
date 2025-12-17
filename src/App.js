@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import AppNavbar from './layout/Navbar';
+import { initializeTheme } from './utils/theme';
+import { addSampleNotifications } from './utils/notifications';
+import { isLoggedIn } from './utils/auth';
 import HomePage from './pages/HomePage';
 import ExplorePage from './pages/ExplorePage';
 import PopularPage from './pages/PopularPage';
@@ -28,13 +31,28 @@ import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import AchievementsPage from './pages/AchievementsPage';
 import EditAvatarPage from './pages/EditAvatarPage';
+import NotificationsPage from './pages/NotificationsPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import FavoritesPage from './pages/FavoritesPage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
 
   useEffect(() => {
+    // Initialize theme and notifications on app load
+    initializeTheme();
+    addSampleNotifications();
+    
+    const shouldRequireAuth = (p) => p.startsWith('/chat') || p.startsWith('/create-community');
+
     // Check URL path to determine which page to show
     const path = window.location.pathname;
+    if (!isLoggedIn() && shouldRequireAuth(path)) {
+      window.history.replaceState({}, '', '/login');
+      setCurrentPage('login');
+      return;
+    }
     if (path.includes('/explore')) {
       setCurrentPage('explore');
     } else if (path.includes('/popular')) {
@@ -71,8 +89,18 @@ function App() {
       setCurrentPage('login');
     } else if (path.includes('/signup')) {
       setCurrentPage('signup');
+    } else if (path.includes('/notifications')) {
+      setCurrentPage('notifications');
+    } else if (path.includes('/forgot-password')) {
+      setCurrentPage('forgot-password');
+    } else if (path.includes('/reset-password')) {
+      setCurrentPage('reset-password');
+    } else if (path.includes('/favorites')) {
+      setCurrentPage('favorites');
     } else if (path.includes('/chat')) {
       setCurrentPage('chat');
+    } else if (path.includes('/user/')) {
+      setCurrentPage('profile');
     } else if (path.includes('/profile')) {
       setCurrentPage('profile');
     } else if (path.includes('/settings')) {
@@ -96,6 +124,11 @@ function App() {
     // Listen for navigation
     const handlePopState = () => {
       const newPath = window.location.pathname;
+      if (!isLoggedIn() && shouldRequireAuth(newPath)) {
+        window.history.replaceState({}, '', '/login');
+        setCurrentPage('login');
+        return;
+      }
       if (newPath.includes('/explore')) {
         setCurrentPage('explore');
       } else if (newPath.includes('/popular')) {
@@ -132,8 +165,18 @@ function App() {
         setCurrentPage('login');
       } else if (newPath.includes('/signup')) {
         setCurrentPage('signup');
+      } else if (newPath.includes('/notifications')) {
+        setCurrentPage('notifications');
+      } else if (newPath.includes('/forgot-password')) {
+        setCurrentPage('forgot-password');
+      } else if (newPath.includes('/reset-password')) {
+        setCurrentPage('reset-password');
+      } else if (newPath.includes('/favorites')) {
+        setCurrentPage('favorites');
       } else if (newPath.includes('/chat')) {
         setCurrentPage('chat');
+      } else if (newPath.includes('/user/')) {
+        setCurrentPage('profile');
       } else if (newPath.includes('/profile')) {
         setCurrentPage('profile');
       } else if (newPath.includes('/settings')) {
@@ -202,6 +245,14 @@ function App() {
         return <LoginPage />;
       case 'signup':
         return <SignupPage />;
+      case 'notifications':
+        return <NotificationsPage />;
+      case 'forgot-password':
+        return <ForgotPasswordPage />;
+      case 'reset-password':
+        return <ResetPasswordPage />;
+      case 'favorites':
+        return <FavoritesPage />;
       case 'my-community':
         return <MyCommunityPage onNavigate={handleNavigate} />;
       case 'community':
