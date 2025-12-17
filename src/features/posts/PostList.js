@@ -8,28 +8,38 @@ const PostList = () => {
   const [sortBy, setSortBy] = useState('BEST');
   const { posts, loading, error, refetch } = usePosts();
 
+  const getTimestampMs = (post) => {
+    const raw = post?.createdAt || post?.timestamp || post?.created || 0;
+    const ms = new Date(raw).getTime();
+    return Number.isNaN(ms) ? 0 : ms;
+  };
+
+  const hotRank = (post, exponent = 1.5) => {
+    const score = Number(post?.score) || 0;
+    const ts = getTimestampMs(post);
+    const hoursSince = Math.max(0, (Date.now() - ts) / 3600000);
+    return score / Math.pow(hoursSince + 2, exponent);
+  };
+
   const sortPosts = (postsArray, sort) => {
+    const list = Array.isArray(postsArray) ? postsArray : [];
     switch (sort) {
       case 'NEW':
-        return [...postsArray].sort((a, b) => {
-          // Simple timestamp sorting (newer first)
-          return 0; // Keep original order for now
-        });
+        return [...list].sort((a, b) => getTimestampMs(b) - getTimestampMs(a));
       case 'TOP':
-        return [...postsArray].sort((a, b) => b.score - a.score);
+        return [...list].sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0) || getTimestampMs(b) - getTimestampMs(a));
+      case 'RISING':
+        return [...list].sort((a, b) => hotRank(b, 1.15) - hotRank(a, 1.15) || getTimestampMs(b) - getTimestampMs(a));
       case 'HOT':
+        return [...list].sort((a, b) => hotRank(b, 1.5) - hotRank(a, 1.5) || getTimestampMs(b) - getTimestampMs(a));
       case 'BEST':
       default:
-        // Score + recency blend
-        return [...postsArray].sort((a, b) => b.score - a.score);
+        // Slight recency bias, less aggressive than HOT
+        return [...list].sort((a, b) => hotRank(b, 1.35) - hotRank(a, 1.35) || getTimestampMs(b) - getTimestampMs(a));
     }
   };
 
   const sortedPosts = useMemo(() => sortPosts(posts, sortBy), [posts, sortBy]);
-
-  const handleUpvote = () => {};
-
-  const handleDownvote = () => {};
 
   const handleCommentClick = (post) => {
     const slug = post.subreddit?.replace(/^r\//, '') || 'general';
@@ -87,6 +97,7 @@ const PostList = () => {
                 communityKey={communityKey}
                 title={post.title}
                 author={post.author}
+                  authorId={post.authorId}
                 subreddit={subreddit}
                 timestamp={timestamp}
                 score={post.score}
@@ -96,8 +107,6 @@ const PostList = () => {
                 subredditIcon={post.subredditIcon}
                 onCommentClick={() => handleCommentClick(post)}
                 onSubredditClick={() => handleSubredditClick(post.subreddit)}
-                onUpvote={() => handleUpvote(post.uniqueKey)}
-                onDownvote={() => handleDownvote(post.uniqueKey)}
               />
             );
           })

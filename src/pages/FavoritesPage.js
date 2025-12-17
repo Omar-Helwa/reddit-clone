@@ -1,8 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './FavoritesPage.css';
 import { getFavoriteCommunities, toggleFavoriteCommunity } from '../utils/favorites';
-import { postsAPI } from '../api/postsAPI';
+import postsAPI from '../api/postsAPI';
 import { navigate } from '../utils/helpers';
+
+function normalizeCommunityKey(value) {
+  if (!value) return '';
+  return String(value).replace(/^r\//i, '').trim();
+}
 
 function FavoritesPage() {
   const [favorites, setFavorites] = useState(getFavoriteCommunities());
@@ -34,7 +39,11 @@ function FavoritesPage() {
 
   const favoritePosts = useMemo(() => {
     if (!favorites.length) return [];
-    return posts.filter((p) => favorites.includes(p.subreddit));
+    const favSet = new Set(favorites.map(normalizeCommunityKey));
+    return posts.filter((p) => {
+      const key = normalizeCommunityKey(p?.subreddit || p?.community || p?.communityName);
+      return key && favSet.has(key);
+    });
   }, [posts, favorites]);
 
   const handleToggleFavorite = (communityName) => {
@@ -77,17 +86,17 @@ function FavoritesPage() {
           {!loading && !error && favoritePosts.map((post) => (
             <article key={post._id || post.postId} className="post-card">
               <div className="post-top">
-                <button className="subreddit" onClick={() => navigate(`/r/${post.subreddit}`)}>
-                  r/{post.subreddit}
+                <button className="subreddit" onClick={() => navigate(`/r/${normalizeCommunityKey(post.subreddit || post.community || post.communityName)}`)}>
+                  r/{normalizeCommunityKey(post.subreddit || post.community || post.communityName)}
                 </button>
-                <button className="star" onClick={() => handleToggleFavorite(post.subreddit)} title="Unfavorite">
+                <button className="star" onClick={() => handleToggleFavorite(normalizeCommunityKey(post.subreddit || post.community || post.communityName))} title="Unfavorite">
                   ★
                 </button>
               </div>
               <h3 className="title">{post.title}</h3>
               {post.textBody && <p className="excerpt">{post.textBody}</p>}
               <div className="actions">
-                <button className="open" onClick={() => navigate(`/r/${post.subreddit}/comments/${post._id || post.postId}`)}>
+                <button className="open" onClick={() => navigate(`/r/${normalizeCommunityKey(post.subreddit || post.community || post.communityName)}/comments/${post._id || post.postId}`)}>
                   Open
                 </button>
               </div>

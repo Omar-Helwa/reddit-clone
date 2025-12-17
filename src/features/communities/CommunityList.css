@@ -146,15 +146,15 @@
 .community-link {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex: 1;
   text-decoration: none;
   min-width: 0;
 }
 
 .community-icon {
-  width: 32px;
-  height: 32px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
@@ -187,12 +187,12 @@
 }
 
 .join-button {
-  padding: 4px 12px;
+  padding: 3px 8px;
   background: transparent;
   border: 1px solid var(--blue);
   color: var(--blue);
-  border-radius: 20px;
-  font-size: 12px;
+  border-radius: 16px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;

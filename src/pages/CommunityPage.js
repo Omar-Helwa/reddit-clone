@@ -6,6 +6,20 @@ import { deleteCommunity } from '../api/communitiesApi';
 import { usePostsBySubreddit } from '../hooks/usePosts';
 import { isJoined as isJoinedStore, joinCommunity, leaveCommunity, navigate } from '../utils/helpers';
 import { isFavoriteCommunity, toggleFavoriteCommunity } from '../utils/favorites';
+import { DEFAULT_COMMUNITY_ICON } from '../utils/placeholders';
+
+function formatCommunityCreated(value) {
+  if (!value) return '';
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    // If it's already human-friendly (e.g. "Mon Dec 16 2025"), keep it.
+    if (!/^\d{4}-\d{2}-\d{2}T/.test(trimmed) && !/\d{2}:\d{2}:\d{2}/.test(trimmed)) return trimmed;
+  }
+  const ms = new Date(value).getTime();
+  if (Number.isNaN(ms)) return String(value);
+  return new Date(ms).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
 
 function CommunityPage() {
   const [isJoined, setIsJoined] = useState(false);
@@ -34,19 +48,51 @@ function CommunityPage() {
       name: `r/${slug || 'community'}`,
       displayName: `r/${slug || 'community'}`,
       description: 'Community details coming soon.',
-      icon: 'https://via.placeholder.com/80',
+      icon: DEFAULT_COMMUNITY_ICON,
       banner: 'https://via.placeholder.com/1200x200',
       members: 0,
       online: 0,
-      createdDate: new Date().toDateString(),
+      createdAt: new Date().toISOString(),
       type: 'Public',
       rules: [],
       moderators: []
     };
   }, [communityList, communityName]);
-  // Pass full subreddit name with r/ prefix to match database format
-  const subredditKey = communityName ? `r/${communityName}` : '';
+
+  const createdLabel = useMemo(() => {
+    return formatCommunityCreated(community?.createdAt || community?.createdDate || community?.created);
+  }, [community]);
+  // Backend posts use subreddit slug (without r/)
+  const subredditKey = communityName ? `${communityName}` : '';
   const { posts, loading: postsLoading, error: postsError, refetch } = usePostsBySubreddit(subredditKey);
+
+  const getTimestampMs = (post) => {
+    const raw = post?.createdAt || post?.timestamp || post?.created || 0;
+    const ms = new Date(raw).getTime();
+    return Number.isNaN(ms) ? 0 : ms;
+  };
+
+  const hotRank = (post, exponent = 1.5) => {
+    const score = Number(post?.score) || 0;
+    const ts = getTimestampMs(post);
+    const hoursSince = Math.max(0, (Date.now() - ts) / 3600000);
+    return score / Math.pow(hoursSince + 2, exponent);
+  };
+
+  const sortedPosts = useMemo(() => {
+    const list = Array.isArray(posts) ? posts : [];
+    switch (sortBy) {
+      case 'new':
+        return [...list].sort((a, b) => getTimestampMs(b) - getTimestampMs(a));
+      case 'top':
+        return [...list].sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0) || getTimestampMs(b) - getTimestampMs(a));
+      case 'rising':
+        return [...list].sort((a, b) => hotRank(b, 1.15) - hotRank(a, 1.15) || getTimestampMs(b) - getTimestampMs(a));
+      case 'hot':
+      default:
+        return [...list].sort((a, b) => hotRank(b, 1.5) - hotRank(a, 1.5) || getTimestampMs(b) - getTimestampMs(a));
+    }
+  }, [posts, sortBy]);
 
   useEffect(() => {
     if (communityName) {
@@ -98,7 +144,12 @@ function CommunityPage() {
       <div className="community-header">
         <div className="community-header-content">
           <div className="community-info">
-            <img src={community.icon} alt={community.name} className="community-icon-large" />
+            <img
+              src={community.icon || DEFAULT_COMMUNITY_ICON}
+              alt={community.name}
+              className="community-icon-large"
+              onError={(e) => { e.currentTarget.src = DEFAULT_COMMUNITY_ICON; }}
+            />
             <div className="community-title-section">
               <h1>{community.displayName}</h1>
               <p className="community-name">{community.name}</p>
@@ -187,7 +238,7 @@ function CommunityPage() {
                 {!postsLoading && !postsError && posts.length === 0 && (
                   <div className="no-posts">No posts yet.</div>
                 )}
-                {!postsLoading && !postsError && posts.length > 0 && posts.map(post => (
+                {!postsLoading && !postsError && sortedPosts.length > 0 && sortedPosts.map(post => (
                   <div key={post.postId} className="post-wrapper">
                     {post.isPinned && <span className="pinned-badge">📌 Pinned by moderators</span>}
                     <Post 
@@ -195,6 +246,7 @@ function CommunityPage() {
                       communityKey={communityName}
                       title={post.title}
                       author={post.author}
+                      authorId={post.authorId}
                       subreddit={`r/${communityName}`}
                       timestamp={post.createdAt || post.timestamp}
                       score={post.score}
@@ -217,7 +269,7 @@ function CommunityPage() {
                   <strong>Type:</strong> <span>{community.type}</span>
                 </div>
                 <div className="detail-row">
-                  <strong>Created:</strong> <span>{community.createdDate}</span>
+                  <strong>Created:</strong> <span>{createdLabel}</span>
                 </div>
               </div>
             </div>
@@ -253,7 +305,7 @@ function CommunityPage() {
                 <span>Online</span>
               </div>
             </div>
-            <p className="created-date">{community.createdDate}</p>
+            <p className="created-date">{createdLabel}</p>
             <button 
               className="create-post-btn-full"
               onClick={() => navigate(`/r/${communityName}/submit`)}

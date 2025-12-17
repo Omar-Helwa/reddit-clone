@@ -48,14 +48,6 @@ function PopularPage() {
       .slice(0, 50);
   }, [posts, cutoff]);
 
-  const handleUpvote = (postId) => {
-    console.log(`Upvoted post: ${postId}`);
-  };
-
-  const handleDownvote = (postId) => {
-    console.log(`Downvoted post: ${postId}`);
-  };
-
   const handleCommentClick = (postId) => {
     console.log(`Navigate to post: ${postId}`);
   };
@@ -117,8 +109,6 @@ function PopularPage() {
               <div className="post-rank">{index + 1}</div>
               <Post
                 {...post}
-                onUpvote={() => handleUpvote(post.postId)}
-                onDownvote={() => handleDownvote(post.postId)}
                 onCommentClick={() => handleCommentClick(post.postId)}
               />
             </div>

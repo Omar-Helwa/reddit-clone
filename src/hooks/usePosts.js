@@ -5,6 +5,17 @@
 
 import { useState, useEffect } from 'react';
 import postsAPI from '../api/postsAPI';
+import { DEFAULT_COMMUNITY_ICON, DEFAULT_USER_ICON } from '../utils/placeholders';
+
+function unwrapList(result) {
+  if (Array.isArray(result)) return result;
+  if (!result || typeof result !== 'object') return [];
+  if (Array.isArray(result.items)) return result.items;
+  if (Array.isArray(result.posts)) return result.posts;
+  if (Array.isArray(result.data)) return result.data;
+  if (result.data && Array.isArray(result.data.items)) return result.data.items;
+  return [];
+}
 
 /**
  * Transform MongoDB post document to component format
@@ -14,14 +25,22 @@ import postsAPI from '../api/postsAPI';
 function transformPost(post) {
   // Use Mongo _id as primary identifier for routing; keep original postId for display if needed
   const primaryId = post._id || post.postId;
-  const author = post.author || post.username || post.userId || 'Unknown';
+  const authorId = post.userId || post.authorId || post.user?._id || post.user?.id || null;
+  const authorName = post.author || post.username || post.user?.username || null;
+  const author = (authorName ? String(authorName) : 'Unknown').replace(/^u\//, '').trim() || 'Unknown';
+  const subredditRaw = post.subreddit || 'general';
+  const subredditKey = String(subredditRaw).replace(/^r\//, '').trim() || 'general';
+  const subredditDisplay = String(subredditRaw).startsWith('r/') ? String(subredditRaw) : `r/${subredditKey}`;
   return {
     postId: primaryId,
     uniqueKey: primaryId,
     originalPostId: post.postId,
     title: post.title,
-    author: author,
-    subreddit: post.subreddit || 'r/general',
+    author,
+    authorId,
+    authorName,
+    subreddit: subredditDisplay,
+    subredditKey,
     type: post.type || 'text',
     
     // Content
@@ -39,11 +58,11 @@ function transformPost(post) {
     
     // Metadata
     isPinned: post.isPinned || false,
-    createdAt: post.createdAt,
+    createdAt: post.createdAt || post.timestamp,
     
     // UI defaults
-    subredditIcon: 'https://via.placeholder.com/120/ff4500/ffffff?text=R',
-    authorIcon: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_4.png',
+    subredditIcon: DEFAULT_COMMUNITY_ICON,
+    authorIcon: DEFAULT_USER_ICON,
   };
 }
 
@@ -62,7 +81,7 @@ export function usePosts() {
       setError(null);
       
       const result = await postsAPI.getAll();
-      const list = Array.isArray(result) ? result : (result?.items ?? []);
+      const list = unwrapList(result);
       const transformedPosts = list.map(transformPost);
       setPosts(transformedPosts);
     } catch (err) {
@@ -103,14 +122,24 @@ export function usePostsBySubreddit(subreddit) {
       return;
     }
 
+    const normalize = (value) => String(value || '').replace(/^r\//, '').trim();
+    const targetKey = normalize(subreddit);
+
     try {
       setLoading(true);
       setError(null);
-      
-      const result = await postsAPI.getBySubreddit(subreddit);
-      const list = Array.isArray(result) ? result : (result?.items ?? []);
+
+      // Some backends expect "subreddit=slug" while others expect "subreddit=r/slug".
+      // Try slug first, then fall back.
+      const resultA = await postsAPI.getBySubreddit(targetKey);
+      let list = unwrapList(resultA);
+      if (list.length === 0) {
+        const resultB = await postsAPI.getBySubreddit(`r/${targetKey}`);
+        list = unwrapList(resultB);
+      }
+
       const transformedPosts = list.map(transformPost);
-      const filteredPosts = transformedPosts.filter(p => p.subreddit === subreddit);
+      const filteredPosts = transformedPosts.filter((p) => normalize(p.subredditKey || p.subreddit) === targetKey);
       setPosts(filteredPosts);
     } catch (err) {
       setError(err.message || 'Failed to fetch posts');

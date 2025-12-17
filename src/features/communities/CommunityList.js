@@ -2,8 +2,41 @@ import React, { useState } from 'react';
 import './CommunityList.css';
 import useCommunities from '../../hooks/useCommunities';
 import { getJoinedCommunities, isJoined as isJoinedStore, joinCommunity, leaveCommunity } from '../../utils/helpers';
+import { DEFAULT_COMMUNITY_ICON } from '../../utils/placeholders';
 
 const CommunityList = () => {
+  const pickCommunityText = (community) => {
+    const candidates = [
+      community?.displayName,
+      community?.name,
+      community?.slug,
+      community?.subreddit,
+      community?.communityName,
+      community?.title,
+    ];
+    for (const value of candidates) {
+      const text = typeof value === 'string' ? value.trim() : '';
+      if (!text) continue;
+      if (text.toLowerCase() === 'r/' || text.toLowerCase() === '/r/') continue;
+      return text;
+    }
+    return '';
+  };
+
+  const getCommunitySlug = (community) => {
+    const raw = pickCommunityText(community);
+    const slug = String(raw).replace(/^\//, '').replace(/^r\//i, '').trim();
+    return slug;
+  };
+
+  const getCommunityLabel = (community) => {
+    const raw = pickCommunityText(community);
+    const trimmed = String(raw).trim();
+    if (!trimmed) return 'r/community';
+    const noPrefix = trimmed.replace(/^\/?r\//i, '');
+    if (!noPrefix) return 'r/community';
+    return `r/${noPrefix}`;
+  };
   const primaryNav = [
     { label: 'Home', href: '/', icon: '🏠' },
     { label: 'Popular', href: '/popular', icon: '🔥' },
@@ -17,7 +50,7 @@ const CommunityList = () => {
   const [joined, setJoined] = useState(() => getJoinedCommunities());
 
   const handleJoinCommunity = (communityName) => {
-    const slug = (communityName || '').replace(/^r\//, '');
+    const slug = (communityName || '').replace(/^r\//i, '');
     if (!slug) return;
 
     if (isJoinedStore(slug)) {
@@ -89,23 +122,42 @@ const CommunityList = () => {
         {communities.length > 0 ? (
           communities.map((community) => (
             <div key={community._id || community.name} className="community-item">
-              <a href={`/${community.name}`} className="community-link">
+              {(() => {
+                const slug = getCommunitySlug(community);
+                const label = getCommunityLabel(community);
+                const href = slug ? `/r/${slug}` : '#';
+                const isJoined = slug ? joined.includes(slug) : false;
+                return (
+                  <>
+                    <a
+                      href={href}
+                      className="community-link"
+                      onClick={(e) => {
+                        if (!slug) e.preventDefault();
+                      }}
+                    >
                 <img 
-                  src={community.icon || 'https://via.placeholder.com/40'} 
-                  alt={community.name}
+                  src={community.icon || DEFAULT_COMMUNITY_ICON} 
+                  alt={label || 'community'}
                   className="community-icon"
+                  onError={(e) => { e.currentTarget.src = DEFAULT_COMMUNITY_ICON; }}
                 />
                 <div className="community-info">
-                  <h3 className="community-name">{community.name}</h3>
+                  <h3 className="community-name">{label || 'r/community'}</h3>
                   <p className="community-members">{community.members ?? 0} members</p>
                 </div>
-              </a>
-              <button 
-                className={`join-button ${joined.includes((community.name || '').replace(/^r\//, '')) ? 'joined' : ''}`}
-                onClick={() => handleJoinCommunity(community.name)}
-              >
-                {joined.includes((community.name || '').replace(/^r\//, '')) ? 'Joined' : 'Join'}
-              </button>
+                    </a>
+                    <button 
+                      className={`join-button ${isJoined ? 'joined' : ''}`}
+                      onClick={() => handleJoinCommunity(slug)}
+                      disabled={!slug}
+                      title={slug ? '' : 'This community is missing a slug'}
+                    >
+                      {isJoined ? 'Joined' : 'Join'}
+                    </button>
+                  </>
+                );
+              })()}
             </div>
           ))
         ) : (

@@ -9,6 +9,15 @@ import { mockChats, mockMessages } from '../data/mockChatData';
 // Flag to enable mock data fallback for development
 const USE_MOCK_DATA = true;
 
+// In-memory store for mock chats so new chats persist in dev
+let inMemoryChats = null;
+const getChatsStore = () => {
+  if (!inMemoryChats) {
+    inMemoryChats = (mockChats || []).map((c) => ({ ...c }));
+  }
+  return inMemoryChats;
+};
+
 // In-memory store for mock messages so sends/deletes persist in dev
 let inMemoryMessages = null;
 const getMessagesStore = () => {
@@ -30,7 +39,7 @@ export const fetchChats = async () => {
   if (USE_MOCK_DATA) {
     // Return mock data for development
     return new Promise((resolve) => {
-      setTimeout(() => resolve(mockChats), 500);
+      setTimeout(() => resolve(getChatsStore()), 300);
     });
   }
   
@@ -81,6 +90,11 @@ export const createChat = async (chatData) => {
       ...chatData,
       updatedAt: new Date(),
     };
+
+    // Persist in in-memory store
+    const store = getChatsStore();
+    store.unshift({ ...newChat });
+
     return new Promise((resolve) => {
       setTimeout(() => resolve(newChat), 500);
     });
@@ -118,6 +132,17 @@ export const sendMessage = async (chatId, messageData) => {
     const store = getMessagesStore();
     if (!store[chatId]) store[chatId] = [];
     store[chatId].push(newMessage);
+
+    // Update chat list metadata so it moves to top and shows last message
+    const chatsStore = getChatsStore();
+    const idx = chatsStore.findIndex((c) => String(c._id) === String(chatId));
+    if (idx >= 0) {
+      chatsStore[idx] = {
+        ...chatsStore[idx],
+        lastMessage: newMessage.content || (newMessage.attachments?.length ? '📎 Attachment' : ''),
+        updatedAt: newMessage.timestamp || now,
+      };
+    }
 
     return new Promise((resolve) => {
       setTimeout(() => resolve(newMessage), 200);

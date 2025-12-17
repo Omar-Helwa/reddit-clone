@@ -5,13 +5,25 @@ import './ChatList.css';
  * ChatList Component
  * Displays list of chat conversations
  */
-const ChatList = ({ chats, activeChat, onSelectChat, loading }) => {
+const ChatList = ({ chats, activeChat, onSelectChat, loading, currentUserId }) => {
   const [searchQuery, setSearchQuery] = useState('');
+
+  const getOtherUser = (chat) => {
+    const u1 = chat?.user1;
+    const u2 = chat?.user2;
+    const u1Id = u1?.id || u1?._id;
+    const u2Id = u2?.id || u2?._id;
+    if (!currentUserId) return u2 || u1;
+    if (String(u1Id) === String(currentUserId)) return u2 || u1;
+    if (String(u2Id) === String(currentUserId)) return u1 || u2;
+    return u2 || u1;
+  };
 
   // Filter chats based on search query
   const filteredChats = chats.filter((chat) => {
-    const otherUser = chat.user2.name.toLowerCase();
-    return otherUser.includes(searchQuery.toLowerCase());
+    const other = getOtherUser(chat);
+    const otherName = (other?.name || '').toLowerCase();
+    return otherName.includes(searchQuery.toLowerCase());
   });
 
   // Format timestamp
@@ -64,17 +76,21 @@ const ChatList = ({ chats, activeChat, onSelectChat, loading }) => {
           </div>
         ) : (
           filteredChats.map((chat) => (
+            (() => {
+              const other = getOtherUser(chat);
+              const otherName = other?.name || 'User';
+              return (
             <div
               key={chat._id}
               className={`chat-item ${activeChat?._id === chat._id ? 'active' : ''}`}
               onClick={() => onSelectChat(chat)}
             >
               <div className="chat-avatar">
-                {getInitials(chat.user2.name)}
+                {getInitials(otherName)}
               </div>
               <div className="chat-item-content">
                 <div className="chat-item-header">
-                  <span className="chat-user-name">{chat.user2.name}</span>
+                  <span className="chat-user-name">{otherName}</span>
                   <span className="chat-timestamp">
                     {formatTimestamp(chat.updatedAt)}
                   </span>
@@ -82,6 +98,8 @@ const ChatList = ({ chats, activeChat, onSelectChat, loading }) => {
                 <div className="chat-last-message">{chat.lastMessage}</div>
               </div>
             </div>
+              );
+            })()
           ))
         )}
       </div>

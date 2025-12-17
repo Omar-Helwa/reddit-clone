@@ -73,21 +73,32 @@ function SignupPage() {
     if (validateForm()) {
       try {
         // Import API client and auth utils
-        const { createUser } = await import('../api/usersApi');
+        const { createUser, loginUser } = await import('../api/usersApi');
         const { setCurrentUser } = await import('../utils/auth');
         
         // Create new user in MongoDB
-        const newUser = await createUser({
+        const createdUser = await createUser({
           username: formData.username,
           email: formData.email,
           password: formData.password,
           image: '', // Optional: add avatar upload later
         });
-        
-        console.log('User created successfully:', newUser);
-        
-        // Save user info to localStorage
-        setCurrentUser(newUser);
+
+        console.log('User created successfully:', createdUser);
+
+        // Immediately log in to obtain JWT token (required for protected endpoints like POST /posts)
+        let authResult = null;
+        try {
+          authResult = await loginUser(formData.username, formData.password);
+        } catch (loginErr) {
+          console.warn('Auto-login after signup failed:', loginErr);
+        }
+
+        const userToStore = authResult?.user
+          ? { ...authResult.user, token: authResult.token }
+          : createdUser;
+
+        setCurrentUser(userToStore);
         
         alert(`Welcome ${formData.username}! Your account has been created.`);
         

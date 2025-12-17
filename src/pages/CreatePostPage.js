@@ -3,6 +3,7 @@ import './CreatePostPage.css';
 import { isJoined, joinCommunity, navigate, getJoinedCommunities } from '../utils/helpers';
 import { useCreatePost } from '../hooks/usePosts';
 import useCommunities from '../hooks/useCommunities';
+import { DEFAULT_COMMUNITY_ICON } from '../utils/placeholders';
 import { getCurrentUserId } from '../utils/auth';
 
 function CreatePostPage() {
@@ -130,6 +131,15 @@ function CreatePostPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Backend requires JWT token for creating posts
+    const token = localStorage.getItem('userToken');
+    if (!token) {
+      setError('You are signed in without a token. Please log in again to create posts.');
+      navigate('/login');
+      return;
+    }
+
     if (!canPost) {
       setError('You must join this community to post.');
       return;
@@ -243,7 +253,7 @@ function CreatePostPage() {
                 </div>
               ) : filteredCommunities.length > 0 ? (
                 filteredCommunities.map((comm) => {
-                  const icon = comm.icon || 'https://via.placeholder.com/40';
+                  const icon = comm.icon || DEFAULT_COMMUNITY_ICON;
                   const display = comm.displayName || comm.name || 'Community';
                   const desc = comm.description || 'No description provided.';
                   return (
@@ -253,7 +263,7 @@ function CreatePostPage() {
                       onClick={() => handleSelectCommunity(normalizeCommunityName(comm.name || comm.displayName))}
                     >
                       <div className="community-item-avatar">
-                        <img src={icon} alt={display} />
+                        <img src={icon} alt={display} onError={(e) => { e.currentTarget.src = DEFAULT_COMMUNITY_ICON; }} />
                       </div>
                       <div className="community-item-info">
                         <div className="community-item-name">{display}</div>

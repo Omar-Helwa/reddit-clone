@@ -27,6 +27,9 @@ function transformComment(comment) {
     
     // Nesting
     parentCommentId: comment.parentCommentId || null,
+
+    // UI nesting
+    replies: [],
     
     // Metadata
     createdAt: comment.createdAt,
@@ -34,6 +37,37 @@ function transformComment(comment) {
     // UI defaults
     authorIcon: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_4.png',
   };
+}
+
+function buildCommentTree(comments) {
+  const list = Array.isArray(comments) ? comments : [];
+  const byId = new Map();
+  list.forEach((c) => {
+    if (c && c.commentId) byId.set(String(c.commentId), { ...c, replies: [] });
+  });
+
+  const roots = [];
+  byId.forEach((comment) => {
+    const parentId = comment.parentCommentId ? String(comment.parentCommentId) : null;
+    if (parentId && parentId !== String(comment.commentId) && byId.has(parentId)) {
+      const parent = byId.get(parentId);
+      parent.replies.push(comment);
+    } else {
+      roots.push(comment);
+    }
+  });
+
+  const sortByCreated = (arr) => {
+    arr.sort((a, b) => {
+      const ta = new Date(a.createdAt || 0).getTime();
+      const tb = new Date(b.createdAt || 0).getTime();
+      return ta - tb;
+    });
+    arr.forEach((c) => sortByCreated(c.replies));
+  };
+  sortByCreated(roots);
+
+  return roots;
 }
 
 /**
@@ -76,8 +110,9 @@ export function useComments(postId) {
       }
 
       const transformedComments = finalComments.map(transformComment);
+      const tree = buildCommentTree(transformedComments);
       console.log('Comments transformed:', transformedComments);
-      setComments(transformedComments);
+      setComments(tree);
     } catch (err) {
       setError(err.message || 'Failed to fetch comments');
       console.error('Comments fetch error:', err);

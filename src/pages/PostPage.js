@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './PostPage.css';
 import CommentList from '../features/comments/CommentList';
+import Post from '../features/posts/Post';
 import { navigate } from '../utils/helpers';
 import { usePost } from '../hooks/usePosts';
 import { useComments, useCreateComment } from '../hooks/useComments';
@@ -62,6 +63,28 @@ function PostPage() {
     }
   };
 
+  const handleSubmitReply = async (parentCommentId, text) => {
+    if (!text?.trim()) return;
+
+    const userId = getCurrentUserId();
+    if (!userId) {
+      alert('You must be logged in to reply');
+      return;
+    }
+
+    try {
+      await createComment(post._id || post.postId, {
+        userId,
+        text: text.trim(),
+        parentCommentId: parentCommentId || null,
+      });
+      refetchComments();
+    } catch (err) {
+      console.error('Reply error:', err);
+      alert('Failed to create reply: ' + (err?.message || 'Unknown error'));
+    }
+  };
+
   const handleVote = () => {
     alert('Poll voting is not yet connected to the API.');
   };
@@ -117,16 +140,28 @@ function PostPage() {
     <div className="post-page">
       <div className="post-container">
         <article className="post-card-full">
-          <div className="post-header">
-            <button 
-              className="subreddit" 
-              onClick={() => navigate(`/r/${communityName}`)}
-            >
-              r/{post.subreddit}
-            </button>
-            <h1 className="title">{post.title}</h1>
-            <div className="meta">Posted by {post.author} • {post.timestamp}</div>
-          </div>
+          <Post
+            postId={post.postId || post._id}
+            communityKey={(post.subredditKey || communityName || 'general').replace(/^r\//, '')}
+            title={post.title}
+            author={post.author}
+              authorId={post.authorId || post.userId}
+            subreddit={post.subreddit}
+            timestamp={post.createdAt || post.timestamp}
+            score={post.score}
+            commentCount={Number.isFinite(Number(post.commentCount)) ? Number(post.commentCount) : (Array.isArray(comments) ? comments.length : 0)}
+            textBody={''}
+            subredditIcon={post.subredditIcon}
+            authorIcon={post.authorIcon}
+            onCommentClick={() => {
+              const el = document.querySelector('.comments-section-full');
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+            onSubredditClick={() => {
+              const slug = (post.subredditKey || communityName || '').replace(/^r\//, '') || 'general';
+              navigate(`/r/${slug}`);
+            }}
+          />
           {post.type === 'text' && post.textBody && (
             <div className="post-body">
               <p>{post.textBody}</p>
@@ -210,6 +245,7 @@ function PostPage() {
               postId={post.postId || post._id} 
               comments={comments} 
               onSubmitNewComment={handleSubmitNewComment}
+              onSubmitReply={handleSubmitReply}
               autoFocus={focusComment}
             />
           )}

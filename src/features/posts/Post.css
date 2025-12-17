@@ -1,12 +1,11 @@
 .post-card {
-  display: grid;
-  grid-template-columns: 52px 1fr;
-  gap: 12px;
+  position: relative;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
   padding: 12px 14px;
   margin: 10px 0;
+  margin-left: 88px;
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
@@ -16,13 +15,37 @@
 }
 
 .vote-column {
+  position: absolute;
+  left: -88px;
+  top: 12px;
+  width: 60px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 6px 0;
-  background: var(--hover);
-  border-radius: 12px;
+  padding: 4px 0;
+  background: transparent;
+}
+
+@media (max-width: 520px) {
+  .post-card {
+    margin-left: 0;
+  }
+
+  .vote-column {
+    position: static;
+    width: auto;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    margin-bottom: 10px;
+  }
+
+  .vote-score {
+    margin: 0 10px;
+  }
 }
 
 .vote-button {
@@ -38,10 +61,26 @@
   color: var(--accent, #ff4500);
 }
 
+.upvote-button.active {
+  color: var(--orange);
+}
+
+.downvote-button.active {
+  color: var(--blue);
+}
+
 .vote-score {
   font-weight: 700;
   color: var(--text-primary);
   font-size: 13px;
+}
+
+.vote-score.upvoted {
+  color: var(--orange);
+}
+
+.vote-score.downvoted {
+  color: var(--blue);
 }
 
 .post-body {
@@ -74,7 +113,8 @@
 
 .subreddit-name,
 .subreddit-name-link {
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 13px;
   color: var(--text-primary);
   background: none;
   border: none;
@@ -92,6 +132,23 @@
 
 .post-meta {
   color: var(--text-secondary);
+}
+
+.post-author-link {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.post-author-link:hover {
+  color: var(--blue);
+  text-decoration: underline;
 }
 
 .post-timestamp {

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ChatList from '../features/chats/ChatList';
 import ChatWindow from '../features/chats/ChatWindow';
 import useChats from '../hooks/useChats';
 import './ChatPage.css';
+import { getCurrentUserId } from '../utils/auth';
 
 /**
  * ChatPage Component
@@ -10,6 +11,8 @@ import './ChatPage.css';
  */
 function ChatPage() {
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const currentUserId = getCurrentUserId();
+  const didAutoOpenRef = useRef(false);
   
   // Using the custom useChats hook
   const {
@@ -24,7 +27,36 @@ function ChatPage() {
     selectChat,
     sendChatMessage,
     deleteChatMessage,
-  } = useChats('1'); // Replace '1' with actual current user ID from auth
+    startNewChat,
+  } = useChats(currentUserId);
+
+  useEffect(() => {
+    if (didAutoOpenRef.current) return;
+    if (!currentUserId) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const to = params.get('to');
+    const name = params.get('name') || 'User';
+    if (!to || !startNewChat) return;
+
+    didAutoOpenRef.current = true;
+
+    // Try to select existing chat with that user if present
+    const existing = (Array.isArray(chats) ? chats : []).find((c) => {
+      const u1 = c?.user1?.id || c?.user1?._id;
+      const u2 = c?.user2?.id || c?.user2?._id;
+      return String(u1) === String(to) || String(u2) === String(to);
+    });
+    if (existing) {
+      selectChat(existing);
+      return;
+    }
+
+    // Otherwise create a new chat
+    startNewChat({ id: to, name, image: {} }).then((created) => {
+      if (created) selectChat(created);
+    });
+  }, [chats, currentUserId, selectChat, startNewChat]);
 
   // Handle selecting a chat
   const handleSelectChat = (chat) => {
@@ -70,6 +102,7 @@ function ChatPage() {
           onSelectChat={handleSelectChat}
           loading={chatsLoading}
           refreshing={chatsRefreshing}
+          currentUserId={currentUserId || ''}
         />
       </div>
 
@@ -84,7 +117,7 @@ function ChatPage() {
           activeChat={activeChat}
           messages={messages}
           onSendMessage={handleSendMessage}
-          currentUserId="1" // Replace with actual current user ID from auth
+          currentUserId={currentUserId || ''}
           loading={messagesLoading}
           sending={sending}
           onBack={handleBack}

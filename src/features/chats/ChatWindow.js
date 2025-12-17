@@ -97,6 +97,23 @@ const ChatWindow = ({
     );
   }
 
+  const getParticipants = (chat) => {
+    const u1 = chat?.user1;
+    const u2 = chat?.user2;
+    const u1Id = u1?.id || u1?._id;
+    const u2Id = u2?.id || u2?._id;
+    if (!currentUserId) {
+      return { me: u1, other: u2 || u1 };
+    }
+    if (String(u1Id) === String(currentUserId)) return { me: u1, other: u2 || u1 };
+    if (String(u2Id) === String(currentUserId)) return { me: u2, other: u1 || u2 };
+    return { me: u1, other: u2 || u1 };
+  };
+
+  const { me, other } = getParticipants(activeChat);
+  const otherName = other?.name || 'User';
+  const meName = me?.name || 'Me';
+
   return (
     <div className="chat-window-container">
       {/* Header */}
@@ -107,10 +124,10 @@ const ChatWindow = ({
           </button>
         )}
         <div className="chat-window-avatar">
-          {getInitials(activeChat.user2.name)}
+          {getInitials(otherName)}
         </div>
         <div className="chat-window-user-info">
-          <h3>{activeChat.user2.name}</h3>
+          <h3>{otherName}</h3>
           <p>Active now</p>
         </div>
       </div>
@@ -153,8 +170,8 @@ const ChatWindow = ({
               >
                 <div className="message-avatar">
                   {isSent 
-                    ? getInitials(activeChat.user1.name)
-                    : getInitials(activeChat.user2.name)
+                    ? getInitials(meName)
+                    : getInitials(otherName)
                   }
                 </div>
                 <div className="message-bubble">

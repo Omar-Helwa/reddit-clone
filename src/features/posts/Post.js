@@ -2,14 +2,53 @@ import React, { useEffect, useMemo, useState } from 'react';
 import './Post.css';
 import postsAPI from '../../api/postsAPI';
 import { getJoinedCommunities, navigate } from '../../utils/helpers';
-import { getCurrentUser, isLoggedIn } from '../../utils/auth';
+import { getCurrentUser, getCurrentUserId, getUserToken, isLoggedIn } from '../../utils/auth';
 import { AWARD_CATALOG, addPostAward, getPostAwards } from '../../utils/awards';
+import { DEFAULT_COMMUNITY_ICON, DEFAULT_USER_ICON } from '../../utils/placeholders';
+import { getUser } from '../../api/usersApi';
+
+let voteEndpointsSupported = null; // null | true | false
+let scoreUpdateSupported = null; // null | true | false
+
+const CROSSPOSTED_ORIGINS_KEY = 'crosspostedOriginPostIds';
+
+function safeParseJson(value, fallback) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function getCrosspostedOriginIds() {
+  const raw = localStorage.getItem(CROSSPOSTED_ORIGINS_KEY);
+  const parsed = safeParseJson(raw, []);
+  return Array.isArray(parsed) ? parsed.map(String) : [];
+}
+
+function markOriginCrossposted(originPostId) {
+  if (!originPostId) return;
+  const existing = new Set(getCrosspostedOriginIds());
+  existing.add(String(originPostId));
+  localStorage.setItem(CROSSPOSTED_ORIGINS_KEY, JSON.stringify(Array.from(existing)));
+}
+
+function parseCrosspostOriginFromText(text) {
+  if (!text || typeof text !== 'string') return null;
+  const trimmed = text.trim();
+  if (!trimmed.toLowerCase().startsWith('crosspost of:')) return null;
+  // Expected prefix: "Crosspost of: /r/<community>/comments/<postId>"
+  const match = trimmed.match(/Crosspost of:\s*\/r\/([^\s/]+)\/comments\/([a-f\d]{24})/i);
+  if (!match) return null;
+  return { community: match[1], postId: match[2] };
+}
 
 const Post = ({ 
   postId, 
   communityKey,
   title, 
-  author, 
+  author,
+  authorId,
   subreddit, 
   timestamp, 
   score, 
@@ -28,10 +67,51 @@ const Post = ({
   const [crosspostError, setCrosspostError] = useState('');
   const [crossposting, setCrossposting] = useState(false);
   const [awards, setAwards] = useState({});
+  const [localVote, setLocalVote] = useState(null); // 'up' | 'down' | null
+  const [localScore, setLocalScore] = useState(Number(score) || 0);
+  const [resolvedAuthorName, setResolvedAuthorName] = useState(null);
 
-  const normalizedAuthor = (author || '').replace(/^u\//, '') || 'unknown';
+  const crosspostOriginInfo = useMemo(() => parseCrosspostOriginFromText(textBody), [textBody]);
+  const originPostId = crosspostOriginInfo?.postId || postId;
+  const isCrosspost = Boolean(crosspostOriginInfo);
+  const alreadyCrossposted = useMemo(() => {
+    const ids = getCrosspostedOriginIds();
+    return ids.includes(String(originPostId));
+  }, [originPostId]);
+
+  const derivedAuthorId = authorId || (typeof author === 'string' && /^[a-f\d]{24}$/i.test(author) ? author : null);
+  const normalizedAuthor = (resolvedAuthorName || author || '').replace(/^u\//, '') || 'unknown';
   const derivedCommunityKey = (communityKey || (typeof subreddit === 'string' ? subreddit : '') || 'general').replace(/^r\//, '') || 'general';
   const timestampLabel = useMemo(() => formatRelativeTime(timestamp), [timestamp]);
+
+  useEffect(() => {
+    setLocalScore(Number(score) || 0);
+  }, [score]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!derivedAuthorId) {
+      setResolvedAuthorName(null);
+      return undefined;
+    }
+    if (!/^[a-f\d]{24}$/i.test(String(derivedAuthorId))) return undefined;
+
+    (async () => {
+      try {
+        const u = await getUser(String(derivedAuthorId));
+        const name = u?.username;
+        if (!cancelled) setResolvedAuthorName(name || null);
+      } catch (e) {
+        if (!cancelled) setResolvedAuthorName(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [derivedAuthorId]);
+
+  const authorHref = derivedAuthorId ? `/user/${encodeURIComponent(String(derivedAuthorId))}` : null;
 
   const joinedTargets = useMemo(() => {
     const list = getJoinedCommunities();
@@ -49,10 +129,15 @@ const Post = ({
       setCrosspostTarget('');
       return;
     }
+    if (isCrosspost) {
+      setCrosspostError('This post is already a crosspost and cannot be crossposted again.');
+    } else if (alreadyCrossposted) {
+      setCrosspostError('This post has already been crossposted.');
+    }
     if (!crosspostTarget && joinedTargets.length > 0) {
       setCrosspostTarget(joinedTargets[0]);
     }
-  }, [shareOpen, joinedTargets, crosspostTarget]);
+  }, [shareOpen, joinedTargets, crosspostTarget, isCrosspost, alreadyCrossposted]);
 
   const handleOpenShare = () => {
     if (!isLoggedIn()) {
@@ -75,27 +160,53 @@ const Post = ({
     setCrossposting(true);
     setCrosspostError('');
 
-    const user = getCurrentUser();
-    const authorName = (user?.username || 'demo_user').replace(/^u\//, '');
-    const originalLink = `/r/${derivedCommunityKey}/comments/${postId}`;
+    if (isCrosspost) {
+      setCrosspostError('This post is already a crosspost and cannot be crossposted again.');
+      setCrossposting(false);
+      return;
+    }
 
+    if (alreadyCrossposted) {
+      setCrosspostError('This post has already been crossposted.');
+      setCrossposting(false);
+      return;
+    }
+
+    const userId = getCurrentUserId();
+    if (!userId) {
+      setCrosspostError('You must be logged in to crosspost.');
+      setCrossposting(false);
+      navigate('/login');
+      return;
+    }
+
+    const token = getUserToken();
+    if (!token) {
+      setCrosspostError('You are signed in without a token. Please log in again to crosspost.');
+      setCrossposting(false);
+      navigate('/login');
+      return;
+    }
+
+    const originalLink = `/r/${derivedCommunityKey}/comments/${originPostId}`;
+
+    // Backend validates allowed fields; do not send unknown fields like postId/author.
     const payload = {
-      postId: `${Date.now()}`,
       title: title?.trim() || 'Crosspost',
-      author: authorName,
-      subreddit: `r/${crosspostTarget}`,
+      userId,
+      subreddit: String(crosspostTarget).replace(/^r\//, ''),
       type: 'text',
       textBody: `Crosspost of: ${originalLink}${textBody ? `\n\n${textBody}` : ''}`,
       upvotes: 0,
       downvotes: 0,
       score: 0,
       commentCount: 0,
-      createdAt: new Date().toISOString(),
     };
 
     try {
       const created = await postsAPI.create(payload);
-      const newId = created?._id || created?.postId || payload.postId;
+      const newId = created?._id || created?.postId;
+      markOriginCrossposted(originPostId);
       setShareOpen(false);
       navigate(`/r/${crosspostTarget}/comments/${newId}`);
     } catch (err) {
@@ -120,16 +231,144 @@ const Post = ({
     <article className="post-card" data-post-id={postId}>
       <div className="vote-column" aria-label="Post voting">
         <button 
-          className="vote-button upvote-button" 
-          onClick={onUpvote}
+          className={`vote-button upvote-button ${localVote === 'up' ? 'active' : ''}`}
+          onClick={async () => {
+            if (onUpvote) return onUpvote();
+
+            if (!isLoggedIn() || !getUserToken()) {
+              navigate('/login');
+              return;
+            }
+            const prevVote = localVote;
+            const prevScore = localScore;
+            const nextVote = prevVote === 'up' ? null : 'up';
+            const delta = prevVote === 'up' ? -1 : (prevVote === 'down' ? 2 : 1);
+            const optimisticScore = prevScore + delta;
+            setLocalVote(nextVote);
+            setLocalScore(optimisticScore);
+
+            if (voteEndpointsSupported === false) {
+              if (scoreUpdateSupported === false) return;
+              try {
+                const updated = await postsAPI.update(postId, { score: optimisticScore });
+                scoreUpdateSupported = true;
+                const nextScore = Number(updated?.score);
+                if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
+              } catch (err) {
+                const msg = String(err?.message || '');
+                if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
+                  scoreUpdateSupported = false;
+                  return;
+                }
+                setLocalVote(prevVote);
+                setLocalScore(prevScore);
+              }
+              return;
+            }
+
+            try {
+              const updated = await postsAPI.upvote(postId);
+              voteEndpointsSupported = true;
+              const nextScore = Number(updated?.score);
+              if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
+              setLocalVote('up');
+            } catch (e) {
+              const msg = String(e?.message || '');
+              if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
+                voteEndpointsSupported = false;
+                if (scoreUpdateSupported === false) return;
+                try {
+                  const updated = await postsAPI.update(postId, { score: optimisticScore });
+                  scoreUpdateSupported = true;
+                  const nextScore = Number(updated?.score);
+                  if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
+                } catch (err) {
+                  const msg2 = String(err?.message || '');
+                  if (/status:\s*404/i.test(msg2) || /\b404\b/.test(msg2)) {
+                    scoreUpdateSupported = false;
+                    return;
+                  }
+                  setLocalVote(prevVote);
+                  setLocalScore(prevScore);
+                }
+              } else {
+                setLocalVote(prevVote);
+                setLocalScore(prevScore);
+              }
+            }
+          }}
           aria-label="Upvote"
         >
           ▲
         </button>
-        <div className="vote-score">{score}</div>
+        <div className={`vote-score ${localVote === 'up' ? 'upvoted' : localVote === 'down' ? 'downvoted' : ''}`}>{localScore}</div>
         <button 
-          className="vote-button downvote-button" 
-          onClick={onDownvote}
+          className={`vote-button downvote-button ${localVote === 'down' ? 'active' : ''}`}
+          onClick={async () => {
+            if (onDownvote) return onDownvote();
+
+            if (!isLoggedIn() || !getUserToken()) {
+              navigate('/login');
+              return;
+            }
+            const prevVote = localVote;
+            const prevScore = localScore;
+            const nextVote = prevVote === 'down' ? null : 'down';
+            const delta = prevVote === 'down' ? 1 : (prevVote === 'up' ? -2 : -1);
+            const optimisticScore = prevScore + delta;
+            setLocalVote(nextVote);
+            setLocalScore(optimisticScore);
+
+            if (voteEndpointsSupported === false) {
+              if (scoreUpdateSupported === false) return;
+              try {
+                const updated = await postsAPI.update(postId, { score: optimisticScore });
+                scoreUpdateSupported = true;
+                const nextScore = Number(updated?.score);
+                if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
+              } catch (err) {
+                const msg = String(err?.message || '');
+                if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
+                  scoreUpdateSupported = false;
+                  return;
+                }
+                setLocalVote(prevVote);
+                setLocalScore(prevScore);
+              }
+              return;
+            }
+
+            try {
+              const updated = await postsAPI.downvote(postId);
+              voteEndpointsSupported = true;
+              const nextScore = Number(updated?.score);
+              if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
+              setLocalVote('down');
+            } catch (e) {
+              const msg = String(e?.message || '');
+              if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
+                voteEndpointsSupported = false;
+                if (scoreUpdateSupported === false) return;
+                try {
+                  const updated = await postsAPI.update(postId, { score: optimisticScore });
+                  scoreUpdateSupported = true;
+                  const nextScore = Number(updated?.score);
+                  if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
+                } catch (err) {
+                  const msg2 = String(err?.message || '');
+                  if (/status:\s*404/i.test(msg2) || /\b404\b/.test(msg2)) {
+                    scoreUpdateSupported = false;
+                    return;
+                  }
+                  setLocalVote(prevVote);
+                  setLocalScore(prevScore);
+                }
+              } else {
+                setLocalVote(prevVote);
+                setLocalScore(prevScore);
+              }
+            }
+          }}
           aria-label="Downvote"
         >
           ▼
@@ -145,6 +384,7 @@ const Post = ({
                 src={subredditIcon} 
                 alt={subreddit} 
                 className="subreddit-icon"
+                onError={(e) => { e.currentTarget.src = DEFAULT_COMMUNITY_ICON; }}
               />
             )}
             {onSubredditClick ? (
@@ -158,7 +398,20 @@ const Post = ({
               <span className="subreddit-name">{subreddit}</span>
             )}
             <span className="separator">•</span>
-            <span className="post-meta">Posted by u/{normalizedAuthor}</span>
+            {authorHref ? (
+              <span className="post-meta">
+                Posted by{' '}
+                <button
+                  type="button"
+                  className="post-author-link"
+                  onClick={() => navigate(authorHref)}
+                >
+                  u/{normalizedAuthor}
+                </button>
+              </span>
+            ) : (
+              <span className="post-meta">Posted by u/{normalizedAuthor}</span>
+            )}
             <span className="separator">•</span>
             <span className="post-timestamp">{timestampLabel}</span>
           </div>
@@ -254,7 +507,7 @@ const Post = ({
                   className="post-overlay-select"
                   value={crosspostTarget}
                   onChange={(e) => setCrosspostTarget(e.target.value)}
-                  disabled={crossposting}
+                  disabled={crossposting || isCrosspost || alreadyCrossposted}
                 >
                   {joinedTargets.map((name) => (
                     <option key={name} value={name}>r/{name}</option>
@@ -267,7 +520,7 @@ const Post = ({
                   <button className="post-overlay-btn secondary" type="button" onClick={() => setShareOpen(false)} disabled={crossposting}>
                     Cancel
                   </button>
-                  <button className="post-overlay-btn" type="button" onClick={handleConfirmCrosspost} disabled={crossposting}>
+                  <button className="post-overlay-btn" type="button" onClick={handleConfirmCrosspost} disabled={crossposting || isCrosspost || alreadyCrossposted}>
                     {crossposting ? 'Crossposting…' : 'Crosspost'}
                   </button>
                 </div>

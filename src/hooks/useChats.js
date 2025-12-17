@@ -184,6 +184,15 @@ const useChats = (userId = null) => {
           )
         )
       );
+
+      setActiveChat((prev) => {
+        if (!prev || prev._id !== activeChat._id) return prev;
+        return {
+          ...prev,
+          lastMessage: content.trim() || (attachments.length ? '📎 Attachment' : ''),
+          updatedAt: new Date().toISOString(),
+        };
+      });
       
       return response;
     } catch (err) {

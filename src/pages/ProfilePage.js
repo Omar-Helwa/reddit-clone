@@ -68,6 +68,9 @@ function ProfilePage({ onNavigate }) {
     return <div className="profile-page"><div className="error">Please log in to view your profile</div></div>;
   }
 
+  const currentUserId = getCurrentUserId();
+  const isOwnProfile = currentUserId && user?._id && String(currentUserId) === String(user._id);
+
   return (
     <div className="profile-page">
       {/* Banner */}
@@ -85,9 +88,18 @@ function ProfilePage({ onNavigate }) {
             <p className="profile-bio">{user.bio}</p>
           </div>
           <div className="profile-actions">
-            <button className="btn-new-post" onClick={() => onNavigate('create-post', '/r/general/submit')}>
-              New Post
-            </button>
+            {isOwnProfile ? (
+              <button className="btn-new-post" onClick={() => onNavigate('create-post', '/r/general/submit')}>
+                New Post
+              </button>
+            ) : (
+              <button
+                className="btn-new-post"
+                onClick={() => onNavigate('chat', `/chat?to=${encodeURIComponent(user._id)}&name=${encodeURIComponent(user.username || '')}`)}
+              >
+                New Message
+              </button>
+            )}
             <button className="btn-edit-profile" onClick={() => onNavigate('settings', '/settings')}>
               Edit Profile
             </button>
