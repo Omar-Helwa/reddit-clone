@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { fetchChats, fetchChatMessages, sendMessage, createChat, deleteMessage as apiDeleteMessage } from '../api/chatsApi';
+import { fetchChats, fetchChatsForUser, fetchChatMessages, sendMessage, createChat, deleteMessage as apiDeleteMessage } from '../api/chatsApi';
 import { addNotification } from '../utils/notifications';
 
 /**
@@ -40,7 +40,9 @@ const useChats = (userId = null) => {
     else setChatsRefreshing(true);
     setError(null);
     try {
-      const data = await fetchChats();
+      const data = userId ? await fetchChatsForUser(userId) : await fetchChats();
+      console.log('📥 Loaded chats:', data);
+      console.log('📊 Chats count:', Array.isArray(data) ? data.length : 'NOT AN ARRAY');
       setChats(sortChats(data));
     } catch (err) {
       setError(err.message || 'Failed to load chats');
@@ -49,7 +51,7 @@ const useChats = (userId = null) => {
       setChatsLoading(false);
       setChatsRefreshing(false);
     }
-  }, [chats.length, sortChats]);
+  }, [chats.length, sortChats, userId]);
 
   /**
    * Load messages for a specific chat
@@ -164,11 +166,15 @@ const useChats = (userId = null) => {
       
       const response = await sendMessage(activeChat._id, messageData);
       
-      // Update messages list
-      setMessages((prev) => [...prev, response]);
-
-      // Track last seen so we don't notify on our own message during the next poll.
-      if (response?._id) lastSeenMessageIdRef.current = response._id;
+      // Update messages list with the returned message
+      if (response) {
+        setMessages((prev) => [...prev, response]);
+        // Track last seen so we don't notify on our own message during the next poll.
+        if (response?._id) lastSeenMessageIdRef.current = response._id;
+      } else {
+        // If backend doesn't return the message, refetch to update UI
+        await loadMessages(activeChat._id, { background: true });
+      }
       
       // Update chat's last message in the chats list
       setChats((prev) =>

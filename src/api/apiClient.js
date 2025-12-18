@@ -1,3 +1,34 @@
+import { apiFetch } from './shared';
+
+const apiClient = {
+	get: (endpoint) => apiFetch(endpoint),
+
+	post: (endpoint, data) =>
+		apiFetch(endpoint, {
+			method: 'POST',
+			body: JSON.stringify(data ?? {}),
+		}),
+
+	patch: (endpoint, data) =>
+		apiFetch(endpoint, {
+			method: 'PATCH',
+			body: JSON.stringify(data ?? {}),
+		}),
+
+	put: (endpoint, data) =>
+		apiFetch(endpoint, {
+			method: 'PUT',
+			body: JSON.stringify(data ?? {}),
+		}),
+
+	delete: (endpoint) =>
+		apiFetch(endpoint, {
+			method: 'DELETE',
+		}),
+};
+
+export default apiClient;
+
 // // API client for Reddit Clone backend
 // // Use empty string to leverage CRA proxy (configured in package.json)
 // // The proxy forwards requests to http://98.66.152.246 to avoid CORS issues

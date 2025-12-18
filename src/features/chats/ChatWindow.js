@@ -157,7 +157,7 @@ const ChatWindow = ({
           </div>
         ) : (
           messages.map((message, index) => {
-            const isSent = message.userId === currentUserId;
+            const isSent = String(message.userId) === String(currentUserId);
             const replyMsg = message.replyTo ? messages.find(m => m._id === message.replyTo) : null;
             return (
               <div
