@@ -89,7 +89,7 @@ function ProfilePage({ onNavigate }) {
           </div>
           <div className="profile-actions">
             {isOwnProfile ? (
-              <button className="btn-new-post" onClick={() => onNavigate('create-post', '/r/general/submit')}>
+              <button className="btn-new-post" onClick={() => onNavigate('create-post', '/submit')}>
                 New Post
               </button>
             ) : (
@@ -100,6 +100,18 @@ function ProfilePage({ onNavigate }) {
                 New Message
               </button>
             )}
+div className="profile-avatar-section">
+            <div className="profile-avatar-large">{user.avatar}</div>
+          </div>
+          <div className="profile-info">
+            <h1 className="profile-username">{user.username}</h1>
+            <p className="profile-full-username">{user.fullUsername}</p>
+            <p className="profile-bio">{user.bio}</p>
+          </div>
+          <div className="profile-actions">
+            <button className="btn-new-post" onClick={() => onNavigate('create-post', '/submit')}>
+              New Post
+            </button>
             <button className="btn-edit-profile" onClick={() => onNavigate('settings', '/settings')}>
               Edit Profile
             </button>

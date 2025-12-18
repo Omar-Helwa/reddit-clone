@@ -37,7 +37,7 @@ function CommunityPage() {
     if (match) {
       setCommunityName(match[1]);
     } else {
-      setCommunityName('general');
+      setCommunityName('');
     }
   }, []);
 

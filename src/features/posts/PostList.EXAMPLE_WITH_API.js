@@ -35,12 +35,14 @@ const PostList = () => {
   };
 
   const handleCommentClick = (post) => {
-    const slug = post.subreddit?.replace(/^r\//, '') || 'general';
+    const slug = post.subreddit?.replace(/^r\//, '');
+    if (!slug) return;
     navigate(`/community/${slug}/post/${post.postId}`);
   };
 
   const handlePostClick = (post) => {
-    const slug = post.subreddit?.replace(/^r\//, '') || 'general';
+    const slug = post.subreddit?.replace(/^r\//, '');
+    if (!slug) return;
     navigate(`/community/${slug}/post/${post.postId}`);
   };
 

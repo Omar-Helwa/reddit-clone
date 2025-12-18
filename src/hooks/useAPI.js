@@ -59,7 +59,7 @@ export function usePosts() {
         uniqueKey: post._id,
         title: post.title,
         author: post.author,
-        subreddit: post.community || 'r/general',
+        subreddit: post.community || '',
         timestamp: post.createdAt,
         score: (post.upvotes || 0) - (post.downvotes || 0),
         commentCount: post.comments?.length || 0,

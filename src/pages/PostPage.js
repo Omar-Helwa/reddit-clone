@@ -29,53 +29,46 @@ function PostPage() {
     if (search && /comment=1/.test(search)) {
       setFocusComment(true);
     }
+
   }, []);
 
-  const totalPollVotes = useMemo(() => {
-    if (!post?.pollOptions) return 0;
-    return post.pollOptions.reduce((sum, opt) => sum + (opt.votes || 0), 0);
-  }, [post]);
-
   const handleSubmitNewComment = async (text) => {
-    if (!text?.trim()) {
-      alert('Comment cannot be empty');
-      return;
-    }
+    const trimmed = String(text || '').trim();
+    if (!trimmed) return;
 
     const userId = getCurrentUserId();
-    const user = getCurrentUser();
     if (!userId) {
-      alert('You must be logged in to comment');
+      navigate('/login');
       return;
     }
 
     try {
-      await createComment(post._id || post.postId, {
-        userId: userId,
-        text: text.trim(),
+      await createComment(post?._id || post?.postId || postId, {
+        userId,
+        text: trimmed,
         parentCommentId: null,
       });
-      console.log('Comment created, refetching comments...');
       refetchComments();
     } catch (err) {
-      console.error('Comment error:', err);
-      alert('Failed to create comment: ' + err.message);
+      console.error('Create comment error:', err);
+      alert('Failed to create comment: ' + (err?.message || 'Unknown error'));
     }
   };
 
   const handleSubmitReply = async (parentCommentId, text) => {
-    if (!text?.trim()) return;
+    const trimmed = String(text || '').trim();
+    if (!trimmed) return;
 
     const userId = getCurrentUserId();
     if (!userId) {
-      alert('You must be logged in to reply');
+      navigate('/login');
       return;
     }
 
     try {
-      await createComment(post._id || post.postId, {
+      await createComment(post?._id || post?.postId || postId, {
         userId,
-        text: text.trim(),
+        text: trimmed,
         parentCommentId: parentCommentId || null,
       });
       refetchComments();
@@ -88,6 +81,11 @@ function PostPage() {
   const handleVote = () => {
     alert('Poll voting is not yet connected to the API.');
   };
+
+  const totalPollVotes = useMemo(() => {
+    const opts = Array.isArray(post?.pollOptions) ? post.pollOptions : [];
+    return opts.reduce((sum, opt) => sum + (Number(opt?.votes) || 0), 0);
+  }, [post]);
 
   const handleSummarize = async () => {
     if (!post) return;
@@ -142,7 +140,7 @@ function PostPage() {
         <article className="post-card-full">
           <Post
             postId={post.postId || post._id}
-            communityKey={(post.subredditKey || communityName || 'general').replace(/^r\//, '')}
+            communityKey={(post.subredditKey || communityName || '').replace(/^r\//, '')}
             title={post.title}
             author={post.author}
               authorId={post.authorId || post.userId}
@@ -158,8 +156,8 @@ function PostPage() {
               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }}
             onSubredditClick={() => {
-              const slug = (post.subredditKey || communityName || '').replace(/^r\//, '') || 'general';
-              navigate(`/r/${slug}`);
+              const slug = (post.subredditKey || communityName || '').replace(/^r\//, '');
+              if (slug) navigate(`/r/${slug}`);
             }}
           />
           {post.type === 'text' && post.textBody && (

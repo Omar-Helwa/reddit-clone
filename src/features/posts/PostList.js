@@ -27,14 +27,15 @@ const PostList = () => {
       case 'NEW':
         return [...list].sort((a, b) => getTimestampMs(b) - getTimestampMs(a));
       case 'TOP':
-        return [...list].sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0) || getTimestampMs(b) - getTimestampMs(a));
+        return [...list].sort(
+          (a, b) => (Number(b.score) || 0) - (Number(a.score) || 0) || getTimestampMs(b) - getTimestampMs(a)
+        );
       case 'RISING':
         return [...list].sort((a, b) => hotRank(b, 1.15) - hotRank(a, 1.15) || getTimestampMs(b) - getTimestampMs(a));
       case 'HOT':
         return [...list].sort((a, b) => hotRank(b, 1.5) - hotRank(a, 1.5) || getTimestampMs(b) - getTimestampMs(a));
       case 'BEST':
       default:
-        // Slight recency bias, less aggressive than HOT
         return [...list].sort((a, b) => hotRank(b, 1.35) - hotRank(a, 1.35) || getTimestampMs(b) - getTimestampMs(a));
     }
   };
@@ -42,12 +43,14 @@ const PostList = () => {
   const sortedPosts = useMemo(() => sortPosts(posts, sortBy), [posts, sortBy]);
 
   const handleCommentClick = (post) => {
-    const slug = post.subreddit?.replace(/^r\//, '') || 'general';
+    const slug = (post?.subreddit || '').replace(/^r\//, '');
+    if (!slug) return;
     navigate(`/r/${slug}/comments/${post.postId}?comment=1`);
   };
 
   const handleSubredditClick = (subreddit) => {
-    const slug = subreddit.replace(/^r\//, '');
+    const slug = String(subreddit || '').replace(/^r\//, '');
+    if (!slug) return;
     navigate(`/r/${slug}`);
   };
 
@@ -66,10 +69,9 @@ const PostList = () => {
 
   return (
     <div className="post-list-container">
-      {/* Sort Controls */}
       <div className="sort-controls">
         <label htmlFor="sort-select">Sort by:</label>
-        <select 
+        <select
           id="sort-select"
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
@@ -83,35 +85,34 @@ const PostList = () => {
         </select>
       </div>
 
-      {/* Posts List */}
       <div className="post-list">
         {sortedPosts.length > 0 ? (
           sortedPosts.map((post) => {
-            const subreddit = post.subreddit || 'r/general';
-            const communityKey = subreddit.replace(/^r\//, '') || 'general';
-            const timestamp = post.createdAt || post.timestamp;
+            const subreddit = post?.subreddit || '';
+            const communityKey = subreddit.replace(/^r\//, '');
+            const timestamp = post?.createdAt || post?.timestamp;
             return (
               <Post
-                key={post.uniqueKey}
-                postId={post.postId}
+                key={post?.uniqueKey || post?.postId}
+                postId={post?.postId}
                 communityKey={communityKey}
-                title={post.title}
-                author={post.author}
-                  authorId={post.authorId}
+                title={post?.title}
+                author={post?.author}
+                authorId={post?.authorId}
                 subreddit={subreddit}
                 timestamp={timestamp}
-                score={post.score}
-                commentCount={post.commentCount}
-                textBody={post.textBody}
-                authorIcon={post.authorIcon}
-                subredditIcon={post.subredditIcon}
+                score={post?.score}
+                commentCount={post?.commentCount}
+                textBody={post?.textBody}
+                authorIcon={post?.authorIcon}
+                subredditIcon={post?.subredditIcon}
                 onCommentClick={() => handleCommentClick(post)}
-                onSubredditClick={() => handleSubredditClick(post.subreddit)}
+                onSubredditClick={() => handleSubredditClick(subreddit)}
               />
             );
           })
         ) : (
-          <div className="no-posts">No posts found</div>
+          <div className="no-posts">No posts yet.</div>
         )}
       </div>
     </div>

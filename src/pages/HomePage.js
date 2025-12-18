@@ -26,7 +26,7 @@ function HomePage() {
   const recentPosts = useMemo(() => {
     const list = Array.isArray(posts) ? posts : [];
     return [...list]
-      .filter(p => p && p.title)
+      .filter(p => p && p.title && p.subreddit)
       .sort((a, b) => {
         const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -34,7 +34,7 @@ function HomePage() {
       })
       .slice(0, 5)
       .map(p => {
-        const subreddit = p.subreddit || 'r/general';
+        const subreddit = p.subreddit;
         const slug = subreddit.startsWith('r/') ? subreddit.slice(2) : subreddit;
         return {
           id: p.postId,
@@ -91,7 +91,12 @@ function HomePage() {
               <div className="recent-post-item">No recent posts yet</div>
             )}
             {!loading && !error && recentPosts.map((post) => (
-              <div key={post.id || post.title} className="recent-post-item" role="button" onClick={() => navigate(post.path)}>
+              <div
+                key={post.id || post.title}
+                className="recent-post-item"
+                role="button"
+                onClick={() => navigate(post.path)}
+              >
                 <div className="recent-post-dot" aria-hidden="true" />
                 <div className="recent-post-body">
                   <div className="recent-post-title">{post.title}</div>

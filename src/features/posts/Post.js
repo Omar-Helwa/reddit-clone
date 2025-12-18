@@ -81,7 +81,7 @@ const Post = ({
 
   const derivedAuthorId = authorId || (typeof author === 'string' && /^[a-f\d]{24}$/i.test(author) ? author : null);
   const normalizedAuthor = (resolvedAuthorName || author || '').replace(/^u\//, '') || 'unknown';
-  const derivedCommunityKey = (communityKey || (typeof subreddit === 'string' ? subreddit : '') || 'general').replace(/^r\//, '') || 'general';
+  const derivedCommunityKey = (communityKey || (typeof subreddit === 'string' ? subreddit : '') || 'unknown').replace(/^r\//, '') || 'unknown';
   const timestampLabel = useMemo(() => formatRelativeTime(timestamp), [timestamp]);
 
   useEffect(() => {

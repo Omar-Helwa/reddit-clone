@@ -212,14 +212,14 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
       }
     };
     
-    const indentPx = depthValue * COMMENT_INDENT_STEP;
+    const indentPx = depth * COMMENT_INDENT_STEP;
     const commentStyle = { marginLeft: `${indentPx}px` };
     const avatarSrc = comment.avatar || comment.userAvatar || comment.authorIcon || DEFAULT_USER_ICON;
 
     return (
-      <div key={commentId} className="comment" style={commentStyle} data-depth={depthValue}>
+      <div key={commentId} className="comment" style={commentStyle} data-depth={depth}>
         <div className="comment-thread" aria-hidden="true">
-          {depthValue > 0 && <span className="comment-thread-line" />}
+          {depth > 0 && <span className="comment-thread-line" />}
           <span className="comment-thread-node">
             <span className="comment-thread-dot" />
           </span>

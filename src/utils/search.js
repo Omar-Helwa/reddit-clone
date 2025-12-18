@@ -62,14 +62,20 @@ export async function searchPosts(query, limit = 15) {
         const content = (post.textBody || post.content || '').toLowerCase();
         return title.includes(lowerQuery) || content.includes(lowerQuery);
       })
-      .map(post => ({
-        id: post.postId || post._id,
-        type: 'post',
-        title: post.title,
-        subtitle: `${post.subreddit || 'r/general'} • ${post.commentCount || 0} comments`,
-        avatar: post.subredditIcon,
-        link: `/r/${(post.subreddit || 'general').startsWith('r/') ? (post.subreddit || 'general').slice(2) : (post.subreddit || 'general')}/comments/${post.postId || post._id}`,
-      }))
+      .map(post => {
+        const subreddit = post.subreddit;
+        if (!subreddit) return null;
+        const slug = subreddit.startsWith('r/') ? subreddit.slice(2) : subreddit;
+        return {
+          id: post.postId || post._id,
+          type: 'post',
+          title: post.title,
+          subtitle: `${subreddit} • ${post.commentCount || 0} comments`,
+          avatar: post.subredditIcon,
+          link: `/r/${slug}/comments/${post.postId || post._id}`,
+        };
+      })
+      .filter(Boolean)
       .slice(0, limit);
   } catch (error) {
     console.error('Post search failed:', error);

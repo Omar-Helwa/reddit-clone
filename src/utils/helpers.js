@@ -8,7 +8,7 @@ export const getJoinedCommunities = () => {
 		return list
 			.map((c) => (c == null ? '' : String(c)))
 			.map((c) => c.replace(/^r\//, '').trim())
-			.filter((c) => c && c !== 'undefined' && c !== 'null');
+			.filter((c) => c && c !== 'undefined' && c !== 'null' && c !== 'general');
 	} catch (e) {
 		return [];
 	}
@@ -16,7 +16,7 @@ export const getJoinedCommunities = () => {
 
 export const isJoined = (communityName) => {
 	const slug = (communityName == null ? '' : String(communityName)).replace(/^r\//, '').trim();
-	if (!slug || slug === 'undefined' || slug === 'null') return false;
+	if (!slug || slug === 'undefined' || slug === 'null' || slug === 'general') return false;
 	const list = getJoinedCommunities();
 	return list.includes(slug);
 };
@@ -24,7 +24,7 @@ export const isJoined = (communityName) => {
 export const joinCommunity = (communityName) => {
 	try {
 		const slug = (communityName == null ? '' : String(communityName)).replace(/^r\//, '').trim();
-		if (!slug || slug === 'undefined' || slug === 'null') return;
+		if (!slug || slug === 'undefined' || slug === 'null' || slug === 'general') return;
 		const list = getJoinedCommunities();
 		if (!list.includes(slug)) {
 			const updated = [...list, slug];

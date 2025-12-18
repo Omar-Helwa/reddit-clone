@@ -47,7 +47,8 @@ const PostList = () => {
   };
 
   const handleCommentClick = (post) => {
-    const slug = post.subreddit?.replace(/^r\//, '') || 'general';
+    const slug = post.subreddit?.replace(/^r\//, '');
+    if (!slug) return;
     window.location.href = `/community/${slug}/post/${post.postId}`;
   };
 

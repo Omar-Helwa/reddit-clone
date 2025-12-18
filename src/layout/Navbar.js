@@ -219,7 +219,7 @@ function AppNavbar({ onNavigate }) {
           </button>
           <button 
             className="navbar-icon-btn" 
-            onClick={() => handleNavClick('create-post', '/r/general/submit')}
+            onClick={() => handleNavClick('create-post', '/submit')}
             title="Create Post"
             aria-label="Create Post"
           >
@@ -331,7 +331,7 @@ function AppNavbar({ onNavigate }) {
                       <span className="dropdown-icon">👤</span>
                       <span>Profile</span>
                     </button>
-                    <button className="dropdown-item" onClick={() => handleNavClick('create-post', '/r/general/submit')}>
+                    <button className="dropdown-item" onClick={() => handleNavClick('create-post', '/submit')}>
                       <span className="dropdown-icon">➕</span>
                       <span>Create Post</span>
                     </button>

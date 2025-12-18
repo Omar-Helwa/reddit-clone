@@ -26,6 +26,36 @@ function CreatePostPage() {
 
   const { communities: communityList, loading: communitiesLoading } = useCommunities(200);
 
+  const normalizeCommunityName = (value) => (value || '').replace(/^r\//, '').trim();
+
+  const joinedSet = useMemo(() => {
+    const list = (joinedCommunities || []).map(normalizeCommunityName);
+    return new Set(list.filter((c) => c && c !== 'general'));
+  }, [joinedCommunities]);
+
+  const dbJoinedCommunities = useMemo(() => {
+    const list = Array.isArray(communityList) ? communityList : [];
+    if (list.length === 0) return [];
+    return list.filter((c) => {
+      const name = normalizeCommunityName(c?.name);
+      const displayName = normalizeCommunityName(c?.displayName);
+      return (name && joinedSet.has(name)) || (displayName && joinedSet.has(displayName));
+    });
+  }, [communityList, joinedSet]);
+
+  const isCommunityAllowed = useMemo(() => {
+    const allowed = new Set(
+      dbJoinedCommunities
+        .map((c) => normalizeCommunityName(c?.name || c?.displayName))
+        .filter(Boolean)
+    );
+    return (slug) => {
+      const s = normalizeCommunityName(slug);
+      if (!s || s === 'general') return false;
+      return allowed.has(s);
+    };
+  }, [dbJoinedCommunities]);
+
   useEffect(() => {
     const path = window.location.pathname;
     const match = path.match(/\/r\/(.+?)\/submit/);
@@ -34,18 +64,28 @@ function CreatePostPage() {
     const joined = getJoinedCommunities();
     setJoinedCommunities(joined);
 
-    if (name && name !== 'general') {
-      setCommunityName(name);
-      setCanPost(isJoined(name));
+    const normalized = normalizeCommunityName(name);
+    if (normalized && normalized !== 'general' && isJoined(normalized)) {
+      setCommunityName(normalized);
+      setCanPost(true);
       setShowCommunitySelector(false);
-    } else {
+      return;
+    }
+
+    setShowCommunitySelector(true);
+    setCommunityName('');
+    setCanPost(false);
+  }, []);
+
+  useEffect(() => {
+    if (!communityName) return;
+    if (communitiesLoading) return;
+    if (!isCommunityAllowed(communityName)) {
       setShowCommunitySelector(true);
       setCommunityName('');
       setCanPost(false);
     }
-  }, []);
-
-  const normalizeCommunityName = (value) => (value || '').replace(/^r\//, '');
+  }, [communityName, communitiesLoading, isCommunityAllowed]);
 
   const remaining = useMemo(() => Math.max(0, 300 - title.length), [title]);
 
@@ -74,23 +114,25 @@ function CreatePostPage() {
   };
 
   const handleSelectCommunity = (community) => {
-    setCommunityName(community);
+    const normalized = normalizeCommunityName(community);
+    if (!isCommunityAllowed(normalized)) {
+      setError('Please choose a community you have already joined.');
+      return;
+    }
+    setError('');
+    setCommunityName(normalized);
     setCanPost(true);
     setShowCommunitySelector(false);
     setSearchTerm('');
   };
 
-  const filteredCommunities = (() => {
-    const joinedSet = new Set((joinedCommunities || []).map(normalizeCommunityName));
-    const base = communityList.length > 0
-      ? communityList.filter((c) => joinedSet.has(normalizeCommunityName(c.name)) || joinedSet.has(normalizeCommunityName(c.displayName)))
-      : joinedCommunities.map((name) => ({ name }));
-
+  const filteredCommunities = useMemo(() => {
+    const base = dbJoinedCommunities;
     return base.filter((comm) => {
       const value = (comm.name || comm.displayName || '').toLowerCase();
       return value.includes(searchTerm.toLowerCase());
     });
-  })();
+  }, [dbJoinedCommunities, searchTerm]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -137,6 +179,17 @@ function CreatePostPage() {
     if (!token) {
       setError('You are signed in without a token. Please log in again to create posts.');
       navigate('/login');
+      return;
+    }
+
+    if (!communityName || normalizeCommunityName(communityName) === 'general') {
+      setError('You must choose a community.');
+      setShowCommunitySelector(true);
+      return;
+    }
+    if (!isCommunityAllowed(communityName)) {
+      setError('Please choose a community you have already joined.');
+      setShowCommunitySelector(true);
       return;
     }
 
@@ -217,7 +270,7 @@ function CreatePostPage() {
       const newPost = await createPost(payload);
       console.log('Created post response:', newPost);
       
-      navigate(`/r/${communityName}/comments/${newPost.postId}`);
+      navigate(`/r/${subredditValue}/comments/${newPost.postId}`);
     } catch (err) {
       console.error('Create post failed:', err);
       setError(err.message || 'Failed to create post. Please try again.');
@@ -249,6 +302,11 @@ function CreatePostPage() {
               ) : joinedCommunities.length === 0 ? (
                 <div className="no-communities">
                   <p>You haven’t joined any communities yet.</p>
+                  <button type="button" className="post-btn" onClick={() => navigate('/explore')}>Explore communities</button>
+                </div>
+              ) : dbJoinedCommunities.length === 0 ? (
+                <div className="no-communities">
+                  <p>You haven’t joined any communities that exist in the database yet.</p>
                   <button type="button" className="post-btn" onClick={() => navigate('/explore')}>Explore communities</button>
                 </div>
               ) : filteredCommunities.length > 0 ? (
