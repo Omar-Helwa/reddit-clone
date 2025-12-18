@@ -28,7 +28,7 @@ const SortDropdown = ({ onSortChange, currentSort = 'BEST' }) => {
         aria-expanded={isOpen}
       >
         <span className="sort-label">{currentLabel}</span>
-        <span className="sort-icon">⬇</span>
+        <span className="sort-icon">▼</span>
       </button>
 
       {isOpen && (

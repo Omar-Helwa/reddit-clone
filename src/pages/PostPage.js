@@ -5,7 +5,7 @@ import Post from '../features/posts/Post';
 import { navigate } from '../utils/helpers';
 import { usePost } from '../hooks/usePosts';
 import { useComments, useCreateComment } from '../hooks/useComments';
-import { getCurrentUserId, getCurrentUser } from '../utils/auth';
+import { getCurrentUserId } from '../utils/auth';
 import { summarizePost, isGeminiAvailable } from '../utils/gemini';
 
 function PostPage() {
@@ -16,7 +16,7 @@ function PostPage() {
   const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const { post, loading, error, refetch } = usePost(postId);
   const { comments, loading: commentsLoading, error: commentsError, refetch: refetchComments } = useComments(post?._id || post?.postId);
-  const { createComment, loading: creatingComment, error: createCommentError } = useCreateComment();
+  const { createComment } = useCreateComment();
 
   useEffect(() => {
     const path = window.location.pathname; // /r/:name/comments/:postId

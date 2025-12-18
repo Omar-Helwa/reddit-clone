@@ -3,7 +3,7 @@
  * Transforms MongoDB data to component-ready format
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import postsAPI from '../api/postsAPI';
 
 /**
@@ -95,7 +95,7 @@ export function usePostsBySubreddit(subreddit) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     if (!subreddit) {
       setPosts([]);
       setLoading(false);
@@ -117,11 +117,11 @@ export function usePostsBySubreddit(subreddit) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [subreddit]);
 
   useEffect(() => {
     fetchPosts();
-  }, [subreddit]);
+  }, [fetchPosts]);
 
   return {
     posts,
@@ -141,7 +141,7 @@ export function usePost(postId) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchPost = async () => {
+  const fetchPost = useCallback(async () => {
     if (!postId) {
       setLoading(false);
       return;
@@ -161,11 +161,11 @@ export function usePost(postId) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [postId]);
 
   useEffect(() => {
     fetchPost();
-  }, [postId]);
+  }, [fetchPost]);
 
   return {
     post,

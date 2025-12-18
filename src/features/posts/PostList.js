@@ -1,11 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import Post from './Post';
 import './PostList.css';
 import { navigate } from '../../utils/helpers';
 import { usePosts } from '../../hooks/usePosts';
 
-const PostList = () => {
-  const [sortBy, setSortBy] = useState('BEST');
+const PostList = ({ sortBy = 'BEST' }) => {
   const { posts, loading, error, refetch } = usePosts();
 
   const getTimestampMs = (post) => {
@@ -14,16 +13,16 @@ const PostList = () => {
     return Number.isNaN(ms) ? 0 : ms;
   };
 
-  const hotRank = (post, exponent = 1.5) => {
-    const score = Number(post?.score) || 0;
-    const ts = getTimestampMs(post);
-    const hoursSince = Math.max(0, (Date.now() - ts) / 3600000);
-    return score / Math.pow(hoursSince + 2, exponent);
-  };
+  const sortedPosts = useMemo(() => {
+    const hotRank = (post, exponent = 1.5) => {
+      const score = Number(post?.score) || 0;
+      const ts = getTimestampMs(post);
+      const hoursSince = Math.max(0, (Date.now() - ts) / 3600000);
+      return score / Math.pow(hoursSince + 2, exponent);
+    };
 
-  const sortPosts = (postsArray, sort) => {
-    const list = Array.isArray(postsArray) ? postsArray : [];
-    switch (sort) {
+    const list = Array.isArray(posts) ? posts : [];
+    switch (sortBy) {
       case 'NEW':
         return [...list].sort((a, b) => getTimestampMs(b) - getTimestampMs(a));
       case 'TOP':
@@ -38,9 +37,7 @@ const PostList = () => {
       default:
         return [...list].sort((a, b) => hotRank(b, 1.35) - hotRank(a, 1.35) || getTimestampMs(b) - getTimestampMs(a));
     }
-  };
-
-  const sortedPosts = useMemo(() => sortPosts(posts, sortBy), [posts, sortBy]);
+  }, [posts, sortBy]);
 
   const handleCommentClick = (post) => {
     const slug = (post?.subreddit || '').replace(/^r\//, '');
@@ -69,22 +66,6 @@ const PostList = () => {
 
   return (
     <div className="post-list-container">
-      <div className="sort-controls">
-        <label htmlFor="sort-select">Sort by:</label>
-        <select
-          id="sort-select"
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          className="sort-select"
-        >
-          <option value="BEST">Best</option>
-          <option value="HOT">Hot</option>
-          <option value="NEW">New</option>
-          <option value="TOP">Top</option>
-          <option value="RISING">Rising</option>
-        </select>
-      </div>
-
       <div className="post-list">
         {sortedPosts.length > 0 ? (
           sortedPosts.map((post) => {

@@ -28,12 +28,12 @@ function CommunityPage() {
   const [sortBy, setSortBy] = useState('hot');
   const [communityName, setCommunityName] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
-  const { communities: communityList, loading: communitiesLoading } = useCommunities(200);
+  const { communities: communityList } = useCommunities(200);
 
   // Extract community name from URL
   useEffect(() => {
     const path = window.location.pathname;
-    const match = path.match(/\/r\/([^\/]+)/);
+    const match = path.match(/\/r\/([^/]+)/);
     if (match) {
       setCommunityName(match[1]);
     } else {
@@ -72,14 +72,14 @@ function CommunityPage() {
     return Number.isNaN(ms) ? 0 : ms;
   };
 
-  const hotRank = (post, exponent = 1.5) => {
-    const score = Number(post?.score) || 0;
-    const ts = getTimestampMs(post);
-    const hoursSince = Math.max(0, (Date.now() - ts) / 3600000);
-    return score / Math.pow(hoursSince + 2, exponent);
-  };
-
   const sortedPosts = useMemo(() => {
+    const hotRank = (post, exponent = 1.5) => {
+      const score = Number(post?.score) || 0;
+      const ts = getTimestampMs(post);
+      const hoursSince = Math.max(0, (Date.now() - ts) / 3600000);
+      return score / Math.pow(hoursSince + 2, exponent);
+    };
+
     const list = Array.isArray(posts) ? posts : [];
     switch (sortBy) {
       case 'new':

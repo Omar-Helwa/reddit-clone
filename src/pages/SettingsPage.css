@@ -313,6 +313,41 @@ input:checked + .toggle-slider:before {
   color: var(--text-primary);
 }
 
+/* Password Change Form */
+.password-change-form {
+  max-width: 500px;
+}
+
+.password-change-form .settings-input {
+  margin-bottom: 12px;
+}
+
+.password-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 14px;
+  margin: 8px 0;
+  padding: 8px 12px;
+  background-color: rgba(231, 76, 60, 0.1);
+  border-radius: 4px;
+  border-left: 3px solid #e74c3c;
+}
+
+.success-message {
+  color: #27ae60;
+  font-size: 14px;
+  margin: 8px 0;
+  padding: 8px 12px;
+  background-color: rgba(39, 174, 96, 0.1);
+  border-radius: 4px;
+  border-left: 3px solid #27ae60;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .settings-layout {

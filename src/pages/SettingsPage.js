@@ -5,7 +5,7 @@ import { updateUser, getUser } from '../api/usersApi';
 
 function SettingsPage({ onNavigate }) {
   const [activeTab, setActiveTab] = useState('account');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
   const [formData, setFormData] = useState({
@@ -23,6 +23,16 @@ function SettingsPage({ onNavigate }) {
     autoplay: true,
     image: '',
   });
+  
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  
+  const [showPasswordFields, setShowPasswordFields] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -48,6 +58,56 @@ function SettingsPage({ onNavigate }) {
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handlePasswordChange = (field, value) => {
+    setPasswordData((prev) => ({ ...prev, [field]: value }));
+    setPasswordError('');
+    setPasswordSuccess('');
+  };
+
+  const handleChangePassword = async () => {
+    try {
+      setPasswordError('');
+      setPasswordSuccess('');
+
+      // Validation
+      if (!passwordData.newPassword || !passwordData.confirmPassword) {
+        setPasswordError('Please fill in all password fields');
+        return;
+      }
+
+      if (passwordData.newPassword.length < 6) {
+        setPasswordError('New password must be at least 6 characters long');
+        return;
+      }
+
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        setPasswordError('New passwords do not match');
+        return;
+      }
+
+      const userId = getCurrentUserId();
+      if (!userId) {
+        setPasswordError('No user logged in');
+        return;
+      }
+
+      // Update password (JWT token verifies authentication)
+      await updateUser(userId, { 
+        password: passwordData.newPassword 
+      });
+      
+      // Password changed successfully - log user out for security
+      alert('✅ Password changed successfully! Please log in with your new password.');
+      
+      // Clear all user data and redirect to login
+      localStorage.clear();
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Failed to change password:', error);
+      setPasswordError('❌ Failed to change password: ' + error.message);
+    }
   };
 
   const handleSave = async () => {
@@ -90,22 +150,86 @@ function SettingsPage({ onNavigate }) {
 
   const handleDeleteAccount = async () => {
     try {
-      // Import auth utils
-      const { getCurrentUserId, clearCurrentUser } = await import('../utils/auth');
+      // Import auth utils and APIs
+      const { getCurrentUserId, getCurrentUser, clearCurrentUser } = await import('../utils/auth');
       const { deleteUser } = await import('../api/usersApi');
+      const { postsAPI } = await import('../api/postsAPI');
+      const commentsAPI = await import('../api/commentsAPI');
+      const { getAllChats, deleteChat } = await import('../api/chatsApi');
       
-      // Get the current user's ID
+      // Get the current user's ID and username
       const userId = getCurrentUserId();
+      const currentUser = getCurrentUser();
+      const username = currentUser?.username;
       
       if (!userId) {
         alert('No user logged in');
         return;
       }
 
-      // Delete user from MongoDB
+      console.log(`Deleting account for user: ${username} (${userId})`);
+
+      // Step 1: Delete all user's posts
+      try {
+        const allPosts = await postsAPI.getAll();
+        // Posts can have author (username) or authorId/userId
+        const userPosts = allPosts.filter(post => 
+          post.author === username || 
+          post.authorId === userId || 
+          post.userId === userId ||
+          String(post.authorId) === String(userId) ||
+          String(post.userId) === String(userId)
+        );
+        console.log(`Found ${userPosts.length} posts to delete`);
+        
+        for (const post of userPosts) {
+          const postId = post._id || post.id;
+          await postsAPI.delete(postId);
+          console.log(`Deleted post: ${postId}`);
+        }
+      } catch (error) {
+        console.error('Error deleting posts:', error);
+      }
+
+      // Step 2: Delete all user's comments
+      try {
+        // Use listAll() to get all comments, then filter by userId
+        const allComments = await commentsAPI.default.listAll();
+        // Comments store userId (user's ID), not author username
+        const userComments = allComments.filter(comment => 
+          comment.userId === userId || String(comment.userId) === String(userId)
+        );
+        console.log(`Found ${userComments.length} comments to delete`);
+        
+        for (const comment of userComments) {
+          const commentId = comment._id || comment.id;
+          await commentsAPI.default.delete(commentId);
+          console.log(`Deleted comment: ${commentId}`);
+        }
+      } catch (error) {
+        console.error('Error deleting comments:', error);
+      }
+
+      // Step 3: Delete all user's chats
+      try {
+        const allChats = await getAllChats();
+        const userChats = allChats.filter(chat => 
+          chat.participants?.some(p => p.username === username || p === username)
+        );
+        console.log(`Found ${userChats.length} chats to delete`);
+        
+        for (const chat of userChats) {
+          await deleteChat(chat._id);
+          console.log(`Deleted chat: ${chat._id}`);
+        }
+      } catch (error) {
+        console.error('Error deleting chats:', error);
+      }
+
+      // Step 4: Delete user account from MongoDB
       await deleteUser(userId);
       
-      console.log('Account deleted successfully');
+      console.log('Account and all associated data deleted successfully');
       
       // Clear user data from localStorage
       clearCurrentUser();
@@ -193,7 +317,60 @@ function SettingsPage({ onNavigate }) {
 
                 <div className="settings-group">
                   <label className="settings-label">Change password</label>
-                  <button className="settings-button">Change Password</button>
+                  {!showPasswordFields ? (
+                    <button 
+                      className="settings-button" 
+                      onClick={() => setShowPasswordFields(true)}
+                    >
+                      Change Password
+                    </button>
+                  ) : (
+                    <div className="password-change-form">
+                      <input
+                        type="password"
+                        className="settings-input"
+                        placeholder="New Password (min 6 characters)"
+                        value={passwordData.newPassword}
+                        onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
+                      />
+                      <input
+                        type="password"
+                        className="settings-input"
+                        placeholder="Confirm New Password"
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+                      />
+                      {passwordError && (
+                        <p className="error-message">{passwordError}</p>
+                      )}
+                      {passwordSuccess && (
+                        <p className="success-message">{passwordSuccess}</p>
+                      )}
+                      <div className="password-buttons">
+                        <button 
+                          className="btn-save" 
+                          onClick={handleChangePassword}
+                        >
+                          Update Password
+                        </button>
+                        <button 
+                          className="btn-cancel" 
+                          onClick={() => {
+                            setShowPasswordFields(false);
+                            setPasswordData({
+                              currentPassword: '',
+                              newPassword: '',
+                              confirmPassword: ''
+                            });
+                            setPasswordError('');
+                            setPasswordSuccess('');
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="settings-group">

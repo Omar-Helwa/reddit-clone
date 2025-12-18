@@ -155,6 +155,138 @@ const Post = ({
     setAwardOpen(true);
   };
 
+  const handleUpvote = async () => {
+    if (onUpvote) return onUpvote();
+
+    if (!isLoggedIn() || !getUserToken()) {
+      navigate('/login');
+      return;
+    }
+    const prevVote = localVote;
+    const prevScore = localScore;
+    const nextVote = prevVote === 'up' ? null : 'up';
+    const delta = prevVote === 'up' ? -1 : (prevVote === 'down' ? 2 : 1);
+    const optimisticScore = prevScore + delta;
+    setLocalVote(nextVote);
+    setLocalScore(optimisticScore);
+
+    if (voteEndpointsSupported === false) {
+      if (scoreUpdateSupported === false) return;
+      try {
+        const updated = await postsAPI.update(postId, { score: optimisticScore });
+        scoreUpdateSupported = true;
+        const nextScore = Number(updated?.score);
+        if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
+      } catch (err) {
+        const msg = String(err?.message || '');
+        if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
+          scoreUpdateSupported = false;
+          return;
+        }
+        setLocalVote(prevVote);
+        setLocalScore(prevScore);
+      }
+      return;
+    }
+
+    try {
+      const updated = await postsAPI.upvote(postId);
+      voteEndpointsSupported = true;
+      const nextScore = Number(updated?.score);
+      if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
+      setLocalVote('up');
+    } catch (e) {
+      const msg = String(e?.message || '');
+      if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
+        voteEndpointsSupported = false;
+        if (scoreUpdateSupported === false) return;
+        try {
+          const updated = await postsAPI.update(postId, { score: optimisticScore });
+          scoreUpdateSupported = true;
+          const nextScore = Number(updated?.score);
+          if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
+        } catch (err) {
+          const msg2 = String(err?.message || '');
+          if (/status:\s*404/i.test(msg2) || /\b404\b/.test(msg2)) {
+            scoreUpdateSupported = false;
+            return;
+          }
+          setLocalVote(prevVote);
+          setLocalScore(prevScore);
+        }
+      } else {
+        setLocalVote(prevVote);
+        setLocalScore(prevScore);
+      }
+    }
+  };
+
+  const handleDownvote = async () => {
+    if (onDownvote) return onDownvote();
+
+    if (!isLoggedIn() || !getUserToken()) {
+      navigate('/login');
+      return;
+    }
+    const prevVote = localVote;
+    const prevScore = localScore;
+    const nextVote = prevVote === 'down' ? null : 'down';
+    const delta = prevVote === 'down' ? 1 : (prevVote === 'up' ? -2 : -1);
+    const optimisticScore = prevScore + delta;
+    setLocalVote(nextVote);
+    setLocalScore(optimisticScore);
+
+    if (voteEndpointsSupported === false) {
+      if (scoreUpdateSupported === false) return;
+      try {
+        const updated = await postsAPI.update(postId, { score: optimisticScore });
+        scoreUpdateSupported = true;
+        const nextScore = Number(updated?.score);
+        if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
+      } catch (err) {
+        const msg = String(err?.message || '');
+        if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
+          scoreUpdateSupported = false;
+          return;
+        }
+        setLocalVote(prevVote);
+        setLocalScore(prevScore);
+      }
+      return;
+    }
+
+    try {
+      const updated = await postsAPI.downvote(postId);
+      voteEndpointsSupported = true;
+      const nextScore = Number(updated?.score);
+      if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
+      setLocalVote('down');
+    } catch (e) {
+      const msg = String(e?.message || '');
+      if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
+        voteEndpointsSupported = false;
+        if (scoreUpdateSupported === false) return;
+        try {
+          const updated = await postsAPI.update(postId, { score: optimisticScore });
+          scoreUpdateSupported = true;
+          const nextScore = Number(updated?.score);
+          if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
+        } catch (err) {
+          const msg2 = String(err?.message || '');
+          if (/status:\s*404/i.test(msg2) || /\b404\b/.test(msg2)) {
+            scoreUpdateSupported = false;
+            return;
+          }
+          setLocalVote(prevVote);
+          setLocalScore(prevScore);
+        }
+      } else {
+        setLocalVote(prevVote);
+        setLocalScore(prevScore);
+      }
+    }
+  };
+
   const handleConfirmCrosspost = async () => {
     if (!crosspostTarget) return;
     setCrossposting(true);
@@ -229,152 +361,6 @@ const Post = ({
 
   return (
     <article className="post-card" data-post-id={postId}>
-      <div className="vote-column" aria-label="Post voting">
-        <button 
-          className={`vote-button upvote-button ${localVote === 'up' ? 'active' : ''}`}
-          onClick={async () => {
-            if (onUpvote) return onUpvote();
-
-            if (!isLoggedIn() || !getUserToken()) {
-              navigate('/login');
-              return;
-            }
-            const prevVote = localVote;
-            const prevScore = localScore;
-            const nextVote = prevVote === 'up' ? null : 'up';
-            const delta = prevVote === 'up' ? -1 : (prevVote === 'down' ? 2 : 1);
-            const optimisticScore = prevScore + delta;
-            setLocalVote(nextVote);
-            setLocalScore(optimisticScore);
-
-            if (voteEndpointsSupported === false) {
-              if (scoreUpdateSupported === false) return;
-              try {
-                const updated = await postsAPI.update(postId, { score: optimisticScore });
-                scoreUpdateSupported = true;
-                const nextScore = Number(updated?.score);
-                if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
-              } catch (err) {
-                const msg = String(err?.message || '');
-                if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
-                  scoreUpdateSupported = false;
-                  return;
-                }
-                setLocalVote(prevVote);
-                setLocalScore(prevScore);
-              }
-              return;
-            }
-
-            try {
-              const updated = await postsAPI.upvote(postId);
-              voteEndpointsSupported = true;
-              const nextScore = Number(updated?.score);
-              if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
-              setLocalVote('up');
-            } catch (e) {
-              const msg = String(e?.message || '');
-              if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
-                voteEndpointsSupported = false;
-                if (scoreUpdateSupported === false) return;
-                try {
-                  const updated = await postsAPI.update(postId, { score: optimisticScore });
-                  scoreUpdateSupported = true;
-                  const nextScore = Number(updated?.score);
-                  if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
-                } catch (err) {
-                  const msg2 = String(err?.message || '');
-                  if (/status:\s*404/i.test(msg2) || /\b404\b/.test(msg2)) {
-                    scoreUpdateSupported = false;
-                    return;
-                  }
-                  setLocalVote(prevVote);
-                  setLocalScore(prevScore);
-                }
-              } else {
-                setLocalVote(prevVote);
-                setLocalScore(prevScore);
-              }
-            }
-          }}
-          aria-label="Upvote"
-        >
-          ▲
-        </button>
-        <div className={`vote-score ${localVote === 'up' ? 'upvoted' : localVote === 'down' ? 'downvoted' : ''}`}>{localScore}</div>
-        <button 
-          className={`vote-button downvote-button ${localVote === 'down' ? 'active' : ''}`}
-          onClick={async () => {
-            if (onDownvote) return onDownvote();
-
-            if (!isLoggedIn() || !getUserToken()) {
-              navigate('/login');
-              return;
-            }
-            const prevVote = localVote;
-            const prevScore = localScore;
-            const nextVote = prevVote === 'down' ? null : 'down';
-            const delta = prevVote === 'down' ? 1 : (prevVote === 'up' ? -2 : -1);
-            const optimisticScore = prevScore + delta;
-            setLocalVote(nextVote);
-            setLocalScore(optimisticScore);
-
-            if (voteEndpointsSupported === false) {
-              if (scoreUpdateSupported === false) return;
-              try {
-                const updated = await postsAPI.update(postId, { score: optimisticScore });
-                scoreUpdateSupported = true;
-                const nextScore = Number(updated?.score);
-                if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
-              } catch (err) {
-                const msg = String(err?.message || '');
-                if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
-                  scoreUpdateSupported = false;
-                  return;
-                }
-                setLocalVote(prevVote);
-                setLocalScore(prevScore);
-              }
-              return;
-            }
-
-            try {
-              const updated = await postsAPI.downvote(postId);
-              voteEndpointsSupported = true;
-              const nextScore = Number(updated?.score);
-              if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
-              setLocalVote('down');
-            } catch (e) {
-              const msg = String(e?.message || '');
-              if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
-                voteEndpointsSupported = false;
-                if (scoreUpdateSupported === false) return;
-                try {
-                  const updated = await postsAPI.update(postId, { score: optimisticScore });
-                  scoreUpdateSupported = true;
-                  const nextScore = Number(updated?.score);
-                  if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
-                } catch (err) {
-                  const msg2 = String(err?.message || '');
-                  if (/status:\s*404/i.test(msg2) || /\b404\b/.test(msg2)) {
-                    scoreUpdateSupported = false;
-                    return;
-                  }
-                  setLocalVote(prevVote);
-                  setLocalScore(prevScore);
-                }
-              } else {
-                setLocalVote(prevVote);
-                setLocalScore(prevScore);
-              }
-            }
-          }}
-          aria-label="Downvote"
-        >
-          ▼
-        </button>
-      </div>
-
       <div className="post-body">
         {/* Credit Bar */}
         <div className="post-credit-bar">
@@ -451,13 +437,31 @@ const Post = ({
 
         {/* Post Action Bar */}
         <div className="post-action-bar">
+          <div className="vote-column" aria-label="Post voting">
+            <button 
+              className={`vote-button upvote-button ${localVote === 'up' ? 'active' : ''}`}
+              onClick={handleUpvote}
+              aria-label="Upvote"
+            >
+              ▲
+            </button>
+            <div className={`vote-score ${localVote === 'up' ? 'upvoted' : localVote === 'down' ? 'downvoted' : ''}`}>{localScore}</div>
+            <button 
+              className={`vote-button downvote-button ${localVote === 'down' ? 'active' : ''}`}
+              onClick={handleDownvote}
+              aria-label="Downvote"
+            >
+              ▼
+            </button>
+          </div>
+
           <button 
             className="action-button comment-button"
             onClick={onCommentClick}
             aria-label="Comments"
           >
             <span className="icon">💬</span>
-            <span className="count">{commentCount} Comments</span>
+            <span className="count">{commentCount}</span>
           </button>
           
           <button 
