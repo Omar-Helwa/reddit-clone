@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './StartCommunityPage.css';
 import { createCommunity } from '../api/communitiesApi';
+import { uploadCommunityImage } from '../api/uploadsApi';
 import { joinCommunity } from '../utils/helpers';
 
 function StartCommunityPage({ onNavigate }) {
@@ -18,6 +19,8 @@ function StartCommunityPage({ onNavigate }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   const categories = [
     { id: 'gaming', label: 'Gaming', icon: '🎮' },
@@ -34,6 +37,64 @@ function StartCommunityPage({ onNavigate }) {
 
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
+  };
+
+  // Handle icon upload
+  const handleIconUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Invalid file type. Use JPEG, PNG, GIF, or WebP.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File too large. Maximum size is 5MB.');
+      return;
+    }
+
+    setError('');
+    setUploadingIcon(true);
+
+    try {
+      const iconUrl = await uploadCommunityImage(file);
+      setFormData(prev => ({ ...prev, icon: iconUrl }));
+    } catch (err) {
+      setError(err.message || 'Failed to upload icon');
+    } finally {
+      setUploadingIcon(false);
+    }
+  };
+
+  // Handle banner upload
+  const handleBannerUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Invalid file type. Use JPEG, PNG, GIF, or WebP.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File too large. Maximum size is 5MB.');
+      return;
+    }
+
+    setError('');
+    setUploadingBanner(true);
+
+    try {
+      const bannerUrl = await uploadCommunityImage(file);
+      setFormData(prev => ({ ...prev, banner: bannerUrl }));
+    } catch (err) {
+      setError(err.message || 'Failed to upload banner');
+    } finally {
+      setUploadingBanner(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -245,6 +306,46 @@ function StartCommunityPage({ onNavigate }) {
                 />
                 <div className="input-hint">
                   {formData.description.length}/500 characters
+                </div>
+              </div>
+
+              {/* Icon Upload */}
+              <div className="form-group">
+                <label>Community Icon (optional)</label>
+                <div className="image-upload-row">
+                  {formData.icon && (
+                    <img src={formData.icon} alt="Icon preview" className="icon-preview" />
+                  )}
+                  <label className="upload-btn">
+                    {uploadingIcon ? 'Uploading...' : formData.icon ? 'Change Icon' : 'Upload Icon'}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      onChange={handleIconUpload}
+                      disabled={uploadingIcon}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Banner Upload */}
+              <div className="form-group">
+                <label>Community Banner (optional)</label>
+                <div className="image-upload-row">
+                  {formData.banner && (
+                    <img src={formData.banner} alt="Banner preview" className="banner-preview" />
+                  )}
+                  <label className="upload-btn">
+                    {uploadingBanner ? 'Uploading...' : formData.banner ? 'Change Banner' : 'Upload Banner'}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      onChange={handleBannerUpload}
+                      disabled={uploadingBanner}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
                 </div>
               </div>
             </div>

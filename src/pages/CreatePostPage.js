@@ -5,6 +5,7 @@ import { useCreatePost } from '../hooks/usePosts';
 import useCommunities from '../hooks/useCommunities';
 import { DEFAULT_COMMUNITY_ICON } from '../utils/placeholders';
 import { getCurrentUserId, getCurrentUser } from '../utils/auth';
+import { uploadPostImage } from '../api/uploadsApi';
 
 function CreatePostPage() {
   const { createPost, loading: creatingPost, error: createError } = useCreatePost();
@@ -13,6 +14,9 @@ function CreatePostPage() {
   const [title, setTitle] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [imagePreview, setImagePreview] = useState(''); // Local preview before upload
+  const [imageFile, setImageFile] = useState(null); // Store the actual file
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [pollOptions, setPollOptions] = useState([
     { id: 1, text: '' },
     { id: 2, text: '' }
@@ -156,35 +160,65 @@ function CreatePostPage() {
     e.stopPropagation();
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     const files = e.dataTransfer.files;
     if (files && files[0]) {
       const file = files[0];
       if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          setImageUrl(event.target.result);
-        };
-        reader.readAsDataURL(file);
+        // Show local preview immediately
+        setImagePreview(URL.createObjectURL(file));
+        setImageFile(file);
+        setError('');
+        
+        // Upload the image
+        setUploadingImage(true);
+        try {
+          const uploadedUrl = await uploadPostImage(file);
+          setImageUrl(uploadedUrl);
+        } catch (err) {
+          setError(err.message || 'Failed to upload image');
+          setImagePreview('');
+          setImageFile(null);
+        } finally {
+          setUploadingImage(false);
+        }
       } else {
-        setError('Please drop an image file');
+        setError('Please drop an image file (JPEG, PNG, GIF, or WebP)');
       }
     }
   };
 
-  const handleFileInput = (e) => {
+  const handleFileInput = async (e) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setImageUrl(event.target.result);
-      };
-      reader.readAsDataURL(file);
+      // Show local preview immediately
+      setImagePreview(URL.createObjectURL(file));
+      setImageFile(file);
+      setError('');
+      
+      // Upload the image
+      setUploadingImage(true);
+      try {
+        const uploadedUrl = await uploadPostImage(file);
+        setImageUrl(uploadedUrl);
+      } catch (err) {
+        setError(err.message || 'Failed to upload image');
+        setImagePreview('');
+        setImageFile(null);
+      } finally {
+        setUploadingImage(false);
+      }
     } else {
-      setError('Please select an image file');
+      setError('Please select an image file (JPEG, PNG, GIF, or WebP)');
     }
+  };
+
+  const handleRemoveImage = () => {
+    setImageUrl('');
+    setImagePreview('');
+    setImageFile(null);
   };
 
   // Convert HTML to plain text for saving
@@ -373,11 +407,15 @@ function CreatePostPage() {
     }
 
     if (postType === 'image') {
-      if (!isValidImageInput(imageUrl)) {
-        setError('Please upload an image or provide a valid image URL.');
+      if (uploadingImage) {
+        setError('Please wait for the image to finish uploading.');
         return;
       }
-      payload.imageUrl = imageUrl.trim();
+      if (!imageUrl) {
+        setError('Please upload an image first.');
+        return;
+      }
+      payload.imageUrl = imageUrl;
       if (plainTextBody.trim()) payload.textBody = plainTextBody.trim();
     }
 
@@ -581,7 +619,7 @@ function CreatePostPage() {
           {/* Image/Video Upload Area */}
           {postType === 'image' && (
             <>
-              {!imageUrl ? (
+              {!imagePreview && !imageUrl ? (
                 <div 
                   className="media-dropzone"
                   onDragOver={handleDragOver}
@@ -594,7 +632,7 @@ function CreatePostPage() {
                     </svg>
                     <input
                       type="file"
-                      accept="image/*,video/*"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
                       onChange={handleFileInput}
                       style={{ display: 'none' }}
                     />
@@ -602,11 +640,17 @@ function CreatePostPage() {
                 </div>
               ) : (
                 <div className="image-preview">
-                  <img src={imageUrl} alt="preview" />
+                  <img src={imagePreview || imageUrl} alt="preview" />
+                  {uploadingImage && (
+                    <div className="upload-overlay">
+                      <span>Uploading...</span>
+                    </div>
+                  )}
                   <button
                     type="button"
                     className="remove-image"
-                    onClick={() => setImageUrl('')}
+                    onClick={handleRemoveImage}
+                    disabled={uploadingImage}
                   >
                     ✕
                   </button>
@@ -744,8 +788,8 @@ function CreatePostPage() {
                 <path d="M10 5v5l3 3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
             </button>
-            <button type="submit" className="post-btn" disabled={creatingPost}>
-              {creatingPost ? 'Posting...' : 'Post'}
+            <button type="submit" className="post-btn" disabled={creatingPost || uploadingImage}>
+              {uploadingImage ? 'Uploading...' : creatingPost ? 'Posting...' : 'Post'}
             </button>
           </div>
         </form>

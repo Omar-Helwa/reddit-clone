@@ -786,6 +786,67 @@ input:checked + .toggle-slider:before {
 .social-link-input-group input {
   width: 100%;
 }
+
+/* Avatar/Banner Upload Styles */
+.settings-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-avatar-preview {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--card-border);
+}
+
+.settings-banner-preview {
+  width: 80px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid var(--card-border);
+}
+
+.settings-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background-color: var(--blue);
+  color: white;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.settings-upload-btn:hover {
+  background-color: var(--blue-darker, #0060c0);
+}
+
+.settings-upload-btn:has(input:disabled) {
+  background-color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.settings-error {
+  color: #d93025;
+  font-size: 13px;
+  padding: 4px 0;
+  margin-bottom: 8px;
+}
+
+.settings-success {
+  color: #188038;
+  font-size: 13px;
+  padding: 4px 0;
+  margin-bottom: 8px;
+}
+
 /* Settings Modal Styles */
 .settings-modal-overlay {
   position: fixed;

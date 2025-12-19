@@ -416,6 +416,27 @@
   background: rgba(0, 0, 0, 0.8);
 }
 
+.remove-image:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Upload Overlay */
+.upload-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
 /* Link Input */
 .link-input-wrapper {
   margin-bottom: 8px;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './CreateCommunityModal.css';
 import { createCommunity } from '../api/communitiesApi';
+import { uploadCommunityImage } from '../api/uploadsApi';
 import { joinCommunity } from '../utils/helpers';
 
 function CreateCommunityModal({ isOpen, onClose, onNavigate }) {
@@ -12,10 +13,14 @@ function CreateCommunityModal({ isOpen, onClose, onNavigate }) {
     type: 'public',
     nsfw: false,
     topics: [],
-    description: ''
+    description: '',
+    icon: '',
+    banner: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   const topics = [
     { id: 'anime', label: 'Anime & Cosplay', emoji: '🎭' },
@@ -67,6 +72,64 @@ function CreateCommunityModal({ isOpen, onClose, onNavigate }) {
     }
   };
 
+  // Handle icon upload
+  const handleIconUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Invalid file type. Use JPEG, PNG, GIF, or WebP.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File too large. Maximum size is 5MB.');
+      return;
+    }
+
+    setError('');
+    setUploadingIcon(true);
+
+    try {
+      const iconUrl = await uploadCommunityImage(file);
+      setFormData(prev => ({ ...prev, icon: iconUrl }));
+    } catch (err) {
+      setError(err.message || 'Failed to upload icon');
+    } finally {
+      setUploadingIcon(false);
+    }
+  };
+
+  // Handle banner upload
+  const handleBannerUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Invalid file type. Use JPEG, PNG, GIF, or WebP.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File too large. Maximum size is 5MB.');
+      return;
+    }
+
+    setError('');
+    setUploadingBanner(true);
+
+    try {
+      const bannerUrl = await uploadCommunityImage(file);
+      setFormData(prev => ({ ...prev, banner: bannerUrl }));
+    } catch (err) {
+      setError(err.message || 'Failed to upload banner');
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
+
   const handleSubmit = async () => {
     setError('');
     setLoading(true);
@@ -75,6 +138,8 @@ function CreateCommunityModal({ isOpen, onClose, onNavigate }) {
         name: `r/${formData.name}`,
         displayName: formData.name,
         description: formData.description,
+        icon: formData.icon || '',
+        banner: formData.banner || '',
         type: formData.type === 'public' ? 'Public' : formData.type === 'restricted' ? 'Restricted' : 'Private',
         nsfw: formData.nsfw,
         topics: formData.topics,
@@ -84,7 +149,9 @@ function CreateCommunityModal({ isOpen, onClose, onNavigate }) {
       joinCommunity(formData.name);
       setCreatedCommunity({
         name: formData.name,
-        description: formData.description
+        description: formData.description,
+        icon: formData.icon,
+        banner: formData.banner
       });
       setStep(5); // Success step
       setShowConfetti(true);
@@ -111,9 +178,13 @@ function CreateCommunityModal({ isOpen, onClose, onNavigate }) {
       type: 'public',
       nsfw: false,
       topics: [],
-      description: ''
+      description: '',
+      icon: '',
+      banner: ''
     });
     setError('');
+    setUploadingIcon(false);
+    setUploadingBanner(false);
     onClose();
   }, [onClose]);
 
@@ -357,27 +428,49 @@ function CreateCommunityModal({ isOpen, onClose, onNavigate }) {
 
               {/* Live Preview Card */}
               <div className="preview-card">
-                <div className="preview-banner">
-                  <button className="edit-banner-btn">
-                    <svg viewBox="0 0 20 20" width="16" height="16">
-                      <path fill="currentColor" d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828zM4 4v12c0 1.103.897 2 2 2h12c1.103 0 2-.897 2-2V8.414l-2-2V16H6V6h5.586l2-2H6a2 2 0 0 0-2 2z"/>
-                    </svg>
-                  </button>
+                <div className="preview-banner" style={formData.banner ? { backgroundImage: `url(${formData.banner})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
+                  <label className="edit-banner-btn" title="Upload banner">
+                    {uploadingBanner ? '...' : (
+                      <svg viewBox="0 0 20 20" width="16" height="16">
+                        <path fill="currentColor" d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828zM4 4v12c0 1.103.897 2 2 2h12c1.103 0 2-.897 2-2V8.414l-2-2V16H6V6h5.586l2-2H6a2 2 0 0 0-2 2z"/>
+                      </svg>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      onChange={handleBannerUpload}
+                      disabled={uploadingBanner}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
                 </div>
                 <div className="preview-content">
                   <div className="preview-avatar">
                     <div className="avatar-circle">
-                      <svg viewBox="0 0 20 20" width="32" height="32">
-                        <circle cx="10" cy="10" r="10" fill="#FF4500"/>
-                        <circle cx="10" cy="8" r="4" fill="white"/>
-                        <path d="M4 16c0-3 3-5.5 6-5.5s6 2.5 6 5.5" fill="white"/>
-                      </svg>
+                      {formData.icon ? (
+                        <img src={formData.icon} alt="Community icon" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                      ) : (
+                        <svg viewBox="0 0 20 20" width="32" height="32">
+                          <circle cx="10" cy="10" r="10" fill="#FF4500"/>
+                          <circle cx="10" cy="8" r="4" fill="white"/>
+                          <path d="M4 16c0-3 3-5.5 6-5.5s6 2.5 6 5.5" fill="white"/>
+                        </svg>
+                      )}
                     </div>
-                    <button className="edit-avatar-btn">
-                      <svg viewBox="0 0 20 20" width="12" height="12">
-                        <path fill="currentColor" d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
-                      </svg>
-                    </button>
+                    <label className="edit-avatar-btn" title="Upload icon">
+                      {uploadingIcon ? '...' : (
+                        <svg viewBox="0 0 20 20" width="12" height="12">
+                          <path fill="currentColor" d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
+                        </svg>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        onChange={handleIconUpload}
+                        disabled={uploadingIcon}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
                   </div>
                   <h3 className="preview-name">r/{formData.name || 'communityname'}</h3>
                   <p className="preview-stats">1 weekly visitor · 1 weekly contributor</p>
@@ -416,25 +509,19 @@ function CreateCommunityModal({ isOpen, onClose, onNavigate }) {
             
             {/* Success Preview Card */}
             <div className="success-preview-card">
-              <div className="success-banner">
-                <button className="edit-banner-btn">
-                  <svg viewBox="0 0 20 20" width="16" height="16">
-                    <path fill="currentColor" d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828zM4 4v12c0 1.103.897 2 2 2h12c1.103 0 2-.897 2-2V8.414l-2-2V16H6V6h5.586l2-2H6a2 2 0 0 0-2 2z"/>
-                  </svg>
-                </button>
+              <div className="success-banner" style={createdCommunity.banner ? { backgroundImage: `url(${createdCommunity.banner})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
               </div>
               <div className="success-content-inner">
                 <div className="success-avatar">
-                  <svg viewBox="0 0 20 20" width="40" height="40">
-                    <circle cx="10" cy="10" r="10" fill="#FF4500"/>
-                    <circle cx="10" cy="8" r="4" fill="white"/>
-                    <path d="M4 16c0-3 3-5.5 6-5.5s6 2.5 6 5.5" fill="white"/>
-                  </svg>
-                  <button className="edit-avatar-btn success-edit">
-                    <svg viewBox="0 0 20 20" width="12" height="12">
-                      <path fill="currentColor" d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
+                  {createdCommunity.icon ? (
+                    <img src={createdCommunity.icon} alt="Community icon" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : (
+                    <svg viewBox="0 0 20 20" width="40" height="40">
+                      <circle cx="10" cy="10" r="10" fill="#FF4500"/>
+                      <circle cx="10" cy="8" r="4" fill="white"/>
+                      <path d="M4 16c0-3 3-5.5 6-5.5s6 2.5 6 5.5" fill="white"/>
                     </svg>
-                  </button>
+                  )}
                 </div>
                 <h3 className="success-name">r/{createdCommunity.name}</h3>
                 <p className="success-stats">1 weekly visitor · 1 weekly contributor</p>

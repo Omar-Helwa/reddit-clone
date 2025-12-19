@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './SettingsPage.css';
 import { getCurrentUserId } from '../utils/auth';
 import { updateUser, getUser, toggleNsfw, toggleAllowFollow } from '../api/usersApi';
+import { uploadProfileImage } from '../api/uploadsApi';
 import CommunityList from '../features/communities/CommunityList';
 
 function SettingsPage({ onNavigate }) {
@@ -95,6 +96,14 @@ function SettingsPage({ onNavigate }) {
   // Notification modal state
   const [notificationModal, setNotificationModal] = useState({ open: false, setting: '', title: '' });
   const [notificationModalValue, setNotificationModalValue] = useState('all-on');
+  
+  // Avatar/Banner upload state
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
+  const [avatarSuccess, setAvatarSuccess] = useState('');
+  const [bannerError, setBannerError] = useState('');
+  const [bannerSuccess, setBannerSuccess] = useState('');
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -296,6 +305,85 @@ function SettingsPage({ onNavigate }) {
       setTimeout(() => setProfileFieldSuccess(''), 3000);
     } catch (error) {
       setProfileFieldError(`❌ Failed to update: ${error.message}`);
+    }
+  };
+
+  // Handle avatar upload
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setAvatarError('Invalid file type. Use JPEG, PNG, GIF, or WebP.');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError('File too large. Maximum size is 5MB.');
+      return;
+    }
+
+    setAvatarError('');
+    setUploadingAvatar(true);
+
+    try {
+      const imageUrl = await uploadProfileImage(file);
+      
+      // Update user with new image URL
+      const userId = getCurrentUserId();
+      if (userId) {
+        await updateUser(userId, { image: imageUrl });
+        setFormData(prev => ({ ...prev, image: imageUrl }));
+        localStorage.setItem('userImage', imageUrl);
+        setAvatarSuccess('✅ Avatar updated successfully!');
+        setTimeout(() => setAvatarSuccess(''), 3000);
+      }
+    } catch (error) {
+      setAvatarError(`❌ Failed to upload: ${error.message}`);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  // Handle banner upload
+  const handleBannerUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setBannerError('Invalid file type. Use JPEG, PNG, GIF, or WebP.');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setBannerError('File too large. Maximum size is 5MB.');
+      return;
+    }
+
+    setBannerError('');
+    setUploadingBanner(true);
+
+    try {
+      const imageUrl = await uploadProfileImage(file);
+      
+      // Update user with new banner URL
+      const userId = getCurrentUserId();
+      if (userId) {
+        await updateUser(userId, { banner: imageUrl });
+        setFormData(prev => ({ ...prev, banner: imageUrl }));
+        setBannerSuccess('✅ Banner updated successfully!');
+        setTimeout(() => setBannerSuccess(''), 3000);
+      }
+    } catch (error) {
+      setBannerError(`❌ Failed to upload: ${error.message}`);
+    } finally {
+      setUploadingBanner(false);
     }
   };
 
@@ -788,25 +876,65 @@ function SettingsPage({ onNavigate }) {
               </div>
             </div>
 
-            <div className="settings-row">
+            {/* Avatar Upload */}
+            <div className="settings-row-editable">
               <div className="settings-row-left">
                 <span className="settings-row-label">Avatar</span>
                 <span className="settings-row-description">Edit your avatar or upload an image</span>
               </div>
-              <div className="settings-row-right">
-                <span className="settings-row-arrow">›</span>
+              <div className="settings-row-right settings-upload-row">
+                {formData.image && (
+                  <img 
+                    src={formData.image} 
+                    alt="Avatar" 
+                    className="settings-avatar-preview"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                )}
+                <label className="settings-upload-btn">
+                  {uploadingAvatar ? 'Uploading...' : 'Upload'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    onChange={handleAvatarUpload}
+                    disabled={uploadingAvatar}
+                    style={{ display: 'none' }}
+                  />
+                </label>
               </div>
             </div>
+            {avatarError && <div className="settings-error">{avatarError}</div>}
+            {avatarSuccess && <div className="settings-success">{avatarSuccess}</div>}
 
-            <div className="settings-row">
+            {/* Banner Upload */}
+            <div className="settings-row-editable">
               <div className="settings-row-left">
                 <span className="settings-row-label">Banner</span>
                 <span className="settings-row-description">Upload a profile background image</span>
               </div>
-              <div className="settings-row-right">
-                <span className="settings-row-arrow">›</span>
+              <div className="settings-row-right settings-upload-row">
+                {formData.banner && (
+                  <img 
+                    src={formData.banner} 
+                    alt="Banner" 
+                    className="settings-banner-preview"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                )}
+                <label className="settings-upload-btn">
+                  {uploadingBanner ? 'Uploading...' : 'Upload'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    onChange={handleBannerUpload}
+                    disabled={uploadingBanner}
+                    style={{ display: 'none' }}
+                  />
+                </label>
               </div>
             </div>
+            {bannerError && <div className="settings-error">{bannerError}</div>}
+            {bannerSuccess && <div className="settings-success">{bannerSuccess}</div>}
 
             {/* Social Links - Editable */}
             <div className="settings-row-editable">
