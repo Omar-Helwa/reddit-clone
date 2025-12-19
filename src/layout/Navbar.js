@@ -4,11 +4,13 @@ import { getCurrentUser, clearCurrentUser } from '../utils/auth';
 import { toggleTheme, getCurrentTheme } from '../utils/theme';
 import { getUnreadCount, getNotifications } from '../utils/notifications';
 import { universalSearch } from '../utils/search';
+import CreateCommunityModal from '../components/CreateCommunityModal';
 
 function AppNavbar({ onNavigate }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showCreateCommunityModal, setShowCreateCommunityModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
@@ -47,6 +49,16 @@ function AppNavbar({ onNavigate }) {
     } else {
       window.location.href = path;
     }
+  };
+
+  const handleOpenCreateCommunity = (e) => {
+    if (e) e.preventDefault();
+    if (!currentUser) {
+      handleNavClick('login', '/login');
+      return;
+    }
+    setShowMenu(false);
+    setShowCreateCommunityModal(true);
   };
 
   const handleLogout = () => {
@@ -589,7 +601,7 @@ function AppNavbar({ onNavigate }) {
             <a 
               href="/create-community" 
               className="menu-link create-link"
-              onClick={(e) => { e.preventDefault(); handleNavClick('create-community', '/create-community'); }}
+              onClick={handleOpenCreateCommunity}
             >
               ➕ Create Community
             </a>
@@ -631,6 +643,13 @@ function AppNavbar({ onNavigate }) {
           </div>
         </div>
       )}
+
+      {/* Create Community Modal */}
+      <CreateCommunityModal 
+        isOpen={showCreateCommunityModal}
+        onClose={() => setShowCreateCommunityModal(false)}
+        onNavigate={onNavigate}
+      />
     </header>
   );
 }

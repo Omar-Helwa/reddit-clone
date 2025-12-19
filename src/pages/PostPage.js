@@ -185,9 +185,7 @@ function PostPage() {
 
     try {
       await createComment(post?._id || post?.postId || postId, {
-        userId,
         text: trimmed,
-        parentCommentId: null,
       });
       setNewCommentText('');
       refetchComments();
@@ -215,9 +213,8 @@ function PostPage() {
 
     try {
       await createComment(post?._id || post?.postId || postId, {
-        userId,
         text: trimmed,
-        parentCommentId: parentCommentId || null,
+        parentCommentId: parentCommentId,
       });
       refetchComments();
     } catch (err) {

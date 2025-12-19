@@ -85,6 +85,13 @@ function SettingsPage({ onNavigate }) {
   const [socialLinksError, setSocialLinksError] = useState('');
   const [socialLinksSuccess, setSocialLinksSuccess] = useState('');
   
+  // Profile fields editing state
+  const [editingDisplayName, setEditingDisplayName] = useState(false);
+  const [editingAbout, setEditingAbout] = useState(false);
+  const [editingGender, setEditingGender] = useState(false);
+  const [profileFieldError, setProfileFieldError] = useState('');
+  const [profileFieldSuccess, setProfileFieldSuccess] = useState('');
+  
   // Notification modal state
   const [notificationModal, setNotificationModal] = useState({ open: false, setting: '', title: '' });
   const [notificationModalValue, setNotificationModalValue] = useState('all-on');
@@ -99,9 +106,10 @@ function SettingsPage({ onNavigate }) {
           setFormData((prev) => ({
             ...prev,
             email: userData.email || '',
-            displayName: userData.username || '',
+            displayName: userData.displayName || userData.username || '',
             image: userData.image || '',
-            about: userData.bio || '',
+            about: userData.about || userData.bio || '',
+            gender: userData.gender === true ? 'Woman' : userData.gender === false ? 'Man' : (userData.gender || 'Prefer not to say'),
             nsfw: userData.nsfw || false,
             allowFollow: userData.allowFollowing !== false, // default to true if not set
             socialLinks: {
@@ -238,6 +246,59 @@ function SettingsPage({ onNavigate }) {
     }
   };
 
+  // Handle saving individual profile fields
+  const handleSaveProfileField = async (field) => {
+    try {
+      setProfileFieldError('');
+      setProfileFieldSuccess('');
+      
+      const userId = getCurrentUserId();
+      if (!userId) {
+        setProfileFieldError('No user logged in');
+        return;
+      }
+
+      let updatePayload = {};
+      
+      if (field === 'displayName') {
+        if (!formData.displayName.trim()) {
+          setProfileFieldError('Display name cannot be empty');
+          return;
+        }
+        updatePayload = { displayName: formData.displayName.trim() };
+      } else if (field === 'about') {
+        updatePayload = { about: formData.about.trim() };
+      } else if (field === 'gender') {
+        // Save gender value - API accepts boolean (Man = false, Woman = true)
+        // For other values, we'll save them as-is and let API handle
+        let genderValue = undefined;
+        if (formData.gender === 'Man') genderValue = false;
+        else if (formData.gender === 'Woman') genderValue = true;
+        else if (formData.gender === 'Non-binary') genderValue = formData.gender;
+        else if (formData.gender === 'I prefer not to say' || formData.gender === '') genderValue = null;
+        
+        updatePayload = { gender: genderValue };
+      }
+
+      await updateUser(userId, updatePayload);
+      
+      // Close the edit mode
+      if (field === 'displayName') {
+        setEditingDisplayName(false);
+        localStorage.setItem('username', formData.displayName);
+      } else if (field === 'about') {
+        setEditingAbout(false);
+      } else if (field === 'gender') {
+        setEditingGender(false);
+      }
+      
+      setProfileFieldSuccess(`✅ ${field === 'displayName' ? 'Display name' : field === 'about' ? 'About' : 'Gender'} updated successfully!`);
+      setTimeout(() => setProfileFieldSuccess(''), 3000);
+    } catch (error) {
+      setProfileFieldError(`❌ Failed to update: ${error.message}`);
+    }
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -250,10 +311,18 @@ function SettingsPage({ onNavigate }) {
       }
 
       // Prepare update payload (only send fields the schema accepts)
+      // Convert gender string to boolean for API (Man = false, Woman = true)
+      let genderValue = undefined;
+      if (formData.gender === 'Man') genderValue = false;
+      else if (formData.gender === 'Woman') genderValue = true;
+      
       const updatePayload = {
         username: formData.displayName,
+        displayName: formData.displayName,
         email: formData.email,
         image: formData.image,
+        about: formData.about,
+        gender: genderValue,
       };
 
       // Update to API
@@ -537,12 +606,12 @@ function SettingsPage({ onNavigate }) {
               )}
             </div>
 
-            <div className="settings-row">
+            <div className="settings-row" onClick={() => setEditingGender(true)}>
               <div className="settings-row-left">
                 <span className="settings-row-label">Gender</span>
               </div>
               <div className="settings-row-right">
-                <span className="settings-row-value">{formData.gender}</span>
+                <span className="settings-row-value">{formData.gender || 'I prefer not to say'}</span>
                 <span className="settings-row-arrow">›</span>
               </div>
             </div>
@@ -680,7 +749,12 @@ function SettingsPage({ onNavigate }) {
           <div className="settings-section">
             <h3 className="settings-section-title">General</h3>
 
-            <div className="settings-row">
+            {/* Profile field success/error messages */}
+            {profileFieldSuccess && <div className="settings-success">{profileFieldSuccess}</div>}
+            {profileFieldError && <div className="settings-error">{profileFieldError}</div>}
+
+            {/* Display name row */}
+            <div className="settings-row" onClick={() => setEditingDisplayName(true)}>
               <div className="settings-row-left">
                 <span className="settings-row-label">Display name</span>
                 <span className="settings-row-description">Changing your display name won't change your username</span>
@@ -691,11 +765,25 @@ function SettingsPage({ onNavigate }) {
               </div>
             </div>
 
-            <div className="settings-row">
+            {/* About description row */}
+            <div className="settings-row" onClick={() => setEditingAbout(true)}>
               <div className="settings-row-left">
                 <span className="settings-row-label">About description</span>
+                <span className="settings-row-description">{formData.about ? formData.about.substring(0, 50) + (formData.about.length > 50 ? '...' : '') : 'Add a bio'}</span>
               </div>
               <div className="settings-row-right">
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            {/* Gender row */}
+            <div className="settings-row" onClick={() => setEditingGender(true)}>
+              <div className="settings-row-left">
+                <span className="settings-row-label">Gender</span>
+                <span className="settings-row-description">This information may be used to improve your recommendations</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">{formData.gender || 'I prefer not to say'}</span>
                 <span className="settings-row-arrow">›</span>
               </div>
             </div>
@@ -1790,6 +1878,147 @@ function SettingsPage({ onNavigate }) {
           {saveMessage && <span className="save-message">{saveMessage}</span>}
         </div>
       </main>
+
+      {/* Display Name Modal */}
+      {editingDisplayName && (
+        <div className="settings-modal-overlay" onClick={() => setEditingDisplayName(false)}>
+          <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="settings-modal-header">
+              <h2 className="settings-modal-title">Display name</h2>
+              <button className="settings-modal-close" onClick={() => setEditingDisplayName(false)}>
+                <svg viewBox="0 0 20 20" width="20" height="20">
+                  <path fill="currentColor" d="M10 8.586L15.293 3.293a1 1 0 111.414 1.414L11.414 10l5.293 5.293a1 1 0 01-1.414 1.414L10 11.414l-5.293 5.293a1 1 0 01-1.414-1.414L8.586 10 3.293 4.707a1 1 0 011.414-1.414L10 8.586z"/>
+                </svg>
+              </button>
+            </div>
+            <p className="settings-modal-description">Changing your display name won't change your username</p>
+            <div className="settings-modal-body">
+              <div className="settings-floating-input">
+                <input
+                  type="text"
+                  id="displayNameInput"
+                  className="settings-floating-input-field"
+                  value={formData.displayName}
+                  onChange={(e) => setFormData({ ...formData, displayName: e.target.value.slice(0, 30) })}
+                  placeholder=" "
+                  maxLength={30}
+                />
+                <label htmlFor="displayNameInput" className="settings-floating-label">Display name</label>
+                <span className="settings-input-char-count">{formData.displayName?.length || 0}/30</span>
+              </div>
+            </div>
+            <div className="settings-modal-footer">
+              <button className="settings-modal-cancel-btn" onClick={() => setEditingDisplayName(false)}>Cancel</button>
+              <button className="settings-modal-save-btn" onClick={() => handleSaveProfileField('displayName')}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* About Description Modal */}
+      {editingAbout && (
+        <div className="settings-modal-overlay" onClick={() => setEditingAbout(false)}>
+          <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="settings-modal-header">
+              <h2 className="settings-modal-title">About</h2>
+              <button className="settings-modal-close" onClick={() => setEditingAbout(false)}>
+                <svg viewBox="0 0 20 20" width="20" height="20">
+                  <path fill="currentColor" d="M10 8.586L15.293 3.293a1 1 0 111.414 1.414L11.414 10l5.293 5.293a1 1 0 01-1.414 1.414L10 11.414l-5.293 5.293a1 1 0 01-1.414-1.414L8.586 10 3.293 4.707a1 1 0 011.414-1.414L10 8.586z"/>
+                </svg>
+              </button>
+            </div>
+            <p className="settings-modal-description">A brief description of yourself shown on your profile</p>
+            <div className="settings-modal-body">
+              <div className="settings-floating-input">
+                <textarea
+                  id="aboutInput"
+                  className="settings-floating-textarea-field"
+                  value={formData.about}
+                  onChange={(e) => setFormData({ ...formData, about: e.target.value.slice(0, 200) })}
+                  placeholder=" "
+                  maxLength={200}
+                  rows={4}
+                />
+                <label htmlFor="aboutInput" className="settings-floating-label">About (optional)</label>
+                <span className="settings-input-char-count">{formData.about?.length || 0}/200</span>
+              </div>
+            </div>
+            <div className="settings-modal-footer">
+              <button className="settings-modal-cancel-btn" onClick={() => setEditingAbout(false)}>Cancel</button>
+              <button className="settings-modal-save-btn" onClick={() => handleSaveProfileField('about')}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Gender Modal */}
+      {editingGender && (
+        <div className="settings-modal-overlay" onClick={() => setEditingGender(false)}>
+          <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="settings-modal-header">
+              <h2 className="settings-modal-title">Gender</h2>
+              <button className="settings-modal-close" onClick={() => setEditingGender(false)}>
+                <svg viewBox="0 0 20 20" width="20" height="20">
+                  <path fill="currentColor" d="M10 8.586L15.293 3.293a1 1 0 111.414 1.414L11.414 10l5.293 5.293a1 1 0 01-1.414 1.414L10 11.414l-5.293 5.293a1 1 0 01-1.414-1.414L8.586 10 3.293 4.707a1 1 0 011.414-1.414L10 8.586z"/>
+                </svg>
+              </button>
+            </div>
+            <p className="settings-modal-description">This information may be used to improve your recommendations and ads.</p>
+            <div className="settings-modal-body">
+              <div className="settings-radio-group">
+                <label className="settings-radio-option">
+                  <input
+                    type="radio"
+                    name="gender"
+                    value="Woman"
+                    checked={formData.gender === 'Woman'}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  />
+                  <span className="settings-radio-checkmark"></span>
+                  <span className="settings-radio-label">Woman</span>
+                </label>
+                <label className="settings-radio-option">
+                  <input
+                    type="radio"
+                    name="gender"
+                    value="Man"
+                    checked={formData.gender === 'Man'}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  />
+                  <span className="settings-radio-checkmark"></span>
+                  <span className="settings-radio-label">Man</span>
+                </label>
+                <label className="settings-radio-option">
+                  <input
+                    type="radio"
+                    name="gender"
+                    value="Non-binary"
+                    checked={formData.gender === 'Non-binary'}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  />
+                  <span className="settings-radio-checkmark"></span>
+                  <span className="settings-radio-label">Non-binary</span>
+                </label>
+                <label className="settings-radio-option">
+                  <input
+                    type="radio"
+                    name="gender"
+                    value=""
+                    checked={formData.gender === '' || formData.gender === 'I prefer not to say'}
+                    onChange={(e) => setFormData({ ...formData, gender: 'I prefer not to say' })}
+                  />
+                  <span className="settings-radio-checkmark"></span>
+                  <span className="settings-radio-label">I prefer not to say</span>
+                </label>
+              </div>
+            </div>
+            <div className="settings-modal-footer">
+              <button className="settings-modal-cancel-btn" onClick={() => setEditingGender(false)}>Cancel</button>
+              <button className="settings-modal-save-btn" onClick={() => handleSaveProfileField('gender')}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

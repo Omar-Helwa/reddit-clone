@@ -12,7 +12,125 @@ import Post from '../features/posts/Post';
 import { navigate } from '../utils/helpers';
 import postsAPI from '../api/postsAPI';
 import commentsAPI from '../api/commentsAPI';
-import { createChat } from '../api/chatsApi';
+import { createChat, fetchChats } from '../api/chatsApi';
+import { DEFAULT_COMMUNITY_ICON } from '../utils/placeholders';
+
+// Helper function to format time ago
+const formatTimeAgo = (date) => {
+  if (!date) return '';
+  const now = new Date();
+  const past = new Date(date);
+  const diffMs = now - past;
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffMonths = Math.floor(diffDays / 30);
+  const diffYears = Math.floor(diffDays / 365);
+
+  if (diffYears > 0) return `${diffYears} yr. ago`;
+  if (diffMonths > 0) return `${diffMonths} mo. ago`;
+  if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  if (diffHours > 0) return `${diffHours} hr. ago`;
+  if (diffMins > 0) return `${diffMins} min. ago`;
+  return 'just now';
+};
+
+// Profile Comment Card Component
+function ProfileCommentCard({ comment, username }) {
+  const [score, setScore] = useState(comment.score || 0);
+  const [voted, setVoted] = useState(null);
+
+  const handleVote = (direction) => {
+    if (voted === direction) {
+      setVoted(null);
+      setScore(comment.score || 0);
+    } else {
+      setVoted(direction);
+      setScore((comment.score || 0) + (direction === 'up' ? 1 : -1));
+    }
+  };
+
+  const handleCommentClick = () => {
+    if (comment.postId) {
+      navigate(`/r/${comment.subreddit || 'unknown'}/comments/${comment.postId}`);
+    }
+  };
+
+  return (
+    <div className="profile-comment-card">
+      <div className="comment-card-header">
+        <div className="comment-card-community" onClick={() => navigate(`/r/${comment.subreddit || 'unknown'}`)}>
+          <img 
+            src={DEFAULT_COMMUNITY_ICON} 
+            alt="" 
+            className="comment-community-icon"
+            onError={(e) => { e.currentTarget.src = DEFAULT_COMMUNITY_ICON; }}
+          />
+          <span className="comment-community-name">r/{comment.subreddit || 'unknown'}</span>
+        </div>
+        <span className="comment-card-dot">•</span>
+        <span className="comment-card-post-title" onClick={handleCommentClick}>
+          {comment.postTitle || 'Post'}
+        </span>
+      </div>
+      
+      <div className="comment-card-meta">
+        <span className="comment-card-author">{username || comment.author || 'unknown'}</span>
+        <span className="comment-card-action">
+          {comment.parentId ? 'replied to' : 'commented'}
+        </span>
+        {comment.parentAuthor && (
+          <span className="comment-card-parent-author">{comment.parentAuthor}</span>
+        )}
+        <span className="comment-card-time">{formatTimeAgo(comment.createdAt)}</span>
+      </div>
+
+      <div className="comment-card-text" onClick={handleCommentClick}>
+        {comment.text}
+      </div>
+
+      <div className="comment-card-actions">
+        <button 
+          className={`comment-vote-btn ${voted === 'up' ? 'voted-up' : ''}`}
+          onClick={() => handleVote('up')}
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M12 4l-8 8h5v8h6v-8h5z"/>
+          </svg>
+        </button>
+        <span className={`comment-score ${voted === 'up' ? 'score-up' : voted === 'down' ? 'score-down' : ''}`}>
+          {score}
+        </span>
+        <button 
+          className={`comment-vote-btn ${voted === 'down' ? 'voted-down' : ''}`}
+          onClick={() => handleVote('down')}
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M12 20l8-8h-5V4H9v8H4z"/>
+          </svg>
+        </button>
+        <button className="comment-action-btn" onClick={handleCommentClick}>
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M21 6h-2V3H5v3H3c-1 0-2 1-2 2v3c0 3 2 5.5 5 6.4V19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-1.6c3-.9 5-3.4 5-6.4V8c0-1-1-2-2-2zM3 8h2v3c0 1.5.5 2.8 1.4 3.9C4.2 14 3 12.2 3 10V8zm14 11H7v-1h10v1zm4-9c0 2.2-1.2 4-3.4 4.9-.4-.2-.9-.4-1.6-.6V11h-2v4H10v-4H8v3.3c-.7.2-1.2.4-1.6.6C5.2 14 4 12.2 4 10V8h16v2z"/>
+          </svg>
+          Reply
+        </button>
+        <button className="comment-action-btn">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12c0 4.3 2.7 8 6.5 9.4l-.4-2.1C5.8 18 4 15.2 4 12c0-4.4 3.6-8 8-8s8 3.6 8 8c0 3.2-1.8 6-4.5 7.3l-.5 2.1C18.3 20 21 16.3 21 12c0-5.5-4.5-10-10-10zm.5 13.5l3.5-3.5-1.5-1.5-1 1V8h-2v3.5l-1-1L9 12l3.5 3.5z"/>
+          </svg>
+          Share
+        </button>
+        <button className="comment-action-btn comment-more-btn">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M6 12c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm8 0c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm8 0c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function ProfilePage({ onNavigate }) {
   const [activeTab, setActiveTab] = useState('overview');
@@ -124,7 +242,7 @@ function ProfilePage({ onNavigate }) {
             day: 'numeric',
           }),
           avatar: userData.image || null,
-          bio: userData.bio || '',
+          about: userData.about || userData.bio || '',
           email: userData.email,
           _id: userData._id || userIdToLoad,
           isNSFW: userData.isNSFW || false,
@@ -347,7 +465,24 @@ function ProfilePage({ onNavigate }) {
     
     try {
       const currentUser = getCurrentUser();
-      // Backend expects user1 and user2 objects, not participants array
+      const targetUserId = user._id || viewedUserId;
+      
+      // Check if a chat already exists with this user
+      const existingChats = await fetchChats();
+      const existingChat = existingChats.find(chat => {
+        // Check if target user is in this chat (could be user1 or user2)
+        const user1Id = chat.user1?.id || chat.user1?._id;
+        const user2Id = chat.user2?.id || chat.user2?._id;
+        return user1Id === targetUserId || user2Id === targetUserId;
+      });
+      
+      if (existingChat) {
+        // Chat already exists, navigate to it
+        navigate(`/chat/${existingChat._id}`);
+        return;
+      }
+      
+      // No existing chat, create a new one
       const chatData = {
         user1: {
           id: currentUser._id,
@@ -355,7 +490,7 @@ function ProfilePage({ onNavigate }) {
           image: currentUser.image ? { link: currentUser.image } : {},
         },
         user2: {
-          id: user._id || viewedUserId,
+          id: targetUserId,
           name: user.username || user.displayName || 'User',
           image: user.avatar ? { link: user.avatar } : {},
         },
@@ -567,7 +702,11 @@ function ProfilePage({ onNavigate }) {
                     ))}
                     <div className="comments-list">
                       {userComments.map((comment) => (
-                        <div key={comment._id} className="profile-comment-item">{comment.text}</div>
+                        <ProfileCommentCard 
+                          key={comment._id} 
+                          comment={comment}
+                          username={user?.username}
+                        />
                       ))}
                     </div>
                   </>
@@ -598,7 +737,11 @@ function ProfilePage({ onNavigate }) {
               userComments.length === 0 ? renderEmptyState('comments') : (
                 <div className="comments-list">
                   {userComments.map((comment) => (
-                    <div key={comment._id} className="profile-comment-item">{comment.text}</div>
+                    <ProfileCommentCard 
+                      key={comment._id} 
+                      comment={comment}
+                      username={user?.username}
+                    />
                   ))}
                 </div>
               )
@@ -698,25 +841,18 @@ function ProfilePage({ onNavigate }) {
         {/* Right Sidebar - Profile Card */}
         <aside className="profile-right-sidebar">
           <div className="profile-card">
-            {/* Banner */}
-            <div className="profile-card-banner">
-              {isOwnProfile && (
-                <button className="banner-edit-btn" title="Edit banner">
-                  <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
-                    <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"/>
-                    <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd"/>
-                  </svg>
-                </button>
-              )}
+            {/* Username and Menu Row */}
+            <div className="profile-card-header">
+              <span className="profile-card-username">{user.displayName || user.username}</span>
+              <button className="profile-card-menu-btn" title="More options">
+                <svg viewBox="0 0 20 20" width="20" height="20" fill="currentColor">
+                  <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"/>
+                </svg>
+              </button>
             </div>
             
             {/* Profile Info */}
             <div className="profile-card-content">
-              <div className="profile-card-name-row">
-                <span className="profile-card-name">{user.displayName}</span>
-                {user.isNSFW && <span className="nsfw-badge small">18+</span>}
-              </div>
-              
               {/* Follow and Chat buttons - only show when viewing another user's profile */}
               {!isOwnProfile && (
                 <div className="profile-card-actions">
@@ -725,9 +861,11 @@ function ProfilePage({ onNavigate }) {
                     onClick={handleFollowToggle}
                     disabled={followLoading}
                   >
-                    <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
-                    </svg>
+                    {!isFollowing && (
+                      <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+                        <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"/>
+                      </svg>
+                    )}
                     {followLoading ? 'Loading...' : isFollowing ? 'Following' : 'Follow'}
                   </button>
                   <button className="start-chat-btn" onClick={handleStartChat}>
@@ -737,6 +875,11 @@ function ProfilePage({ onNavigate }) {
                     Start Chat
                   </button>
                 </div>
+              )}
+
+              {/* About/Description */}
+              {user.about && (
+                <p className="profile-card-about">{user.about}</p>
               )}
               
               {/* Stats */}
@@ -749,19 +892,20 @@ function ProfilePage({ onNavigate }) {
                   <span className="stat-number">{user.contributions}</span>
                   <span className="stat-name">Contributions</span>
                 </div>
+              </div>
+
+              <div className="profile-card-stats-grid">
                 <div className="stat-item">
                   <span className="stat-number">{user.redditAge}</span>
                   <span className="stat-name">Reddit Age</span>
                 </div>
-                <div className="stat-item">
-                  <span className="stat-number">{user.activeIn}</span>
+                <div className="stat-item clickable">
+                  <span className="stat-number">
+                    <span className="active-communities-icons">🏠</span>
+                    {user.activeIn}
+                  </span>
                   <span className="stat-name">Active in &gt;</span>
                 </div>
-              </div>
-
-              <div className="profile-card-gold">
-                <span className="gold-number">{user.goldEarned}</span>
-                <span className="gold-label">Gold earned</span>
               </div>
 
               {/* Achievements */}

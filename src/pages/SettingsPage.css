@@ -300,6 +300,13 @@ input:checked + .toggle-slider:before {
   background-color: var(--card-bg);
 }
 
+.settings-char-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: right;
+  margin-top: 4px;
+}
+
 .settings-select {
   padding: 10px 12px;
   border: 1px solid var(--card-border);
@@ -778,4 +785,239 @@ input:checked + .toggle-slider:before {
 
 .social-link-input-group input {
   width: 100%;
+}
+/* Settings Modal Styles */
+.settings-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.settings-modal {
+  background-color: var(--card-bg);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.settings-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 0;
+}
+
+.settings-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.settings-modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.settings-modal-close:hover {
+  background-color: var(--hover);
+}
+
+.settings-modal-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 8px 20px 16px;
+  line-height: 1.4;
+}
+
+.settings-modal-body {
+  padding: 0 20px 20px;
+}
+
+.settings-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--card-border);
+}
+
+.settings-modal-cancel-btn {
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
+  transition: background-color 0.2s;
+}
+
+.settings-modal-cancel-btn:hover {
+  background-color: var(--hover);
+}
+
+.settings-modal-save-btn {
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background-color: #0079D3;
+  color: white;
+  border: none;
+  transition: background-color 0.2s;
+}
+
+.settings-modal-save-btn:hover {
+  background-color: #006CBD;
+}
+
+/* Floating Label Input */
+.settings-floating-input {
+  position: relative;
+  width: 100%;
+}
+
+.settings-floating-input-field,
+.settings-floating-textarea-field {
+  width: 100%;
+  padding: 24px 16px 8px;
+  font-size: 16px;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background-color: var(--hover);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.settings-floating-textarea-field {
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+}
+
+.settings-floating-input-field:focus,
+.settings-floating-textarea-field:focus {
+  border-color: #0079D3;
+  background-color: var(--card-bg);
+}
+
+.settings-floating-label {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: var(--text-secondary);
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.settings-floating-textarea-field + .settings-floating-label {
+  top: 24px;
+}
+
+.settings-floating-input-field:focus + .settings-floating-label,
+.settings-floating-input-field:not(:placeholder-shown) + .settings-floating-label,
+.settings-floating-textarea-field:focus + .settings-floating-label,
+.settings-floating-textarea-field:not(:placeholder-shown) + .settings-floating-label {
+  top: 12px;
+  transform: translateY(0);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.settings-input-char-count {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Radio Button Group */
+.settings-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-radio-option {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.settings-radio-option:hover {
+  background-color: var(--hover);
+}
+
+.settings-radio-option input[type="radio"] {
+  display: none;
+}
+
+.settings-radio-checkmark {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--card-border);
+  border-radius: 50%;
+  margin-right: 12px;
+  position: relative;
+  flex-shrink: 0;
+  transition: border-color 0.2s;
+}
+
+.settings-radio-option input[type="radio"]:checked + .settings-radio-checkmark {
+  border-color: #0079D3;
+}
+
+.settings-radio-option input[type="radio"]:checked + .settings-radio-checkmark::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  background-color: #0079D3;
+  border-radius: 50%;
+}
+
+.settings-radio-label {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+/* Checkmark icon for selected radio */
+.settings-radio-option input[type="radio"]:checked ~ .settings-radio-label::after {
+  content: '';
+  margin-left: auto;
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%230079D3' d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z'/%3E%3C/svg%3E");
+  background-size: contain;
 }

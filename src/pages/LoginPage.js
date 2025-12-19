@@ -64,8 +64,6 @@ function LoginPage() {
 
         setCurrentUser(userToStore);
 
-        alert(`Welcome back, ${authResult.user.username}!`);
-
         // Redirect to home page
         window.location.href = '/';
       } catch (error) {

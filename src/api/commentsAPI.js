@@ -88,24 +88,18 @@ export const commentsAPI = {
    * Create new comment on a post
    * @param {string} postId - Post ID
    * @param {object} commentData - Comment data
-   * @param {string} commentData.userId - Author user ID (ObjectId)
    * @param {string} commentData.text - Comment text content
    * @param {string} [commentData.parentCommentId] - Parent comment ID for nested replies
    * @returns {Promise<Object>} Created comment
    */
   create: (postId, commentData) => {
-    // Backend schema requires: userId, postId, text, createdAt
+    // Backend gets userId from JWT token
     const payload = {
-      userId: commentData.userId,
       postId: postId,
       text: commentData.text,
-      upvotes: 0,
-      downvotes: 0,
-      score: 0,
-      createdAt: new Date().toISOString(),
     };
     
-    // Only include parentCommentId if provided
+    // Only include parentCommentId if provided (for replies)
     if (commentData.parentCommentId) {
       payload.parentCommentId = commentData.parentCommentId;
     }
