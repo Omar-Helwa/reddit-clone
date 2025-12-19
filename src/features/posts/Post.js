@@ -218,15 +218,14 @@ const Post = ({
     setLocalScore(optimisticScore);
     setUserVote(postId, nextVote); // Persist vote to localStorage
 
-    // Try to update the backend score (fire and forget, don't revert on failure)
-    // The backend doesn't track per-user votes, so we just update the score
+    // Call the backend upvote endpoint to track the vote
     try {
-      if (voteEndpointsSupported !== false) {
-        await postsAPI.update(postId, { score: optimisticScore });
+      if (nextVote === 'up') {
+        await postsAPI.upvote(postId);
+        console.log('Upvote saved to backend for post:', postId);
       }
     } catch (err) {
-      // Silently fail - localStorage already has the correct state
-      console.warn('Failed to sync vote to backend:', err);
+      console.warn('Failed to save upvote to backend:', err);
     }
   };
 
@@ -263,14 +262,14 @@ const Post = ({
     setLocalScore(optimisticScore);
     setUserVote(postId, nextVote); // Persist vote to localStorage
 
-    // Try to update the backend score (fire and forget, don't revert on failure)
+    // Call the backend downvote endpoint to track the vote
     try {
-      if (voteEndpointsSupported !== false) {
-        await postsAPI.update(postId, { score: optimisticScore });
+      if (nextVote === 'down') {
+        await postsAPI.downvote(postId);
+        console.log('Downvote saved to backend for post:', postId);
       }
     } catch (err) {
-      // Silently fail - localStorage already has the correct state
-      console.warn('Failed to sync vote to backend:', err);
+      console.warn('Failed to save downvote to backend:', err);
     }
   };
 

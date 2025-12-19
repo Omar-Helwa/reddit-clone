@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   getMyPosts,
   getMyComments,
@@ -18,7 +18,7 @@ export function useMyProfileData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchProfileData = async () => {
+  const fetchProfileData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -30,6 +30,16 @@ export function useMyProfileData() {
         getMyUpvotedPosts({ limit: 25 }),
         getMyDownvotedPosts({ limit: 25 })
       ]);
+      console.log('Profile data fetched:', {
+        posts: postsRes.items?.length || 0,
+        comments: commentsRes.items?.length || 0,
+        saved: savedRes.items?.length || 0,
+        hidden: hiddenRes.items?.length || 0,
+        upvoted: upvotedRes.items?.length || 0,
+        downvoted: downvotedRes.items?.length || 0
+      });
+      console.log('Upvoted posts:', upvotedRes);
+      console.log('Downvoted posts:', downvotedRes);
       setPosts(postsRes.items || []);
       setComments(commentsRes.items || []);
       setSavedPosts(savedRes.items || []);
@@ -37,16 +47,16 @@ export function useMyProfileData() {
       setUpvotedPosts(upvotedRes.items || []);
       setDownvotedPosts(downvotedRes.items || []);
     } catch (err) {
+      console.error('Profile data fetch error:', err);
       setError(err.message || 'Failed to load profile data');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchProfileData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchProfileData]);
 
   return {
     posts,

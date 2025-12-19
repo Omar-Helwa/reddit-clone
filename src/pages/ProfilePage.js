@@ -4,6 +4,8 @@ import './ProfilePage.css';
 import { getCurrentUser, getCurrentUserId } from '../utils/auth';
 import { getUser } from '../api/usersApi';
 import CommunityList from '../features/communities/CommunityList';
+import Post from '../features/posts/Post';
+import { navigate } from '../utils/helpers';
 
 function ProfilePage({ onNavigate }) {
   const [activeTab, setActiveTab] = useState('overview');
@@ -256,11 +258,21 @@ function ProfilePage({ onNavigate }) {
               userPosts.length === 0 && userComments.length === 0
                 ? renderEmptyState('overview')
                 : <>
-                    <div className="posts-list">
-                      {userPosts.map((post) => (
-                        <div key={post._id} className="profile-post-item">{post.title}</div>
-                      ))}
-                    </div>
+                    {userPosts.map((post) => (
+                      <Post
+                        key={post._id}
+                        postId={post._id}
+                        title={post.title}
+                        author={post.author || post.userId}
+                        subreddit={post.subreddit}
+                        timestamp={post.createdAt}
+                        score={post.score || 0}
+                        commentCount={post.commentCount || 0}
+                        textBody={post.textBody}
+                        onCommentClick={() => navigate(`/r/${post.subreddit}/comments/${post._id}`)}
+                        onSubredditClick={() => navigate(`/r/${post.subreddit}`)}
+                      />
+                    ))}
                     <div className="comments-list">
                       {userComments.map((comment) => (
                         <div key={comment._id} className="profile-comment-item">{comment.text}</div>
@@ -272,11 +284,19 @@ function ProfilePage({ onNavigate }) {
               userPosts.length === 0 ? renderEmptyState('posts') : (
                 <div className="posts-list">
                   {userPosts.map((post) => (
-                    <div key={post._id} className="profile-post-item">
-                      {post.title}
-                      <button onClick={() => handleProfileUpvote(post._id)}>Upvote</button>
-                      <button onClick={() => handleProfileDownvote(post._id)}>Downvote</button>
-                    </div>
+                    <Post
+                      key={post._id}
+                      postId={post._id}
+                      title={post.title}
+                      author={post.author || post.userId}
+                      subreddit={post.subreddit}
+                      timestamp={post.createdAt}
+                      score={post.score || 0}
+                      commentCount={post.commentCount || 0}
+                      textBody={post.textBody}
+                      onCommentClick={() => navigate(`/r/${post.subreddit}/comments/${post._id}`)}
+                      onSubredditClick={() => navigate(`/r/${post.subreddit}`)}
+                    />
                   ))}
                 </div>
               )
@@ -294,7 +314,19 @@ function ProfilePage({ onNavigate }) {
               savedPosts.length === 0 ? renderEmptyState('saved') : (
                 <div className="posts-list">
                   {savedPosts.map((post) => (
-                    <div key={post._id} className="profile-post-item">{post.title}</div>
+                    <Post
+                      key={post._id}
+                      postId={post._id}
+                      title={post.title}
+                      author={post.author || post.userId}
+                      subreddit={post.subreddit}
+                      timestamp={post.createdAt}
+                      score={post.score || 0}
+                      commentCount={post.commentCount || 0}
+                      textBody={post.textBody}
+                      onCommentClick={() => navigate(`/r/${post.subreddit}/comments/${post._id}`)}
+                      onSubredditClick={() => navigate(`/r/${post.subreddit}`)}
+                    />
                   ))}
                 </div>
               )
@@ -304,7 +336,19 @@ function ProfilePage({ onNavigate }) {
               hiddenPosts.length === 0 ? renderEmptyState('hidden') : (
                 <div className="posts-list">
                   {hiddenPosts.map((post) => (
-                    <div key={post._id} className="profile-post-item">{post.title}</div>
+                    <Post
+                      key={post._id}
+                      postId={post._id}
+                      title={post.title}
+                      author={post.author || post.userId}
+                      subreddit={post.subreddit}
+                      timestamp={post.createdAt}
+                      score={post.score || 0}
+                      commentCount={post.commentCount || 0}
+                      textBody={post.textBody}
+                      onCommentClick={() => navigate(`/r/${post.subreddit}/comments/${post._id}`)}
+                      onSubredditClick={() => navigate(`/r/${post.subreddit}`)}
+                    />
                   ))}
                 </div>
               )
@@ -313,11 +357,19 @@ function ProfilePage({ onNavigate }) {
               upvotedPosts.length === 0 ? renderEmptyState('upvoted') : (
                 <div className="posts-list">
                   {upvotedPosts.map((post) => (
-                    <div key={post._id} className="profile-post-item">
-                      {post.title}
-                      <button onClick={() => handleProfileUpvote(post._id)}>Upvote</button>
-                      <button onClick={() => handleProfileDownvote(post._id)}>Downvote</button>
-                    </div>
+                    <Post
+                      key={post._id}
+                      postId={post._id}
+                      title={post.title}
+                      author={post.author || post.userId}
+                      subreddit={post.subreddit}
+                      timestamp={post.createdAt}
+                      score={post.score || 0}
+                      commentCount={post.commentCount || 0}
+                      textBody={post.textBody}
+                      onCommentClick={() => navigate(`/r/${post.subreddit}/comments/${post._id}`)}
+                      onSubredditClick={() => navigate(`/r/${post.subreddit}`)}
+                    />
                   ))}
                 </div>
               )
@@ -326,11 +378,19 @@ function ProfilePage({ onNavigate }) {
               downvotedPosts.length === 0 ? renderEmptyState('downvoted') : (
                 <div className="posts-list">
                   {downvotedPosts.map((post) => (
-                    <div key={post._id} className="profile-post-item">
-                      {post.title}
-                      <button onClick={() => handleProfileUpvote(post._id)}>Upvote</button>
-                      <button onClick={() => handleProfileDownvote(post._id)}>Downvote</button>
-                    </div>
+                    <Post
+                      key={post._id}
+                      postId={post._id}
+                      title={post.title}
+                      author={post.author || post.userId}
+                      subreddit={post.subreddit}
+                      timestamp={post.createdAt}
+                      score={post.score || 0}
+                      commentCount={post.commentCount || 0}
+                      textBody={post.textBody}
+                      onCommentClick={() => navigate(`/r/${post.subreddit}/comments/${post._id}`)}
+                      onSubredditClick={() => navigate(`/r/${post.subreddit}`)}
+                    />
                   ))}
                 </div>
               )
