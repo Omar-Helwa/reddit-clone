@@ -1,5 +1,5 @@
 .community-page {
-  background: #dae0e6;
+  background: var(--app-bg);
   min-height: 100vh;
 }
 
@@ -18,8 +18,8 @@
 }
 
 .community-header {
-  background: #ffffff;
-  border-bottom: 1px solid #ccc;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--card-border);
   padding: 16px 24px;
 }
 
@@ -41,20 +41,20 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  border: 4px solid #ffffff;
+  border: 4px solid var(--card-bg);
   margin-top: -40px;
-  background: #ffffff;
+  background: var(--card-bg);
 }
 
 .community-title-section h1 {
   margin: 0;
   font-size: 28px;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .community-name {
   margin: 4px 0 0 0;
-  color: #7c7c7c;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -63,9 +63,29 @@
   gap: 12px;
 }
 
+.community-delete-btn {
+  padding: 8px 12px;
+  border-radius: 20px;
+  border: none;
+  background: var(--danger);
+  color: var(--accent-contrast);
+  cursor: pointer;
+  font-weight: 800;
+  transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
+.community-delete-btn:hover {
+  filter: brightness(0.95);
+}
+
+.community-delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .join-btn {
   padding: 8px 24px;
-  background: #0079d3;
+  background: var(--blue);
   color: #ffffff;
   border: none;
   border-radius: 20px;
@@ -76,7 +96,7 @@
 }
 
 .join-btn:hover {
-  background: #006cbf;
+  background: #0066b8;
 }
 
 .join-btn.joined {
@@ -89,21 +109,39 @@
 
 .notify-btn {
   padding: 8px 12px;
-  background: #f6f7f8;
-  border: 1px solid #ccc;
+  background: var(--hover);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   font-size: 18px;
   cursor: pointer;
   transition: background 0.2s;
 }
 
+.favorite-btn {
+  padding: 8px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.favorite-btn:hover {
+  background: var(--hover);
+}
+
+.favorite-btn.favorited {
+  border-color: var(--navbar-accent);
+}
+
 .notify-btn:hover {
-  background: #e9ebed;
+  background: var(--hover);
 }
 
 .community-nav {
-  background: #ffffff;
-  border-bottom: 1px solid #ccc;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--card-border);
   padding: 0 24px;
 }
 
@@ -119,7 +157,7 @@
   background: none;
   border: none;
   border-bottom: 3px solid transparent;
-  color: #7c7c7c;
+  color: var(--text-secondary);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -127,12 +165,12 @@
 }
 
 .nav-tab:hover {
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .nav-tab.active {
-  color: #0079d3;
-  border-bottom-color: #0079d3;
+  color: var(--blue);
+  border-bottom-color: var(--blue);
 }
 
 .community-content {
@@ -151,8 +189,8 @@
 }
 
 .feed-controls {
-  background: #ffffff;
-  border: 1px solid #ccc;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 12px 16px;
   display: flex;
@@ -167,8 +205,8 @@
 
 .sort-btn {
   padding: 8px 16px;
-  background: #f6f7f8;
-  border: 1px solid #ccc;
+  background: var(--hover);
+  border: 1px solid var(--card-border);
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
@@ -177,18 +215,18 @@
 }
 
 .sort-btn:hover {
-  background: #e9ebed;
+  background: var(--hover);
 }
 
 .sort-btn.active {
-  background: #0079d3;
+  background: var(--blue);
   color: #ffffff;
-  border-color: #0079d3;
+  border-color: var(--blue);
 }
 
 .create-post-btn {
   padding: 8px 16px;
-  background: #0079d3;
+  background: var(--blue);
   color: #ffffff;
   border: none;
   border-radius: 20px;
@@ -198,7 +236,7 @@
 }
 
 .create-post-btn:hover {
-  background: #006cbf;
+  background: #0066b8;
 }
 
 .posts-feed {
@@ -224,8 +262,8 @@
 
 .about-content,
 .rules-content {
-  background: #ffffff;
-  border: 1px solid #ccc;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 20px;
 }
@@ -234,7 +272,7 @@
 .rules-content h2 {
   margin-top: 0;
   font-size: 18px;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .community-details {
@@ -259,14 +297,14 @@
   display: flex;
   gap: 12px;
   padding: 12px;
-  background: #f6f7f8;
+  background: var(--hover);
   border-radius: 8px;
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--card-border);
 }
 
 .rule-number {
   font-weight: 700;
-  color: #0079d3;
+  color: var(--blue);
 }
 
 .community-sidebar {
@@ -276,8 +314,8 @@
 }
 
 .sidebar-card {
-  background: #ffffff;
-  border: 1px solid #ccc;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 16px;
 }
@@ -285,7 +323,7 @@
 .sidebar-card h3 {
   margin: 0 0 12px 0;
   font-size: 14px;
-  color: #1a1a1b;
+  color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -293,7 +331,7 @@
 .sidebar-description {
   font-size: 14px;
   line-height: 1.5;
-  color: #1a1a1b;
+  color: var(--text-primary);
   margin-bottom: 16px;
 }
 
@@ -302,8 +340,8 @@
   grid-template-columns: 1fr 1fr;
   gap: 16px;
   padding: 16px 0;
-  border-top: 1px solid #e6e6e6;
-  border-bottom: 1px solid #e6e6e6;
+  border-top: 1px solid var(--card-border);
+  border-bottom: 1px solid var(--card-border);
 }
 
 .stat {
@@ -313,24 +351,24 @@
 
 .stat strong {
   font-size: 16px;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .stat span {
   font-size: 12px;
-  color: #7c7c7c;
+  color: var(--text-secondary);
 }
 
 .created-date {
   margin: 12px 0;
   font-size: 12px;
-  color: #7c7c7c;
+  color: var(--text-secondary);
 }
 
 .create-post-btn-full {
   width: 100%;
   padding: 10px;
-  background: #0079d3;
+  background: var(--blue);
   color: #ffffff;
   border: none;
   border-radius: 20px;
@@ -339,7 +377,7 @@
 }
 
 .create-post-btn-full:hover {
-  background: #006cbf;
+  background: #0066b8;
 }
 
 .rules-preview {
@@ -350,7 +388,7 @@
 
 .rule-preview-item {
   font-size: 13px;
-  color: #1a1a1b;
+  color: var(--text-primary);
   line-height: 1.4;
 }
 
@@ -358,17 +396,17 @@
   margin-top: 12px;
   width: 100%;
   padding: 8px;
-  background: #f6f7f8;
-  border: 1px solid #ccc;
+  background: var(--hover);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #0079d3;
+  color: var(--blue);
   cursor: pointer;
 }
 
 .see-all-btn:hover {
-  background: #e9ebed;
+  background: var(--hover);
 }
 
 .moderators-list {
@@ -382,7 +420,7 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .mod-icon {
@@ -393,8 +431,8 @@
   margin-top: 12px;
   width: 100%;
   padding: 8px;
-  background: #f6f7f8;
-  border: 1px solid #ccc;
+  background: var(--hover);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
@@ -402,7 +440,7 @@
 }
 
 .message-mods-btn:hover {
-  background: #e9ebed;
+  background: var(--hover);
 }
 
 @media (max-width: 968px) {

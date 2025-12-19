@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import './LoginPage.css';
+import { signInWithGoogle } from '../utils/googleOAuth';
+import { setCurrentUser } from '../utils/auth';
 
 function LoginPage() {
   const [formData, setFormData] = useState({
@@ -24,11 +26,9 @@ function LoginPage() {
     if (!formData.username.trim()) {
       newErrors.username = 'Username is required';
     }
-    
-    if (!formData.password) {
+
+    if (!formData.password.trim()) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
     }
 
     setErrors(newErrors);
@@ -40,20 +40,34 @@ function LoginPage() {
     
     if (validateForm()) {
       try {
-        // Import API client and auth utils
-        const { loginUser } = await import('../api/usersApi');
         const { setCurrentUser } = await import('../utils/auth');
-        
-        // Authenticate user
-        const user = await loginUser(formData.username, formData.password);
-        
-        console.log('Login successful:', user);
-        
-        // Save user info to localStorage
-        setCurrentUser(user);
-        
-        alert(`Welcome back, ${user.username}!`);
-        
+        const { loginUser } = await import('../api/usersApi');
+
+        const usernameOrEmail = formData.username.trim();
+        const password = formData.password;
+
+        // Call API to validate credentials against DB
+        const authResult = await loginUser(usernameOrEmail, password);
+        console.log('Auth result keys:', Object.keys(authResult || {}));
+
+        // Expected shape: { user, token }
+        if (!authResult?.user) {
+          throw new Error('Login response missing user');
+        }
+
+        if (!authResult?.token) {
+          console.warn('No token returned from login response');
+        }
+
+        const userToStore = {
+          ...authResult.user,
+          token: authResult.token,
+        };
+
+        setCurrentUser(userToStore);
+
+        alert(`Welcome back, ${authResult.user.username}!`);
+
         // Redirect to home page
         window.location.href = '/';
       } catch (error) {
@@ -67,9 +81,27 @@ function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    console.log('Google login clicked');
-    // TODO: Implement Google OAuth
-    alert('Google login will be implemented');
+    (async () => {
+      try {
+        const payload = await signInWithGoogle();
+        const email = payload.email || '';
+        const username = (email && email.includes('@')) ? email.split('@')[0] : (payload.name || 'google_user');
+        const user = {
+          _id: payload.sub ? `google-${payload.sub}` : `google-${Date.now()}`,
+          username,
+          email,
+          image: payload.picture || '',
+        };
+        setCurrentUser(user);
+        window.location.href = '/';
+      } catch (error) {
+        console.error('Google login failed:', error);
+        setErrors((prev) => ({
+          ...prev,
+          submit: error.message || 'Google login failed. Please try again.',
+        }));
+      }
+    })();
   };
 
   const handleAppleLogin = () => {

@@ -1,121 +1,65 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import Post from './Post';
 import './PostList.css';
 import { navigate } from '../../utils/helpers';
-import { ensureSeeded } from '../../data/mockData';
-import useCommunities from '../../hooks/useCommunities';
+import { usePosts } from '../../hooks/usePosts';
 
-const PostList = () => {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState('BEST');
-  const { communities: communityList } = useCommunities(200);
+const PostList = ({ sortBy = 'BEST' }) => {
+  const { posts, loading, error, refetch } = usePosts();
 
-  const communityMap = useMemo(() => {
-    const map = {};
-    communityList.forEach((c) => {
-      const slug = (c.name || '').replace(/^r\//, '');
-      map[slug] = c;
-    });
-    return map;
-  }, [communityList]);
+  console.log('📊 PostList sortBy:', sortBy, 'posts count:', posts?.length);
 
-  useEffect(() => {
-    fetchPosts();
-  }, [sortBy, communityMap]);
-
-  const fetchPosts = async () => {
-    try {
-      setLoading(true);
-      // Seed mock posts (temporary until posts API exists)
-      ensureSeeded();
-      
-      const allPosts = [];
-      const storageKeys = Object.keys(localStorage).filter((k) => k.startsWith('posts:'));
-      storageKeys.forEach((storageKey) => {
-        const communityKey = storageKey.replace('posts:', '');
-        const postsRaw = localStorage.getItem(storageKey);
-        if (!postsRaw) return;
-        try {
-          const communityPosts = JSON.parse(postsRaw);
-          const community = communityMap[communityKey] || {};
-          const subredditName = community.name || `r/${communityKey}`;
-          communityPosts.forEach((post) => {
-            allPosts.push({
-              postId: post.id,
-              communityKey,
-              uniqueKey: `${communityKey}_${post.id}`,
-              title: post.title,
-              author: post.author,
-              subreddit: subredditName,
-              timestamp: post.timestamp,
-              score: post.score,
-              commentCount: post.commentCount,
-              textBody: post.textBody || '',
-              type: post.type || 'text',
-              imageUrl: post.imageUrl,
-              linkUrl: post.linkUrl,
-              pollOptions: post.pollOptions,
-              subredditIcon: community.icon,
-              authorIcon: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_4.png'
-            });
-          });
-        } catch (err) {
-          console.error('Failed to parse posts for', communityKey, err);
-        }
-      });
-      
-      // Sort posts based on sortBy
-      const sorted = sortPosts(allPosts, sortBy);
-      setPosts(sorted);
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      setPosts([]);
-    } finally {
-      setLoading(false);
-    }
+  const getTimestampMs = (post) => {
+    const raw = post?.createdAt || post?.timestamp || post?.created || 0;
+    const ms = new Date(raw).getTime();
+    return Number.isNaN(ms) ? 0 : ms;
   };
 
-  const sortPosts = (postsArray, sort) => {
-    switch (sort) {
+  const sortedPosts = useMemo(() => {
+    console.log('🔄 Sorting posts by:', sortBy, 'count:', posts?.length);
+    
+    const hotRank = (post, exponent = 1.5) => {
+      const score = Number(post?.score) || 0;
+      const ts = getTimestampMs(post);
+      const hoursSince = Math.max(0, (Date.now() - ts) / 3600000);
+      return score / Math.pow(hoursSince + 2, exponent);
+    };
+
+    const list = Array.isArray(posts) ? posts : [];
+    let sorted;
+    switch (sortBy) {
       case 'NEW':
-        return [...postsArray].sort((a, b) => {
-          // Simple timestamp sorting (newer first)
-          return 0; // Keep original order for now
-        });
+        sorted = [...list].sort((a, b) => getTimestampMs(b) - getTimestampMs(a));
+        break;
       case 'TOP':
-        return [...postsArray].sort((a, b) => b.score - a.score);
+        sorted = [...list].sort(
+          (a, b) => (Number(b.score) || 0) - (Number(a.score) || 0) || getTimestampMs(b) - getTimestampMs(a)
+        );
+        break;
+      case 'RISING':
+        sorted = [...list].sort((a, b) => hotRank(b, 1.15) - hotRank(a, 1.15) || getTimestampMs(b) - getTimestampMs(a));
+        break;
       case 'HOT':
+        sorted = [...list].sort((a, b) => hotRank(b, 1.5) - hotRank(a, 1.5) || getTimestampMs(b) - getTimestampMs(a));
+        break;
       case 'BEST':
       default:
-        // Score + recency blend
-        return [...postsArray].sort((a, b) => b.score - a.score);
+        sorted = [...list].sort((a, b) => hotRank(b, 1.35) - hotRank(a, 1.35) || getTimestampMs(b) - getTimestampMs(a));
+        break;
     }
-  };
-
-  const handleUpvote = (postId) => {
-    setPosts(posts.map(post => 
-      post.postId === postId 
-        ? { ...post, score: post.score + 1 }
-        : post
-    ));
-  };
-
-  const handleDownvote = (postId) => {
-    setPosts(posts.map(post => 
-      post.postId === postId 
-        ? { ...post, score: Math.max(0, post.score - 1) }
-        : post
-    ));
-  };
+    console.log('📋 First 3 sorted:', sorted.slice(0, 3).map(p => ({ title: p.title?.substring(0, 20), score: p.score, time: p.createdAt })));
+    return sorted;
+  }, [posts, sortBy]);
 
   const handleCommentClick = (post) => {
-    const slug = post.subreddit?.replace(/^r\//, '') || 'general';
+    const slug = (post?.subreddit || '').replace(/^r\//, '');
+    if (!slug) return;
     navigate(`/r/${slug}/comments/${post.postId}?comment=1`);
   };
 
   const handleSubredditClick = (subreddit) => {
-    const slug = subreddit.replace(/^r\//, '');
+    const slug = String(subreddit || '').replace(/^r\//, '');
+    if (!slug) return;
     navigate(`/r/${slug}`);
   };
 
@@ -123,50 +67,45 @@ const PostList = () => {
     return <div className="post-list loading">Loading posts...</div>;
   }
 
+  if (error) {
+    return (
+      <div className="post-list loading">
+        <div>Error loading posts: {error}</div>
+        <button onClick={refetch}>Retry</button>
+      </div>
+    );
+  }
+
   return (
     <div className="post-list-container">
-      {/* Sort Controls */}
-      <div className="sort-controls">
-        <label htmlFor="sort-select">Sort by:</label>
-        <select 
-          id="sort-select"
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          className="sort-select"
-        >
-          <option value="BEST">Best</option>
-          <option value="HOT">Hot</option>
-          <option value="NEW">New</option>
-          <option value="TOP">Top</option>
-          <option value="RISING">Rising</option>
-        </select>
-      </div>
-
-      {/* Posts List */}
       <div className="post-list">
-        {posts.length > 0 ? (
-          posts.map(post => (
-            <Post
-              key={post.uniqueKey}
-              postId={post.postId}
-              communityKey={post.communityKey}
-              title={post.title}
-              author={post.author}
-              subreddit={post.subreddit}
-              timestamp={post.timestamp}
-              score={post.score}
-              commentCount={post.commentCount}
-              textBody={post.textBody}
-              authorIcon={post.authorIcon}
-              subredditIcon={post.subredditIcon}
-              onCommentClick={() => handleCommentClick(post)}
-              onSubredditClick={() => handleSubredditClick(post.subreddit)}
-              onUpvote={() => handleUpvote(post.uniqueKey)}
-              onDownvote={() => handleDownvote(post.uniqueKey)}
-            />
-          ))
+        {sortedPosts.length > 0 ? (
+          sortedPosts.map((post) => {
+            const subreddit = post?.subreddit || '';
+            const communityKey = subreddit.replace(/^r\//, '');
+            const timestamp = post?.createdAt || post?.timestamp;
+            return (
+              <Post
+                key={post?.uniqueKey || post?.postId}
+                postId={post?.postId}
+                communityKey={communityKey}
+                title={post?.title}
+                author={post?.author}
+                authorId={post?.authorId}
+                subreddit={subreddit}
+                timestamp={timestamp}
+                score={post?.score}
+                commentCount={post?.commentCount}
+                textBody={post?.textBody}
+                authorIcon={post?.authorIcon}
+                subredditIcon={post?.subredditIcon}
+                onCommentClick={() => handleCommentClick(post)}
+                onSubredditClick={() => handleSubredditClick(subreddit)}
+              />
+            );
+          })
         ) : (
-          <div className="no-posts">No posts found</div>
+          <div className="no-posts">No posts yet.</div>
         )}
       </div>
     </div>

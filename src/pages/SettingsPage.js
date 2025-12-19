@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './SettingsPage.css';
+import { getCurrentUserId } from '../utils/auth';
+import { updateUser, getUser } from '../api/usersApi';
+import CommunityList from '../features/communities/CommunityList';
 
 function SettingsPage({ onNavigate }) {
   const [activeTab, setActiveTab] = useState('account');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
   const [formData, setFormData] = useState({
-    email: 'user@example.com',
-    displayName: 'Nemo',
+    email: '',
+    displayName: '',
     about: 'Just another Redditor exploring the internet',
+    gender: 'Man',
+    location: '',
     nsfw: false,
     activityVisible: true,
     contentVisible: true,
@@ -17,34 +24,319 @@ function SettingsPage({ onNavigate }) {
     pushNotifications: false,
     chatRequests: 'everyone',
     autoplay: true,
+    image: '',
+    twoFactorEnabled: false,
+    googleConnected: true,
+    appleConnected: false,
+    contentVisibility: 'hide-all',
+    showNsfw: false,
+    showFollowers: false,
+    personalizeAds: false,
+    showMatureContent: true,
+    blurMature: false,
+    showRecommendations: true,
+    reduceMotion: false,
+    syncMotion: true,
+    communityThemes: true,
+    openInNewTab: false,
+    feedView: 'Card',
+    markdownEditor: false,
+    oldReddit: false,
+    emailAdminNotifications: false,
+    emailChatRequests: false,
+    emailNewUserWelcome: false,
+    emailCommentsOnPosts: false,
+    emailRepliesToComments: false,
+    emailUpvotesOnPosts: false,
+    emailUpvotesOnComments: false,
+    emailUsernameMentions: false,
+    emailNewFollowers: false,
+    emailDailyDigest: false,
+    emailWeeklyRecap: false,
+    emailWeeklyTopic: false,
+    unsubscribeAllEmails: true,
   });
+  
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  
+  const [showPasswordFields, setShowPasswordFields] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  
+  // Notification modal state
+  const [notificationModal, setNotificationModal] = useState({ open: false, setting: '', title: '' });
+  const [notificationModalValue, setNotificationModalValue] = useState('all-on');
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const userId = getCurrentUserId();
+        
+        if (userId) {
+          const userData = await getUser(userId);
+          setFormData((prev) => ({
+            ...prev,
+            email: userData.email || '',
+            displayName: userData.username || '',
+            image: userData.image || '',
+            about: userData.bio || '',
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to load user data:', error);
+      }
+    };
+    loadUserData();
+  }, []);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    alert('Settings saved!');
+  const handlePasswordChange = (field, value) => {
+    setPasswordData((prev) => ({ ...prev, [field]: value }));
+    setPasswordError('');
+    setPasswordSuccess('');
+  };
+
+  const handleChangePassword = async () => {
+    try {
+      setPasswordError('');
+      setPasswordSuccess('');
+
+      // Validation
+      if (!passwordData.newPassword || !passwordData.confirmPassword) {
+        setPasswordError('Please fill in all password fields');
+        return;
+      }
+
+      if (passwordData.newPassword.length < 6) {
+        setPasswordError('New password must be at least 6 characters long');
+        return;
+      }
+
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        setPasswordError('New passwords do not match');
+        return;
+      }
+
+      const userId = getCurrentUserId();
+      if (!userId) {
+        setPasswordError('No user logged in');
+        return;
+      }
+
+      // Update password (JWT token verifies authentication)
+      await updateUser(userId, { 
+        password: passwordData.newPassword 
+      });
+      
+      // Password changed successfully - log user out for security
+      alert('✅ Password changed successfully! Please log in with your new password.');
+      
+      // Clear all user data and redirect to login
+      localStorage.clear();
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Failed to change password:', error);
+      setPasswordError('❌ Failed to change password: ' + error.message);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setSaveMessage('');
+      
+      const userId = getCurrentUserId();
+      if (!userId) {
+        alert('No user logged in');
+        return;
+      }
+
+      // Prepare update payload (only send fields the schema accepts)
+      const updatePayload = {
+        username: formData.displayName,
+        email: formData.email,
+        image: formData.image,
+      };
+
+      // Update to API
+      await updateUser(userId, updatePayload);
+      
+      // Update localStorage so navbar and profile reflect changes immediately
+      localStorage.setItem('username', formData.displayName);
+      localStorage.setItem('userEmail', formData.email);
+      if (formData.image) {
+        localStorage.setItem('userImage', formData.image);
+      }
+      
+      setSaveMessage('✅ Settings saved to database!');
+      setTimeout(() => setSaveMessage(''), 4000);
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      setSaveMessage('❌ Failed to save: ' + error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openNotificationModal = (setting, title) => {
+    setNotificationModal({ open: true, setting, title });
+    setNotificationModalValue('all-on');
+  };
+
+  const closeNotificationModal = () => {
+    setNotificationModal({ open: false, setting: '', title: '' });
+  };
+
+  const saveNotificationSetting = () => {
+    // In a real app, you would save this setting
+    closeNotificationModal();
+  };
+
+  const NotificationModal = () => {
+    if (!notificationModal.open) return null;
+    
+    return (
+      <div className="notification-modal-overlay" onClick={closeNotificationModal}>
+        <div className="notification-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="notification-modal-header">
+            <h3 className="notification-modal-title">{notificationModal.title}</h3>
+            <button className="notification-modal-close" onClick={closeNotificationModal}>
+              ×
+            </button>
+          </div>
+          
+          <div className="notification-modal-options">
+            <div 
+              className="notification-option" 
+              onClick={() => setNotificationModalValue('all-on')}
+            >
+              <div className="notification-option-icon">🔔</div>
+              <div className="notification-option-content">
+                <p className="notification-option-title">All on</p>
+                <p className="notification-option-description">Get notifications to your device and Reddit inbox</p>
+              </div>
+              {notificationModalValue === 'all-on' && (
+                <div className="notification-option-check">✓</div>
+              )}
+            </div>
+            
+            <div 
+              className="notification-option" 
+              onClick={() => setNotificationModalValue('inbox')}
+            >
+              <div className="notification-option-icon">🔕</div>
+              <div className="notification-option-content">
+                <p className="notification-option-title">Inbox</p>
+                <p className="notification-option-description">Only get notifications to your Reddit inbox</p>
+              </div>
+              {notificationModalValue === 'inbox' && (
+                <div className="notification-option-check">✓</div>
+              )}
+            </div>
+          </div>
+          
+          <div className="notification-modal-actions">
+            <button className="notification-modal-btn notification-modal-btn-cancel" onClick={closeNotificationModal}>
+              Cancel
+            </button>
+            <button className="notification-modal-btn notification-modal-btn-save" onClick={saveNotificationSetting}>
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const handleDeleteAccount = async () => {
     try {
-      // Import auth utils
-      const { getCurrentUserId, clearCurrentUser } = await import('../utils/auth');
+      // Import auth utils and APIs
+      const { getCurrentUserId, getCurrentUser, clearCurrentUser } = await import('../utils/auth');
       const { deleteUser } = await import('../api/usersApi');
+      const { postsAPI } = await import('../api/postsAPI');
+      const commentsAPI = await import('../api/commentsAPI');
+      const { getAllChats, deleteChat } = await import('../api/chatsApi');
       
-      // Get the current user's ID
+      // Get the current user's ID and username
       const userId = getCurrentUserId();
+      const currentUser = getCurrentUser();
+      const username = currentUser?.username;
       
       if (!userId) {
         alert('No user logged in');
         return;
       }
 
-      // Delete user from MongoDB
+      console.log(`Deleting account for user: ${username} (${userId})`);
+
+      // Step 1: Delete all user's posts
+      try {
+        const allPosts = await postsAPI.getAll();
+        // Posts can have author (username) or authorId/userId
+        const userPosts = allPosts.filter(post => 
+          post.author === username || 
+          post.authorId === userId || 
+          post.userId === userId ||
+          String(post.authorId) === String(userId) ||
+          String(post.userId) === String(userId)
+        );
+        console.log(`Found ${userPosts.length} posts to delete`);
+        
+        for (const post of userPosts) {
+          const postId = post._id || post.id;
+          await postsAPI.delete(postId);
+          console.log(`Deleted post: ${postId}`);
+        }
+      } catch (error) {
+        console.error('Error deleting posts:', error);
+      }
+
+      // Step 2: Delete all user's comments
+      try {
+        // Use listAll() to get all comments, then filter by userId
+        const allComments = await commentsAPI.default.listAll();
+        // Comments store userId (user's ID), not author username
+        const userComments = allComments.filter(comment => 
+          comment.userId === userId || String(comment.userId) === String(userId)
+        );
+        console.log(`Found ${userComments.length} comments to delete`);
+        
+        for (const comment of userComments) {
+          const commentId = comment._id || comment.id;
+          await commentsAPI.default.delete(commentId);
+          console.log(`Deleted comment: ${commentId}`);
+        }
+      } catch (error) {
+        console.error('Error deleting comments:', error);
+      }
+
+      // Step 3: Delete all user's chats
+      try {
+        const allChats = await getAllChats();
+        const userChats = allChats.filter(chat => 
+          chat.participants?.some(p => p.username === username || p === username)
+        );
+        console.log(`Found ${userChats.length} chats to delete`);
+        
+        for (const chat of userChats) {
+          await deleteChat(chat._id);
+          console.log(`Deleted chat: ${chat._id}`);
+        }
+      } catch (error) {
+        console.error('Error deleting chats:', error);
+      }
+
+      // Step 4: Delete user account from MongoDB
       await deleteUser(userId);
       
-      console.log('Account deleted successfully');
+      console.log('Account and all associated data deleted successfully');
       
       // Clear user data from localStorage
       clearCurrentUser();
@@ -73,352 +365,1237 @@ function SettingsPage({ onNavigate }) {
 
   return (
     <div className="settings-page">
-      <div className="settings-container">
-        <h1 className="settings-title">User Settings</h1>
+      {/* Left Sidebar */}
+      <aside className="settings-left-sidebar">
+        <CommunityList />
+      </aside>
 
-        <div className="settings-layout">
-          {/* Sidebar */}
-          <div className="settings-sidebar">
-            <button
-              className={`settings-nav-item ${activeTab === 'account' ? 'active' : ''}`}
-              onClick={() => setActiveTab('account')}
-            >
-              Account
-            </button>
-            <button
-              className={`settings-nav-item ${activeTab === 'profile' ? 'active' : ''}`}
-              onClick={() => setActiveTab('profile')}
-            >
-              Profile
-            </button>
-            <button
-              className={`settings-nav-item ${activeTab === 'privacy' ? 'active' : ''}`}
-              onClick={() => setActiveTab('privacy')}
-            >
-              Privacy & Safety
-            </button>
-            <button
-              className={`settings-nav-item ${activeTab === 'notifications' ? 'active' : ''}`}
-              onClick={() => setActiveTab('notifications')}
-            >
-              Notifications
-            </button>
-            <button
-              className={`settings-nav-item ${activeTab === 'chat' ? 'active' : ''}`}
-              onClick={() => setActiveTab('chat')}
-            >
-              Chat & Messaging
-            </button>
-          </div>
+      {/* Main Content */}
+      <main className="settings-main-content">
+        <h1 className="settings-title">Settings</h1>
 
-          {/* Content */}
-          <div className="settings-content">
-            {activeTab === 'account' && (
-              <div className="settings-section">
-                <h2>Account Settings</h2>
-                
-                <div className="settings-group">
-                  <label className="settings-label">Email address</label>
-                  <input
-                    type="email"
-                    className="settings-input"
-                    value={formData.email}
-                    onChange={(e) => handleChange('email', e.target.value)}
-                  />
-                  <p className="settings-help">
-                    We'll send you emails about your account, activity, and updates.
-                  </p>
-                </div>
+        {/* Horizontal Tabs */}
+        <div className="settings-tabs">
+          <button
+            className={`settings-tab ${activeTab === 'account' ? 'active' : ''}`}
+            onClick={() => setActiveTab('account')}
+          >
+            Account
+          </button>
+          <button
+            className={`settings-tab ${activeTab === 'profile' ? 'active' : ''}`}
+            onClick={() => setActiveTab('profile')}
+          >
+            Profile
+          </button>
+          <button
+            className={`settings-tab ${activeTab === 'privacy' ? 'active' : ''}`}
+            onClick={() => setActiveTab('privacy')}
+          >
+            Privacy
+          </button>
+          <button
+            className={`settings-tab ${activeTab === 'preferences' ? 'active' : ''}`}
+            onClick={() => setActiveTab('preferences')}
+          >
+            Preferences
+          </button>
+          <button
+            className={`settings-tab ${activeTab === 'notifications' ? 'active' : ''}`}
+            onClick={() => setActiveTab('notifications')}
+          >
+            Notifications
+          </button>
+          <button
+            className={`settings-tab ${activeTab === 'email' ? 'active' : ''}`}
+            onClick={() => setActiveTab('email')}
+          >
+            Email
+          </button>
+        </div>
 
-                <div className="settings-group">
-                  <label className="settings-label">Change password</label>
-                  <button className="settings-button">Change Password</button>
-                </div>
+        {/* Account Tab */}
+        {activeTab === 'account' && (
+          <div className="settings-section">
+            <h3 className="settings-section-title">General</h3>
 
-                <div className="settings-group">
-                  <label className="settings-label">Gender</label>
-                  <select className="settings-select">
-                    <option>I prefer not to say</option>
-                    <option>Man</option>
-                    <option>Woman</option>
-                    <option>Non-binary</option>
-                  </select>
-                </div>
-
-                <div className="settings-group">
-                  <h3>Connected accounts</h3>
-                  <div className="connected-accounts">
-                    <div className="account-item">
-                      <span>🔵 Google</span>
-                      <button className="btn-link">Connect</button>
-                    </div>
-                    <div className="account-item">
-                      <span>⚫ Apple</span>
-                      <button className="btn-link">Connect</button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="settings-group">
-                  <button className="btn-danger" onClick={confirmDelete}>
-                    Delete Account
-                  </button>
-                  <p className="settings-help">
-                    Once you delete your account, there is no going back. All your posts, comments, and data will be permanently removed.
-                  </p>
-                </div>
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Email address</span>
               </div>
-            )}
-
-            {activeTab === 'profile' && (
-              <div className="settings-section">
-                <h2>Profile Settings</h2>
-
-                <div className="settings-group">
-                  <label className="settings-label">Display name</label>
-                  <input
-                    type="text"
-                    className="settings-input"
-                    value={formData.displayName}
-                    onChange={(e) => handleChange('displayName', e.target.value)}
-                  />
-                  <p className="settings-help">
-                    This is your public display name on Reddit.
-                  </p>
-                </div>
-
-                <div className="settings-group">
-                  <label className="settings-label">About (optional)</label>
-                  <textarea
-                    className="settings-textarea"
-                    rows="4"
-                    value={formData.about}
-                    onChange={(e) => handleChange('about', e.target.value)}
-                  />
-                  <p className="settings-help">
-                    A brief description of yourself shown on your profile.
-                  </p>
-                </div>
-
-                <div className="settings-group">
-                  <label className="settings-label">Avatar</label>
-                  <div className="avatar-preview">
-                    <div className="avatar-display">👽</div>
-                    <button 
-                      className="settings-button"
-                      onClick={() => onNavigate('/edit-avatar')}
-                    >
-                      Edit Avatar
-                    </button>
-                  </div>
-                </div>
-
-                <div className="settings-group">
-                  <label className="settings-label">Profile banner</label>
-                  <button className="settings-button">Upload Banner</button>
-                </div>
-
-                <div className="settings-group">
-                  <div className="settings-toggle">
-                    <div>
-                      <strong>NSFW</strong>
-                      <p className="settings-help">
-                        This content is NSFW (may contain nudity, pornography, profanity or inappropriate content for those under 18)
-                      </p>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={formData.nsfw}
-                        onChange={(e) => handleChange('nsfw', e.target.checked)}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-                </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">{formData.email || 'Not set'}</span>
+                <span className="settings-row-arrow">›</span>
               </div>
-            )}
+            </div>
 
-            {activeTab === 'privacy' && (
-              <div className="settings-section">
-                <h2>Privacy & Safety</h2>
-
-                <div className="settings-group">
-                  <div className="settings-toggle">
-                    <div>
-                      <strong>Make my activity visible</strong>
-                      <p className="settings-help">
-                        Allow others to see your active communities and other activity
-                      </p>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={formData.activityVisible}
-                        onChange={(e) => handleChange('activityVisible', e.target.checked)}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="settings-group">
-                  <div className="settings-toggle">
-                    <div>
-                      <strong>Content visibility</strong>
-                      <p className="settings-help">
-                        Posts to this profile can appear in r/all and your profile can be discovered in /users
-                      </p>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={formData.contentVisible}
-                        onChange={(e) => handleChange('contentVisible', e.target.checked)}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="settings-group">
-                  <div className="settings-toggle">
-                    <div>
-                      <strong>Allow people to follow you</strong>
-                      <p className="settings-help">
-                        Followers will be notified about posts you make to your profile and see them in their home feed
-                      </p>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={formData.allowFollow}
-                        onChange={(e) => handleChange('allowFollow', e.target.checked)}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="settings-group">
-                  <div className="settings-toggle">
-                    <div>
-                      <strong>Show up in search results</strong>
-                      <p className="settings-help">
-                        Allow search engines like Google to link to your profile in their search results
-                      </p>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={formData.showInSearch}
-                        onChange={(e) => handleChange('showInSearch', e.target.checked)}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="settings-group">
-                  <h3>Blocked users</h3>
-                  <p className="settings-help">No blocked users</p>
-                </div>
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Gender</span>
               </div>
-            )}
-
-            {activeTab === 'notifications' && (
-              <div className="settings-section">
-                <h2>Notification Settings</h2>
-
-                <div className="settings-group">
-                  <div className="settings-toggle">
-                    <div>
-                      <strong>Email notifications</strong>
-                      <p className="settings-help">
-                        Receive email notifications about your account activity
-                      </p>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={formData.emailNotifications}
-                        onChange={(e) => handleChange('emailNotifications', e.target.checked)}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="settings-group">
-                  <div className="settings-toggle">
-                    <div>
-                      <strong>Push notifications</strong>
-                      <p className="settings-help">
-                        Receive push notifications on this device
-                      </p>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={formData.pushNotifications}
-                        onChange={(e) => handleChange('pushNotifications', e.target.checked)}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-                </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">{formData.gender}</span>
+                <span className="settings-row-arrow">›</span>
               </div>
-            )}
+            </div>
 
-            {activeTab === 'chat' && (
-              <div className="settings-section">
-                <h2>Chat & Messaging</h2>
-
-                <div className="settings-group">
-                  <label className="settings-label">Who can send you chat requests</label>
-                  <select
-                    className="settings-select"
-                    value={formData.chatRequests}
-                    onChange={(e) => handleChange('chatRequests', e.target.value)}
-                  >
-                    <option value="everyone">Everyone</option>
-                    <option value="accounts-older">Accounts older than 30 days</option>
-                    <option value="nobody">Nobody</option>
-                  </select>
-                </div>
-
-                <div className="settings-group">
-                  <div className="settings-toggle">
-                    <div>
-                      <strong>Autoplay videos</strong>
-                      <p className="settings-help">
-                        Videos will play automatically in chat
-                      </p>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={formData.autoplay}
-                        onChange={(e) => handleChange('autoplay', e.target.checked)}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-                </div>
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Location customization</span>
               </div>
-            )}
+              <div className="settings-row-right">
+                <span className="settings-row-value link">{formData.location || 'No location specified'}</span>
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
 
-            <div className="settings-actions">
-              <button className="btn-save" onClick={handleSave}>
-                Save Changes
-              </button>
-              <button className="btn-cancel" onClick={() => onNavigate('/')}>
-                Cancel
+            <h3 className="settings-section-title">Account authorization</h3>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Google</span>
+                <span className="account-auth-description">Connect to log in to Reddit with your Google account</span>
+              </div>
+              <button 
+                className={`settings-btn ${formData.googleConnected ? 'settings-btn-outline' : 'settings-btn-filled'}`}
+                onClick={() => handleChange('googleConnected', !formData.googleConnected)}
+              >
+                {formData.googleConnected ? 'Disconnect' : 'Connect'}
               </button>
             </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Apple</span>
+                <span className="account-auth-description">Connect to log in to Reddit with your Apple account</span>
+              </div>
+              <button 
+                className={`settings-btn ${formData.appleConnected ? 'settings-btn-outline' : 'settings-btn-filled'}`}
+                onClick={() => handleChange('appleConnected', !formData.appleConnected)}
+              >
+                {formData.appleConnected ? 'Disconnect' : 'Connect'}
+              </button>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Two-factor authentication</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.twoFactorEnabled}
+                  onChange={(e) => handleChange('twoFactorEnabled', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <h3 className="settings-section-title">Reddit Premium</h3>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Get premium</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            <h3 className="settings-section-title">Advanced</h3>
+
+            <div className="settings-row" onClick={confirmDelete}>
+              <div className="settings-row-left">
+                <span className="settings-row-label">Delete account</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            {/* Password Change Section */}
+            {showPasswordFields && (
+              <div className="password-section">
+                <h3 className="settings-section-title">Change Password</h3>
+                <div className="password-inputs">
+                  <input
+                    type="password"
+                    className="settings-input"
+                    placeholder="New Password (min 6 characters)"
+                    value={passwordData.newPassword}
+                    onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
+                  />
+                  <input
+                    type="password"
+                    className="settings-input"
+                    placeholder="Confirm New Password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+                  />
+                </div>
+                {passwordError && <p className="error-message">{passwordError}</p>}
+                {passwordSuccess && <p className="success-message">{passwordSuccess}</p>}
+                <div className="password-buttons">
+                  <button className="settings-btn settings-btn-filled" onClick={handleChangePassword}>
+                    Update Password
+                  </button>
+                  <button 
+                    className="settings-btn settings-btn-outline"
+                    onClick={() => {
+                      setShowPasswordFields(false);
+                      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                      setPasswordError('');
+                      setPasswordSuccess('');
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {!showPasswordFields && (
+              <div className="settings-row" onClick={() => setShowPasswordFields(true)}>
+                <div className="settings-row-left">
+                  <span className="settings-row-label">Change password</span>
+                </div>
+                <div className="settings-row-right">
+                  <span className="settings-row-arrow">›</span>
+                </div>
+              </div>
+            )}
           </div>
+        )}
+
+        {/* Profile Tab */}
+        {activeTab === 'profile' && (
+          <div className="settings-section">
+            <h3 className="settings-section-title">General</h3>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Display name</span>
+                <span className="settings-row-description">Changing your display name won't change your username</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">{formData.displayName || 'Not set'}</span>
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">About description</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Avatar</span>
+                <span className="settings-row-description">Edit your avatar or upload an image</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Banner</span>
+                <span className="settings-row-description">Upload a profile background image</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Social links</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Mark as mature (18+)</span>
+                <span className="account-auth-description">Label your profile as Not Safe for Work (NSFW) and ensure it's inaccessible to people under 18</span>
+              </div>
+              <label className="toggle-switch toggle-switch-blue">
+                <input
+                  type="checkbox"
+                  checked={formData.nsfw}
+                  onChange={(e) => handleChange('nsfw', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <h3 className="settings-section-title-large">Curate your profile</h3>
+            <p className="settings-section-subtitle">Manage what content shows on your profile.</p>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Content and activity</span>
+                <span className="account-auth-description">Posts, comments, and communities you're active in</span>
+              </div>
+              <select 
+                className="settings-dropdown"
+                value={formData.contentVisibility || 'hide-all'}
+                onChange={(e) => handleChange('contentVisibility', e.target.value)}
+              >
+                <option value="show-all">Show all</option>
+                <option value="hide-all">Hide all</option>
+              </select>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">NSFW</span>
+                <span className="account-auth-description">Show all NSFW posts and comments</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.showNsfw}
+                  onChange={(e) => handleChange('showNsfw', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Followers</span>
+                <span className="account-auth-description">Show your follower count</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.showFollowers}
+                  onChange={(e) => handleChange('showFollowers', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="settings-info-box">
+              <span className="settings-info-link">Profile curation</span> only applies to your profile and your content stays visible in communities. Mods of communities you participate in and redditors whose profile posts you engage with can still see your full profile for moderation.
+            </div>
+
+            <h3 className="settings-section-title-large">Advanced</h3>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Profile moderation</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-external-icon">↗</span>
+              </div>
+            </div>
+
+            <div className="settings-footer">
+              <a href="/reddit-rules">Reddit Rules</a>
+              <a href="/privacy-policy">Privacy Policy</a>
+              <a href="/user-agreement">User Agreement</a>
+              <a href="/accessibility">Accessibility</a>
+              <span className="settings-footer-copyright">• Reddit, Inc. © 2025. All rights reserved.</span>
+            </div>
+          </div>
+        )}
+
+        {/* Privacy Tab */}
+        {activeTab === 'privacy' && (
+          <div className="settings-section">
+            <h3 className="settings-section-title-large">Social interactions</h3>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Allow people to follow you</span>
+                <span className="account-auth-description">Let people follow you to see your profile posts in their home feed</span>
+              </div>
+              <label className="toggle-switch toggle-switch-blue">
+                <input
+                  type="checkbox"
+                  checked={formData.allowFollow}
+                  onChange={(e) => handleChange('allowFollow', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Who can send you chat requests</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">{formData.chatRequests === 'everyone' ? 'Everyone' : formData.chatRequests === 'accounts-older' ? 'Accounts older than 30 days' : 'Nobody'}</span>
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Blocked accounts</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            <h3 className="settings-section-title-large">Discoverability</h3>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">List your profile on old.reddit.com/users</span>
+                <span className="account-auth-description">List your profile on old.reddit.com/users and allow posts to your profile to appear in r/all</span>
+              </div>
+              <label className="toggle-switch toggle-switch-blue">
+                <input
+                  type="checkbox"
+                  checked={formData.contentVisible}
+                  onChange={(e) => handleChange('contentVisible', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Show up in search results</span>
+                <span className="account-auth-description">Allow search engines like Google to link to your profile in their search results</span>
+              </div>
+              <label className="toggle-switch toggle-switch-blue">
+                <input
+                  type="checkbox"
+                  checked={formData.showInSearch}
+                  onChange={(e) => handleChange('showInSearch', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <h3 className="settings-section-title-large">Advertising</h3>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Personalize ads on Reddit based on information and activity from our partners</span>
+                <span className="account-auth-description">Allow us to use information from our partners to show you better ads on Reddit</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.personalizeAds}
+                  onChange={(e) => handleChange('personalizeAds', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <h3 className="settings-section-title-large">Advanced</h3>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label settings-row-label-link">Third-party app authorizations</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-external-icon">↗</span>
+              </div>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Clear history</span>
+                <span className="account-auth-description">Delete your post views history</span>
+              </div>
+              <button className="settings-btn settings-btn-outline">Clear</button>
+            </div>
+
+            <div className="settings-footer">
+              <a href="/reddit-rules">Reddit Rules</a>
+              <a href="/privacy-policy">Privacy Policy</a>
+              <a href="/user-agreement">User Agreement</a>
+              <a href="/accessibility">Accessibility</a>
+              <span className="settings-footer-copyright">• Reddit, Inc. © 2025. All rights reserved.</span>
+            </div>
+          </div>
+        )}
+
+        {/* Preferences Tab */}
+        {activeTab === 'preferences' && (
+          <div className="settings-section">
+            <h3 className="settings-section-title-large">Language</h3>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Display language</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Content languages</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            <h3 className="settings-section-title-large">Content</h3>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Show mature content (I'm over 18)</span>
+                <span className="account-auth-description">See Not Safe for Work mature and adult content in your feeds and search results</span>
+              </div>
+              <label className="toggle-switch toggle-switch-blue">
+                <input
+                  type="checkbox"
+                  checked={formData.showMatureContent}
+                  onChange={(e) => handleChange('showMatureContent', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Blur mature (18+) images and media</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.blurMature}
+                  onChange={(e) => handleChange('blurMature', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Show recommendations in home feed</span>
+              </div>
+              <label className="toggle-switch toggle-switch-blue">
+                <input
+                  type="checkbox"
+                  checked={formData.showRecommendations}
+                  onChange={(e) => handleChange('showRecommendations', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Muted communities</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            <h3 className="settings-section-title-large">Accessibility</h3>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Autoplay media</span>
+              </div>
+              <label className="toggle-switch toggle-switch-blue">
+                <input
+                  type="checkbox"
+                  checked={formData.autoplay}
+                  onChange={(e) => handleChange('autoplay', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name settings-label-muted">Reduce Motion</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.reduceMotion}
+                  onChange={(e) => handleChange('reduceMotion', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Sync with computer's motion settings</span>
+              </div>
+              <label className="toggle-switch toggle-switch-blue">
+                <input
+                  type="checkbox"
+                  checked={formData.syncMotion}
+                  onChange={(e) => handleChange('syncMotion', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <h3 className="settings-section-title-large">Experience</h3>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Use community themes</span>
+              </div>
+              <label className="toggle-switch toggle-switch-blue">
+                <input
+                  type="checkbox"
+                  checked={formData.communityThemes}
+                  onChange={(e) => handleChange('communityThemes', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Open posts in new tab</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.openInNewTab}
+                  onChange={(e) => handleChange('openInNewTab', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Default feed view</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">{formData.feedView || 'Card'}</span>
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Default to markdown editor</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.markdownEditor}
+                  onChange={(e) => handleChange('markdownEditor', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Keyboard shortcuts</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Default to old Reddit</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.oldReddit}
+                  onChange={(e) => handleChange('oldReddit', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <h3 className="settings-section-title-large">Sensitive advertising categories</h3>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Limit ads in selected categories</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            <div className="settings-footer">
+              <a href="/reddit-rules">Reddit Rules</a>
+              <a href="/privacy-policy">Privacy Policy</a>
+              <a href="/user-agreement">User Agreement</a>
+              <a href="/accessibility">Accessibility</a>
+              <span className="settings-footer-copyright">• Reddit, Inc. © 2025. All rights reserved.</span>
+            </div>
+          </div>
+        )}
+
+        {/* Notifications Tab */}
+        {activeTab === 'notifications' && (
+          <div className="settings-section">
+            <NotificationModal />
+            
+            <h3 className="settings-section-title-large">General</h3>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Community notifications</span>
+              </div>
+              <div className="settings-row-right">
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('community', 'Community notifications')}>›</button>
+              </div>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Web push notifications</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.pushNotifications}
+                  onChange={(e) => handleChange('pushNotifications', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <h3 className="settings-section-title-large">Messages</h3>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Chat messages</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('chatMessages', 'Chat messages')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Chat requests</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('chatRequests', 'Chat requests')}>›</button>
+              </div>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Mark all as read</span>
+                <span className="account-auth-description">Mark all chat conversations as read</span>
+              </div>
+              <button className="settings-btn settings-btn-filled">Mark as read</button>
+            </div>
+
+            <h3 className="settings-section-title-large">Activity</h3>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Mentions of u/username</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('mentions', 'Mentions of u/username')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Comments on your posts</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('commentsOnPosts', 'Comments on your posts')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Upvotes on your posts</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('upvotesPosts', 'Upvotes on your posts')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Upvotes on your comments</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('upvotesComments', 'Upvotes on your comments')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Replies to your comments</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('replies', 'Replies to your comments')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Activity on your comments</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('activityComments', 'Activity on your comments')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">New followers</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('newFollowers', 'New followers')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Awards you receive</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('awards', 'Awards you receive')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Posts you follow</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('followedPosts', 'Posts you follow')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Comments you follow</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('followedComments', 'Comments you follow')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Keyword alerts</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('keywords', 'Keyword alerts')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Achievement updates</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('achievements', 'Achievement updates')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Streak reminders</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('streaks', 'Streak reminders')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Insights on your posts</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('insights', 'Insights on your posts')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Developer Platform app notifications</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('devPlatform', 'Developer Platform app notifications')}>›</button>
+              </div>
+            </div>
+
+            <h3 className="settings-section-title-large">Recommendations</h3>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Trending posts</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('trending', 'Trending posts')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">ReReddit</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('rereddit', 'ReReddit')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Featured content</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('featured', 'Featured content')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Breaking news</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('breaking', 'Breaking news')}>›</button>
+              </div>
+            </div>
+
+            <h3 className="settings-section-title-large">Updates</h3>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Reddit announcements</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('announcements', 'Reddit announcements')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Cake day</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('cakeday', 'Cake day')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Admin notifications</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('admin', 'Admin notifications')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Disabled admin notifications</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">0</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('disabledAdmin', 'Disabled admin notifications')}>›</button>
+              </div>
+            </div>
+
+            <h3 className="settings-section-title-large">Moderation</h3>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <span className="settings-row-label">Mod notifications</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">All on</span>
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('mod', 'Mod notifications')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <div className="settings-community-row">
+                  <span className="settings-community-icon">🔵</span>
+                  <span className="settings-row-label">r/asdrfa</span>
+                </div>
+              </div>
+              <div className="settings-row-right">
+                <button className="settings-arrow-btn" onClick={() => openNotificationModal('community-asdrfa', 'r/asdrfa')}>›</button>
+              </div>
+            </div>
+
+            <div className="settings-footer">
+              <a href="/reddit-rules">Reddit Rules</a>
+              <a href="/privacy-policy">Privacy Policy</a>
+              <a href="/user-agreement">User Agreement</a>
+              <a href="/accessibility">Accessibility</a>
+              <span className="settings-footer-copyright">• Reddit, Inc. © 2025. All rights reserved.</span>
+            </div>
+          </div>
+        )}
+
+        {/* Email Tab */}
+        {activeTab === 'email' && (
+          <div className="settings-section">
+            <h3 className="settings-section-title-large">Messages</h3>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name settings-label-muted">Admin notifications</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.emailAdminNotifications}
+                  onChange={(e) => handleChange('emailAdminNotifications', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name settings-label-muted">Chat requests</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.emailChatRequests}
+                  onChange={(e) => handleChange('emailChatRequests', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <h3 className="settings-section-title-large">Activity</h3>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name settings-label-muted">New user welcome</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.emailNewUserWelcome}
+                  onChange={(e) => handleChange('emailNewUserWelcome', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name settings-label-muted">Comments on your posts</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.emailCommentsOnPosts}
+                  onChange={(e) => handleChange('emailCommentsOnPosts', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name settings-label-muted">Replies to your comments</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.emailRepliesToComments}
+                  onChange={(e) => handleChange('emailRepliesToComments', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name settings-label-muted">Upvotes on your posts</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.emailUpvotesOnPosts}
+                  onChange={(e) => handleChange('emailUpvotesOnPosts', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name settings-label-muted">Upvotes on your comments</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.emailUpvotesOnComments}
+                  onChange={(e) => handleChange('emailUpvotesOnComments', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name settings-label-muted">Username mentions</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.emailUsernameMentions}
+                  onChange={(e) => handleChange('emailUsernameMentions', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name settings-label-muted">New followers</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.emailNewFollowers}
+                  onChange={(e) => handleChange('emailNewFollowers', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <h3 className="settings-section-title-large">Newsletters</h3>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name settings-label-muted">Daily Digest</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.emailDailyDigest}
+                  onChange={(e) => handleChange('emailDailyDigest', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name settings-label-muted">Weekly Recap</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.emailWeeklyRecap}
+                  onChange={(e) => handleChange('emailWeeklyRecap', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name settings-label-muted">Weekly Topic</span>
+              </div>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={formData.emailWeeklyTopic}
+                  onChange={(e) => handleChange('emailWeeklyTopic', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <h3 className="settings-section-title-large">Advanced</h3>
+
+            <div className="account-auth-row">
+              <div className="account-auth-left">
+                <span className="account-auth-name">Unsubscribe from all emails</span>
+              </div>
+              <label className="toggle-switch toggle-switch-blue">
+                <input
+                  type="checkbox"
+                  checked={formData.unsubscribeAllEmails}
+                  onChange={(e) => handleChange('unsubscribeAllEmails', e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="settings-footer">
+              <a href="/reddit-rules">Reddit Rules</a>
+              <a href="/privacy-policy">Privacy Policy</a>
+              <a href="/user-agreement">User Agreement</a>
+              <a href="/accessibility">Accessibility</a>
+              <span className="settings-footer-copyright">• Reddit, Inc. © 2025. All rights reserved.</span>
+            </div>
+          </div>
+        )}
+
+        {/* Save Actions */}
+        <div className="settings-save-actions">
+          <button 
+            className="settings-btn settings-btn-filled" 
+            onClick={handleSave} 
+            disabled={saving}
+          >
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+          <button 
+            className="settings-btn settings-btn-outline" 
+            onClick={() => onNavigate('/')}
+          >
+            Cancel
+          </button>
+          {saveMessage && <span className="save-message">{saveMessage}</span>}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

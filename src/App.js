@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import AppNavbar from './layout/Navbar';
+import { initializeTheme } from './utils/theme';
+import { addSampleNotifications } from './utils/notifications';
+import { isLoggedIn } from './utils/auth';
 import HomePage from './pages/HomePage';
 import ExplorePage from './pages/ExplorePage';
 import PopularPage from './pages/PopularPage';
@@ -28,131 +31,73 @@ import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import AchievementsPage from './pages/AchievementsPage';
 import EditAvatarPage from './pages/EditAvatarPage';
+import NotificationsPage from './pages/NotificationsPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import FavoritesPage from './pages/FavoritesPage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
 
   useEffect(() => {
-    // Check URL path to determine which page to show
-    const path = window.location.pathname;
-    if (path.includes('/explore')) {
-      setCurrentPage('explore');
-    } else if (path.includes('/popular')) {
-      setCurrentPage('popular');
-    } else if (path.includes('/create-community')) {
-      setCurrentPage('create-community');
-    } else if (path.includes('/accessibility')) {
-      setCurrentPage('accessibility');
-    } else if (path.includes('/developer-platform')) {
-      setCurrentPage('developer-platform');
-    } else if (path.includes('/about')) {
-      setCurrentPage('about');
-    } else if (path.includes('/advertise')) {
-      setCurrentPage('advertise');
-    } else if (path.includes('/best')) {
-      setCurrentPage('best');
-    } else if (path.includes('/blog')) {
-      setCurrentPage('blog');
-    } else if (path.includes('/careers')) {
-      setCurrentPage('careers');
-    } else if (path.includes('/communities')) {
-      setCurrentPage('communities');
-    } else if (path.includes('/help')) {
-      setCurrentPage('help');
-    } else if (path.includes('/press')) {
-      setCurrentPage('press');
-    } else if (path.includes('/privacy')) {
-      setCurrentPage('privacy');
-    } else if (path.includes('/rules')) {
-      setCurrentPage('rules');
-    } else if (path.includes('/user-agreement')) {
-      setCurrentPage('user-agreement');
-    } else if (path.includes('/login')) {
-      setCurrentPage('login');
-    } else if (path.includes('/signup')) {
-      setCurrentPage('signup');
-    } else if (path.includes('/chat')) {
-      setCurrentPage('chat');
-    } else if (path.includes('/profile')) {
-      setCurrentPage('profile');
-    } else if (path.includes('/settings')) {
-      setCurrentPage('settings');
-    } else if (path.includes('/achievements')) {
-      setCurrentPage('achievements');
-    } else if (path.includes('/edit-avatar')) {
-      setCurrentPage('edit-avatar');
-    } else if (path.includes('/my-community')) {
-      setCurrentPage('my-community');
-    } else if (path.includes('/r/') && path.includes('/submit')) {
-      setCurrentPage('create-post');
-    } else if (path.includes('/r/') && path.includes('/comments/')) {
-      setCurrentPage('post');
-    } else if (path.includes('/r/') || path.includes('/community')) {
-      setCurrentPage('community');
-    } else {
-      setCurrentPage('home');
-    }
+    initializeTheme();
+    addSampleNotifications();
 
-    // Listen for navigation
+    const shouldRequireAuth = (p) => p.startsWith('/chat') || p.startsWith('/create-community');
+    const matchesRoute = (p, base) => p === `/${base}` || p.startsWith(`/${base}/`);
+
+    const resolvePageFromPath = (p) => {
+      if (!isLoggedIn() && shouldRequireAuth(p)) return 'login';
+      if (matchesRoute(p, 'explore')) return 'explore';
+      if (matchesRoute(p, 'popular')) return 'popular';
+      if (matchesRoute(p, 'create-community')) return 'create-community';
+      if (matchesRoute(p, 'accessibility')) return 'accessibility';
+      if (matchesRoute(p, 'developer-platform')) return 'developer-platform';
+      if (matchesRoute(p, 'about')) return 'about';
+      if (matchesRoute(p, 'advertise')) return 'advertise';
+      if (matchesRoute(p, 'best')) return 'best';
+      if (matchesRoute(p, 'blog')) return 'blog';
+      if (matchesRoute(p, 'careers')) return 'careers';
+      if (matchesRoute(p, 'communities')) return 'communities';
+      if (matchesRoute(p, 'help')) return 'help';
+      if (matchesRoute(p, 'press')) return 'press';
+      if (matchesRoute(p, 'privacy')) return 'privacy';
+      if (matchesRoute(p, 'rules')) return 'rules';
+      if (matchesRoute(p, 'user-agreement')) return 'user-agreement';
+      if (matchesRoute(p, 'login')) return 'login';
+      if (matchesRoute(p, 'signup')) return 'signup';
+      if (matchesRoute(p, 'notifications')) return 'notifications';
+      if (matchesRoute(p, 'forgot-password')) return 'forgot-password';
+      if (matchesRoute(p, 'reset-password')) return 'reset-password';
+      if (matchesRoute(p, 'favorites')) return 'favorites';
+      if (matchesRoute(p, 'chat')) return 'chat';
+      if (p.includes('/user/')) return 'profile';
+      if (matchesRoute(p, 'profile')) return 'profile';
+      if (matchesRoute(p, 'settings')) return 'settings';
+      if (matchesRoute(p, 'achievements')) return 'achievements';
+      if (matchesRoute(p, 'edit-avatar')) return 'edit-avatar';
+      if (matchesRoute(p, 'my-community')) return 'my-community';
+      if (matchesRoute(p, 'submit')) return 'create-post';
+      if (p.includes('/r/') && p.includes('/submit')) return 'create-post';
+      if (p.includes('/r/') && p.includes('/comments/')) return 'post';
+      if (p.includes('/r/') || p.includes('/community')) return 'community';
+      return 'home';
+    };
+
+    const path = window.location.pathname;
+    const page = resolvePageFromPath(path);
+    if (page === 'login' && !isLoggedIn() && shouldRequireAuth(path)) {
+      window.history.replaceState({}, '', '/login');
+    }
+    setCurrentPage(page);
+
     const handlePopState = () => {
       const newPath = window.location.pathname;
-      if (newPath.includes('/explore')) {
-        setCurrentPage('explore');
-      } else if (newPath.includes('/popular')) {
-        setCurrentPage('popular');
-      } else if (newPath.includes('/create-community')) {
-        setCurrentPage('create-community');
-      } else if (newPath.includes('/accessibility')) {
-        setCurrentPage('accessibility');
-      } else if (newPath.includes('/developer-platform')) {
-        setCurrentPage('developer-platform');
-      } else if (newPath.includes('/about')) {
-        setCurrentPage('about');
-      } else if (newPath.includes('/advertise')) {
-        setCurrentPage('advertise');
-      } else if (newPath.includes('/best')) {
-        setCurrentPage('best');
-      } else if (newPath.includes('/blog')) {
-        setCurrentPage('blog');
-      } else if (newPath.includes('/careers')) {
-        setCurrentPage('careers');
-      } else if (newPath.includes('/communities')) {
-        setCurrentPage('communities');
-      } else if (newPath.includes('/help')) {
-        setCurrentPage('help');
-      } else if (newPath.includes('/press')) {
-        setCurrentPage('press');
-      } else if (newPath.includes('/privacy')) {
-        setCurrentPage('privacy');
-      } else if (newPath.includes('/rules')) {
-        setCurrentPage('rules');
-      } else if (newPath.includes('/user-agreement')) {
-        setCurrentPage('user-agreement');
-      } else if (newPath.includes('/login')) {
-        setCurrentPage('login');
-      } else if (newPath.includes('/signup')) {
-        setCurrentPage('signup');
-      } else if (newPath.includes('/chat')) {
-        setCurrentPage('chat');
-      } else if (newPath.includes('/profile')) {
-        setCurrentPage('profile');
-      } else if (newPath.includes('/settings')) {
-        setCurrentPage('settings');
-      } else if (newPath.includes('/achievements')) {
-        setCurrentPage('achievements');
-      } else if (newPath.includes('/edit-avatar')) {
-        setCurrentPage('edit-avatar');
-      } else if (newPath.includes('/my-community')) {
-        setCurrentPage('my-community');
-      } else if (newPath.includes('/r/') && newPath.includes('/submit')) {
-        setCurrentPage('create-post');
-      } else if (newPath.includes('/r/') && newPath.includes('/comments/')) {
-        setCurrentPage('post');
-      } else if (newPath.includes('/r/') || newPath.includes('/community')) {
-        setCurrentPage('community');
-      } else {
-        setCurrentPage('home');
+      const next = resolvePageFromPath(newPath);
+      if (next === 'login' && !isLoggedIn() && shouldRequireAuth(newPath)) {
+        window.history.replaceState({}, '', '/login');
       }
+      setCurrentPage(next);
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -202,6 +147,14 @@ function App() {
         return <LoginPage />;
       case 'signup':
         return <SignupPage />;
+      case 'notifications':
+        return <NotificationsPage />;
+      case 'forgot-password':
+        return <ForgotPasswordPage />;
+      case 'reset-password':
+        return <ResetPasswordPage />;
+      case 'favorites':
+        return <FavoritesPage />;
       case 'my-community':
         return <MyCommunityPage onNavigate={handleNavigate} />;
       case 'community':
@@ -234,5 +187,5 @@ function App() {
 }
 
 export default App;
-
+ 
 

@@ -9,13 +9,38 @@
   --text-tertiary: #939699;
   --accent: #ff4500;
   --accent-contrast: #ffffff;
+  --orange: #ff4500;
   --blue: #0079d3;
+  --danger: #ea0027;
   --muted-blue: #d7e8ff;
   --hover: #f1f3f5;
   --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.08);
   --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
   --radius: 8px;
   --content-width: 1340px;
+
+  /* Bootstrap variable bridge (so reboot/components follow our theme tokens) */
+  --bs-body-bg: var(--app-bg);
+  --bs-body-color: var(--text-primary);
+  --bs-border-color: var(--card-border);
+}
+
+:root.dark-mode {
+  color-scheme: dark;
+
+  --app-bg: #0f1419;
+  --card-bg: #1a1a1b;
+  --card-border: #343536;
+  --text-primary: #d7dadc;
+  --text-secondary: #818384;
+  --text-tertiary: #575a5c;
+  --hover: #272729;
+  --muted-blue: rgba(0, 121, 211, 0.18);
+
+  /* Bootstrap variable bridge */
+  --bs-body-bg: var(--app-bg);
+  --bs-body-color: var(--text-primary);
+  --bs-border-color: var(--card-border);
 }
 
 * {
@@ -29,6 +54,13 @@ body {
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  padding-top: 48px;
+}
+
+input,
+textarea,
+select {
+  color: inherit;
 }
 
 a {

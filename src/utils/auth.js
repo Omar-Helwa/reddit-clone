@@ -9,13 +9,23 @@
  * @param {string} user.email - Email
  */
 export function setCurrentUser(user) {
-  if (user && user._id) {
-    localStorage.setItem('userId', user._id);
-    localStorage.setItem('username', user.username);
-    localStorage.setItem('userEmail', user.email);
-    if (user.image) {
+  const userId = user?._id || user?.id;
+  if (userId) {
+    localStorage.setItem('userId', userId);
+    if (user?.username != null) {
+      localStorage.setItem('username', user.username);
+    }
+    const email = user?.email ?? user?.ema;
+    if (email != null) {
+      localStorage.setItem('userEmail', email);
+    }
+    if (user?.image) {
       localStorage.setItem('userImage', user.image);
     }
+  }
+
+  if (user && user.token) {
+    localStorage.setItem('userToken', user.token);
   }
 }
 
@@ -32,9 +42,11 @@ export function getCurrentUser() {
   
   return {
     _id: userId,
+    id: userId,
     username: localStorage.getItem('username'),
     email: localStorage.getItem('userEmail'),
     image: localStorage.getItem('userImage'),
+    token: localStorage.getItem('userToken'),
   };
 }
 
@@ -63,6 +75,14 @@ export function clearCurrentUser() {
   localStorage.removeItem('userEmail');
   localStorage.removeItem('userImage');
   localStorage.removeItem('userToken');
+}
+
+/**
+ * Get stored JWT token
+ * @returns {string|null}
+ */
+export function getUserToken() {
+  return localStorage.getItem('userToken');
 }
 
 /**

@@ -1,19 +1,100 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Navbar.css';
+import { getCurrentUser, clearCurrentUser } from '../utils/auth';
+import { toggleTheme, getCurrentTheme } from '../utils/theme';
+import { getUnreadCount, getNotifications } from '../utils/notifications';
+import { universalSearch } from '../utils/search';
 
 function AppNavbar({ onNavigate }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [theme, setTheme] = useState('light');
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    setCurrentUser(user);
+    setTheme(getCurrentTheme());
+    setUnreadCount(getUnreadCount());
+    setNotifications(getNotifications().slice(0, 5));
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setUnreadCount(getUnreadCount());
+      setNotifications(getNotifications().slice(0, 5));
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleNavClick = (page, path) => {
+    const isProtected = path === '/chat' || path === '/create-community';
+    if (!currentUser && isProtected) {
+      page = 'login';
+      path = '/login';
+    }
     setShowMenu(false);
     setShowProfileDropdown(false);
+    setShowNotifications(false);
+    setSearchResults(null);
     if (onNavigate) {
       onNavigate(page, path);
     } else {
       window.location.href = path;
     }
   };
+
+  const handleLogout = () => {
+    clearCurrentUser();
+    setCurrentUser(null);
+    setShowProfileDropdown(false);
+    window.location.href = '/';
+  };
+
+  const handleThemeToggle = () => {
+    const newTheme = toggleTheme();
+    setTheme(newTheme);
+  };
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (searchQuery.trim().length < 2) {
+      setSearchResults(null);
+      return;
+    }
+    try {
+      const results = await universalSearch(searchQuery);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Search failed:', error);
+    }
+  };
+
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    if (query.trim().length < 2) {
+      setSearchResults(null);
+    }
+  };
+
+  const handleSearchFocus = async () => {
+    if (searchQuery.trim().length >= 2 && !searchResults) {
+      try {
+        const results = await universalSearch(searchQuery);
+        setSearchResults(results);
+      } catch (error) {
+        console.error('Search failed:', error);
+      }
+    }
+  };
+
+  
 
   return (
     <header className="navbar">
@@ -42,12 +123,82 @@ function AppNavbar({ onNavigate }) {
             <div className="search-left">
               <span className="search-mascot" aria-hidden="true">👽</span>
             </div>
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Find anything"
-              aria-label="Search"
-            />
+            <form className="search-form" onSubmit={handleSearch}>
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search users, posts, communities"
+                aria-label="Search"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onFocus={handleSearchFocus}
+              />
+
+              {searchResults && (
+                <div className="search-results" role="listbox">
+                  {!!searchResults.users?.length && (
+                    <div className="search-section">
+                      <div className="search-section-title">Users</div>
+                      {searchResults.users.map((u) => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          className="search-result-item"
+                          onClick={() => handleNavClick('profile', u.link)}
+                        >
+                          <div className="result-text">
+                            <div className="result-title">{u.title}</div>
+                            <div className="result-subtitle">{u.subtitle}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {!!searchResults.posts?.length && (
+                    <div className="search-section">
+                      <div className="search-section-title">Posts</div>
+                      {searchResults.posts.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className="search-result-item"
+                          onClick={() => handleNavClick('post', p.link)}
+                        >
+                          <div className="result-text">
+                            <div className="result-title">{p.title}</div>
+                            <div className="result-subtitle">{p.subtitle}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {!!searchResults.communities?.length && (
+                    <div className="search-section">
+                      <div className="search-section-title">Communities</div>
+                      {searchResults.communities.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className="search-result-item"
+                          onClick={() => handleNavClick('community', c.link)}
+                        >
+                          <div className="result-text">
+                            <div className="result-title">{c.title}</div>
+                            <div className="result-subtitle">{c.subtitle}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {!searchResults.users?.length && !searchResults.posts?.length && !searchResults.communities?.length && (
+                    <div className="search-empty">No results</div>
+                  )}
+                </div>
+              )}
+            </form>
             <div className="search-right">
               <span className="search-divider" aria-hidden="true" />
               <button className="ask-btn" title="Ask">Ask</button>
@@ -57,7 +208,7 @@ function AppNavbar({ onNavigate }) {
 
         {/* Right Section: Auth Buttons */}
         <div className="navbar-right">
-          <button className="navbar-icon-btn" title="Ads" aria-label="Ads">🄰🄳</button>
+          <button className="navbar-icon-btn" title="Ads" aria-label="Ads" onClick={() => handleNavClick('advertise', '/advertise')}>🄰🄳</button>
           <button 
             className="navbar-icon-btn chat-btn"
             onClick={() => handleNavClick('chat', '/chat')}
@@ -68,13 +219,64 @@ function AppNavbar({ onNavigate }) {
           </button>
           <button 
             className="navbar-icon-btn" 
-            onClick={() => handleNavClick('create-post', '/r/general/submit')}
+            onClick={() => handleNavClick('create-post', '/submit')}
             title="Create Post"
             aria-label="Create Post"
           >
             ➕
           </button>
-          <button className="navbar-icon-btn" title="Notifications" aria-label="Notifications">🔔</button>
+          <div className="navbar-notifications">
+            <button
+              className="navbar-icon-btn"
+              title="Notifications"
+              aria-label="Notifications"
+              onClick={() => setShowNotifications((s) => !s)}
+            >
+              🔔
+              {unreadCount > 0 && <span className="navbar-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+            </button>
+            {showNotifications && (
+              <div className="notifications-popover">
+                <div className="notifications-popover-header">
+                  <strong>Notifications</strong>
+                  <button
+                    className="notifications-viewall"
+                    type="button"
+                    onClick={() => handleNavClick('notifications', '/notifications')}
+                  >
+                    View all
+                  </button>
+                </div>
+                <div className="notifications-popover-list">
+                  {notifications.length === 0 ? (
+                    <div className="notifications-empty">No notifications</div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div key={n.id} className={`notifications-item ${n.read ? '' : 'unread'}`}>
+                        <div className="notifications-icon">{getNotifIcon(n.type)}</div>
+                        <div className="notifications-text">
+                          <div className="notifications-title">{n.title}</div>
+                          <div className="notifications-msg">{n.message}</div>
+                          <div className="notifications-time">{formatRelativeTime(n.timestamp)}</div>
+                        </div>
+                        {n.link && (
+                          <button
+                            type="button"
+                            className="notifications-open"
+                            onClick={() => handleNavClick('notifications', n.link)}
+                            aria-label="Open"
+                            title="Open"
+                          >
+                            →
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="profile-dropdown-wrapper">
             <button 
               className="navbar-avatar" 
@@ -82,95 +284,186 @@ function AppNavbar({ onNavigate }) {
               aria-label="Profile"
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
             >
-              <img src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png" alt="avatar" />
+              <img 
+                src={(currentUser && currentUser.image) ? currentUser.image : "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png"} 
+                alt="avatar" 
+              />
             </button>
             
             {showProfileDropdown && (
               <>
                 <div className="dropdown-overlay" onClick={() => setShowProfileDropdown(false)} />
                 <div className="profile-dropdown">
-                  <div className="dropdown-section">
-                    <div className="dropdown-user-info">
-                      <img 
-                        src="https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png" 
-                        alt="avatar" 
-                        className="dropdown-avatar"
-                      />
-                      <div className="dropdown-user-details">
-                        <div className="dropdown-username">u/demo_user</div>
-                        <div className="dropdown-karma">1,234 karma</div>
+                  {currentUser && (
+                    <>
+                      {/* View Profile Section */}
+                      <button 
+                        className="dropdown-item profile-header-item" 
+                        onClick={() => handleNavClick('profile', '/profile')}
+                      >
+                        <img 
+                          src={currentUser.image || "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png"} 
+                          alt="avatar" 
+                          className="dropdown-profile-avatar"
+                        />
+                        <div className="dropdown-text-group">
+                          <span className="dropdown-text-primary">View Profile</span>
+                          <span className="dropdown-text-secondary">{currentUser.username ? `u/${currentUser.username}` : 'u/user'}</span>
+                        </div>
+                      </button>
+
+                      <div className="dropdown-divider" />
+
+                      {/* User Actions */}
+                      <button className="dropdown-item" onClick={() => handleNavClick('edit-avatar', '/edit-avatar')}>
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M10 12a4 4 0 100-8 4 4 0 000 8zm0 2c-4 0-8 2-8 4v2h16v-2c0-2-4-4-8-4z"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Edit Avatar</span>
+                      </button>
+
+                      <button className="dropdown-item">
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M4 4h12v2H4V4zm0 4h12v8H4V8zm2 2v4h8v-4H6z"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Drafts</span>
+                      </button>
+
+                      <button className="dropdown-item" onClick={() => handleNavClick('achievements', '/achievements')}>
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M10 2l2.5 5 5.5.8-4 3.9 1 5.3-5-2.6-5 2.6 1-5.3-4-3.9 5.5-.8z"/>
+                        </svg>
+                        <div className="dropdown-text-group">
+                          <span className="dropdown-text-primary">Achievements</span>
+                          <span className="dropdown-text-secondary">7 unlocked</span>
+                        </div>
+                      </button>
+
+                      <button className="dropdown-item">
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                          <text x="10" y="13" textAnchor="middle" fontSize="9" fill="currentColor">$</text>
+                        </svg>
+                        <div className="dropdown-text-group">
+                          <span className="dropdown-text-primary">Earn</span>
+                          <span className="dropdown-text-secondary">Earn cash on Reddit</span>
+                        </div>
+                      </button>
+
+                      <button className="dropdown-item">
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                          <path d="M7 10h6M10 7v6" stroke="currentColor" strokeWidth="1.5"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Premium</span>
+                      </button>
+
+                      <div className="dropdown-divider" />
+
+                      {/* Dark Mode Toggle */}
+                      <button className="dropdown-item" onClick={handleThemeToggle}>
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Dark Mode</span>
+                        <div className={`toggle-switch ${theme === 'dark' ? 'active' : ''}`}>
+                          <div className="toggle-knob"></div>
+                        </div>
+                      </button>
+
+                      <div className="dropdown-divider" />
+
+                      {/* Logout */}
+                      <button className="dropdown-item" onClick={handleLogout}>
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M3 3h8v2H5v10h6v2H3V3zm10 4l4 3-4 3V7zm-2 2H8v2h3v-2z"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Log Out</span>
+                      </button>
+
+                      <div className="dropdown-divider" />
+
+                      {/* Additional Links */}
+                      <button className="dropdown-item" onClick={() => handleNavClick('advertise', '/advertise')}>
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Advertise on Reddit</span>
+                      </button>
+
+                      <button className="dropdown-item">
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                          <path d="M10 6v4l2.5 2.5" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Try Reddit Pro</span>
+                        <span className="dropdown-badge-beta">BETA</span>
+                      </button>
+
+                      <div className="dropdown-divider" />
+
+                      {/* Settings */}
+                      <button className="dropdown-item" onClick={() => handleNavClick('settings', '/settings')}>
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Settings</span>
+                      </button>
+                    </>
+                  )}
+                  {!currentUser && (
+                    <>
+                      <div className="dropdown-section">
+                        <button className="dropdown-item" onClick={() => handleNavClick('login', '/login')}>
+                          <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M3 3h8v2H5v10h6v2H3V3zm10 4l4 3-4 3V7zm-2 2H8v2h3v-2z"/>
+                          </svg>
+                          <span>Log In / Sign Up</span>
+                        </button>
                       </div>
-                    </div>
-                  </div>
-                  
-                  <div className="dropdown-divider" />
-                  
-                  <div className="dropdown-section">
-                    <button className="dropdown-item" onClick={() => handleNavClick('profile', '/profile')}>
-                      <span className="dropdown-icon">👤</span>
-                      <span>Profile</span>
-                    </button>
-                    <button className="dropdown-item" onClick={() => handleNavClick('create-post', '/r/general/submit')}>
-                      <span className="dropdown-icon">➕</span>
-                      <span>Create Post</span>
-                    </button>
-                    <button className="dropdown-item">
-                      <span className="dropdown-icon">💾</span>
-                      <span>Saved</span>
-                    </button>
-                    <button className="dropdown-item">
-                      <span className="dropdown-icon">📊</span>
-                      <span>Reddit Recap</span>
-                    </button>
-                  </div>
-                  
-                  <div className="dropdown-divider" />
-                  
-                  <div className="dropdown-section">
-                    <button className="dropdown-item" onClick={() => handleNavClick('settings', '/settings')}>
-                      <span className="dropdown-icon">⚙️</span>
-                      <span>Settings</span>
-                    </button>
-                    <button className="dropdown-item">
-                      <span className="dropdown-icon">❓</span>
-                      <span>Help Center</span>
-                    </button>
-                  </div>
-                  
-                  <div className="dropdown-divider" />
-                  
-                  <div className="dropdown-section">
-                    <button className="dropdown-item">
-                      <span className="dropdown-icon">🌙</span>
-                      <span>Dark Mode</span>
-                      <span className="dropdown-toggle">Off</span>
-                    </button>
-                  </div>
-                  
-                  <div className="dropdown-divider" />
-                  
-                  <div className="dropdown-section">
-                    <button className="dropdown-item logout-item">
-                      <span className="dropdown-icon">🚪</span>
-                      <span>Log Out</span>
-                    </button>
-                  </div>
+                      <div className="dropdown-divider" />
+                      <div className="dropdown-section">
+                        <button className="dropdown-item dark-mode-item" onClick={handleThemeToggle}>
+                          <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                          </svg>
+                          <span>Dark Mode</span>
+                          <div className={`toggle-switch ${theme === 'dark' ? 'active' : ''}`}>
+                            <div className="toggle-knob"></div>
+                          </div>
+                        </button>
+                      </div>
+                      <div className="dropdown-divider" />
+                      <div className="dropdown-section">
+                        <button className="dropdown-item" onClick={() => handleNavClick('settings', '/settings')}>
+                          <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"/>
+                          </svg>
+                          <span>Settings</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </>
             )}
           </div>
-          <button 
-            className="navbar-btn login-btn"
-            onClick={() => handleNavClick('login', '/login')}
-          >
-            Log In
-          </button>
-          <button 
-            className="navbar-btn signup-btn"
-            onClick={() => handleNavClick('signup', '/signup')}
-          >
-            Sign Up
-          </button>
+          {!currentUser && (
+            <>
+              <button 
+                className="navbar-btn login-btn"
+                onClick={() => handleNavClick('login', '/login')}
+              >
+                Log In
+              </button>
+              <button 
+                className="navbar-btn signup-btn"
+                onClick={() => handleNavClick('signup', '/signup')}
+              >
+                Sign Up
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -337,12 +630,35 @@ function AppNavbar({ onNavigate }) {
               🏠 My Communities
             </div>
             <a href="#settings" className="menu-link">⚙️ Settings</a>
-            <a href="#logout" className="menu-link">🚪 Log Out</a>
           </div>
         </div>
       )}
     </header>
   );
+}
+
+function getNotifIcon(type) {
+  const icons = {
+    upvote: '👍',
+    comment: '💬',
+    follow: '👤',
+    join: '👥',
+    message: '✉️',
+  };
+  return icons[type] || '🔔';
+}
+
+function formatRelativeTime(timestamp) {
+  const now = Date.now();
+  const diff = Math.max(0, now - (timestamp || now));
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return new Date(timestamp).toLocaleDateString();
 }
 
 export default AppNavbar;

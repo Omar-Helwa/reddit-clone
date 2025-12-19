@@ -23,48 +23,51 @@ export async function getUser(id) {
 }
 
 /**
- * Login user (find user by username/email and verify password)
- * Note: This searches all users and validates credentials client-side
- * In production, use a proper authentication endpoint with hashed passwords
+ * Login user against auth endpoint, expect JWT token
  * @param {string} usernameOrEmail - Username or email
  * @param {string} password - Password
- * @returns {Promise<Object>} User object if credentials match
+ * @returns {Promise<Object>} { user, token }
  */
 export async function loginUser(usernameOrEmail, password) {
-  // Fetch all users and find matching credentials
-  const response = await listUsers({ limit: 1000 });
-  const users = response.items || [];
-  
-  console.log('Login attempt:', { usernameOrEmail, password });
-  console.log('Total users found:', users.length);
-  
-  // Trim whitespace and do case-insensitive comparison for email
-  const normalizedInput = usernameOrEmail.trim().toLowerCase();
-  const normalizedPassword = password.trim();
-  
-  const user = users.find(u => {
-    const matchUsername = u.username && u.username.trim() === usernameOrEmail.trim();
-    const matchEmail = u.email && u.email.trim().toLowerCase() === normalizedInput;
-    const matchPassword = u.password && u.password.trim() === normalizedPassword;
-    
-    console.log('Checking user:', { 
-      username: u.username, 
-      email: u.email, 
-      matchUsername, 
-      matchEmail, 
-      matchPassword 
-    });
-    
-    return (matchUsername || matchEmail) && matchPassword;
-  });
-  
-  if (!user) {
-    console.error('No matching user found');
-    throw new Error('Invalid username/email or password');
+  const trimmedUser = (usernameOrEmail || '').trim();
+  const trimmedPass = (password || '').trim();
+
+  if (!trimmedUser || !trimmedPass) {
+    throw new Error('Username/email and password are required');
   }
-  
-  console.log('Login successful:', user);
-  return user;
+
+  // Send only username + password (backend requires these two)
+  const payload = {
+    username: trimmedUser,
+    password: trimmedPass,
+  };
+
+  const url = `${API_BASE_URL}/auth/login`;
+  console.log('Auth login URL:', url, 'payload:', payload);
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    console.error('Login failed response:', response.status, text);
+    let parsed = {};
+    try { parsed = JSON.parse(text); } catch (e) {}
+    throw new Error(parsed.error || parsed.message || text || `HTTP ${response.status}`);
+  }
+
+  const result = await response.json();
+  // Expect backend to return { user: {...}, token: '...' }
+  console.log('Login success payload keys:', Object.keys(result || {}));
+  if (result?.token) {
+    return result;
+  }
+
+  // Fallback: if token not provided but user returned
+  return { user: result, token: result?.token };
 }
 
 /**

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import './ExplorePage.css';
+import useCommunities from '../hooks/useCommunities';
 
 function ExplorePage() {
   const [selectedCategory, setSelectedCategory] = useState('trending');
+  const { communities, loading, error } = useCommunities(200);
 
   const categories = [
     { id: 'trending', label: 'Trending', icon: '🔥' },
@@ -15,101 +17,14 @@ function ExplorePage() {
     { id: 'movies', label: 'Movies', icon: '🎬' },
   ];
 
-  const trendingTopics = [
-    {
-      id: 1,
-      title: 'Machine Learning',
-      icon: '🤖',
-      description: 'Artificial intelligence and machine learning discussions',
-      members: '245K',
-      trending: true
-    },
-    {
-      id: 2,
-      title: 'Web Development',
-      icon: '🌐',
-      description: 'Frontend, backend, and fullstack development',
-      members: '189K',
-      trending: true
-    },
-    {
-      id: 3,
-      title: 'Cybersecurity',
-      icon: '🔒',
-      description: 'Cybersecurity news and best practices',
-      members: '156K',
-      trending: true
-    },
-    {
-      id: 4,
-      title: 'Cloud Computing',
-      icon: '☁️',
-      description: 'AWS, Azure, GCP and cloud infrastructure',
-      members: '134K',
-      trending: true
-    },
-    {
-      id: 5,
-      title: 'DevOps',
-      icon: '⚙️',
-      description: 'DevOps practices and tools',
-      members: '98K',
-      trending: false
-    },
-    {
-      id: 6,
-      title: 'Data Science',
-      icon: '📊',
-      description: 'Data analysis and visualization',
-      members: '127K',
-      trending: false
-    },
-  ];
+  // Build API-backed lists from communities
+  const sortedByMembers = useMemo(() => {
+    const list = Array.isArray(communities) ? communities.slice() : [];
+    return list.sort((a, b) => (b.members || 0) - (a.members || 0));
+  }, [communities]);
 
-  const communityRecommendations = [
-    {
-      id: 'r_programming',
-      name: 'r/programming',
-      icon: '💻',
-      members: '3.2M',
-      description: 'Computer Science'
-    },
-    {
-      id: 'r_learnprogramming',
-      name: 'r/learnprogramming',
-      icon: '📚',
-      members: '2.1M',
-      description: 'Learning Hub'
-    },
-    {
-      id: 'r_webdev',
-      name: 'r/webdev',
-      icon: '🌐',
-      members: '1.8M',
-      description: 'Web Development'
-    },
-    {
-      id: 'r_python',
-      name: 'r/python',
-      icon: '🐍',
-      members: '1.5M',
-      description: 'Python Programming'
-    },
-    {
-      id: 'r_javascript',
-      name: 'r/javascript',
-      icon: '⚡',
-      members: '1.2M',
-      description: 'JavaScript & TypeScript'
-    },
-    {
-      id: 'r_csharp',
-      name: 'r/csharp',
-      icon: '#️⃣',
-      members: '456K',
-      description: 'C# Development'
-    },
-  ];
+  const trendingCommunities = useMemo(() => sortedByMembers.slice(0, 6), [sortedByMembers]);
+  const recommendedCommunities = useMemo(() => sortedByMembers.slice(6, 12), [sortedByMembers]);
 
   return (
     <div className="explore-page">
@@ -141,18 +56,20 @@ function ExplorePage() {
             <a href="#view-all" className="view-all-link">View All</a>
           </div>
           <div className="topics-grid">
-            {trendingTopics.slice(0, 4).map(topic => (
-              <div key={topic.id} className="topic-card">
-                <div className="topic-icon">{topic.icon}</div>
+            {loading && <div className="loading">Loading communities...</div>}
+            {error && <div className="error">Failed to load communities</div>}
+            {!loading && !error && trendingCommunities.slice(0, 4).map(comm => (
+              <div key={comm._id || comm.name} className="topic-card">
+                <div className="topic-icon">🏷️</div>
                 <div className="topic-content">
-                  <h3 className="topic-title">{topic.title}</h3>
-                  <p className="topic-description">{topic.description}</p>
+                  <h3 className="topic-title">{comm.displayName || comm.name}</h3>
+                  <p className="topic-description">{comm.description || 'A growing community'}</p>
                   <div className="topic-footer">
-                    <span className="topic-members">{topic.members} members</span>
-                    {topic.trending && <span className="trending-badge">Trending</span>}
+                    <span className="topic-members">{comm.members || 0} members</span>
+                    <span className="trending-badge">Trending</span>
                   </div>
                 </div>
-                <button className="join-topic-btn">Join</button>
+                <button className="join-topic-btn" onClick={() => window.location.href = `/r/${(comm.name || '').replace(/^r\//,'')}`}>View</button>
               </div>
             ))}
           </div>
@@ -165,15 +82,17 @@ function ExplorePage() {
             <a href="#view-all" className="view-all-link">View All</a>
           </div>
           <div className="communities-list">
-            {communityRecommendations.map(community => (
-              <div key={community.id} className="community-row">
-                <div className="community-row-icon">{community.icon}</div>
+            {loading && <div className="loading">Loading communities...</div>}
+            {error && <div className="error">Failed to load communities</div>}
+            {!loading && !error && recommendedCommunities.map(community => (
+              <div key={community._id || community.name} className="community-row">
+                <div className="community-row-icon">🏘️</div>
                 <div className="community-row-content">
-                  <h4 className="community-row-name">{community.name}</h4>
-                  <p className="community-row-desc">{community.description}</p>
-                  <span className="community-row-members">{community.members} members</span>
+                  <h4 className="community-row-name">{community.displayName || community.name}</h4>
+                  <p className="community-row-desc">{community.description || 'Community'}</p>
+                  <span className="community-row-members">{community.members || 0} members</span>
                 </div>
-                <button className="join-community-btn">Join</button>
+                <button className="join-community-btn" onClick={() => window.location.href = `/r/${(community.name || '').replace(/^r\//,'')}`}>View</button>
               </div>
             ))}
           </div>
@@ -185,17 +104,17 @@ function ExplorePage() {
             <h2>📈 More Popular Topics</h2>
           </div>
           <div className="topics-grid">
-            {trendingTopics.slice(4, 6).map(topic => (
-              <div key={topic.id} className="topic-card">
-                <div className="topic-icon">{topic.icon}</div>
+            {!loading && !error && trendingCommunities.slice(4, 8).map(comm => (
+              <div key={comm._id || comm.name} className="topic-card">
+                <div className="topic-icon">🏷️</div>
                 <div className="topic-content">
-                  <h3 className="topic-title">{topic.title}</h3>
-                  <p className="topic-description">{topic.description}</p>
+                  <h3 className="topic-title">{comm.displayName || comm.name}</h3>
+                  <p className="topic-description">{comm.description || 'A growing community'}</p>
                   <div className="topic-footer">
-                    <span className="topic-members">{topic.members} members</span>
+                    <span className="topic-members">{comm.members || 0} members</span>
                   </div>
                 </div>
-                <button className="join-topic-btn">Join</button>
+                <button className="join-topic-btn" onClick={() => window.location.href = `/r/${(comm.name || '').replace(/^r\//,'')}`}>View</button>
               </div>
             ))}
           </div>

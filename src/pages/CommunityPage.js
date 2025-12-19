@@ -1,33 +1,44 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import './CommunityPage.css';
 import Post from '../features/posts/Post';
-import { ensureSeeded } from '../data/mockData';
 import useCommunities from '../hooks/useCommunities';
 import { deleteCommunity } from '../api/communitiesApi';
-import { getPosts, isJoined as isJoinedStore, joinCommunity, leaveCommunity, navigate } from '../utils/helpers';
+import { usePostsBySubreddit } from '../hooks/usePosts';
+import { isJoined as isJoinedStore, joinCommunity, leaveCommunity, navigate } from '../utils/helpers';
+import { isFavoriteCommunity, toggleFavoriteCommunity } from '../utils/favorites';
+import { DEFAULT_COMMUNITY_ICON } from '../utils/placeholders';
+
+function formatCommunityCreated(value) {
+  if (!value) return '';
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    // If it's already human-friendly (e.g. "Mon Dec 16 2025"), keep it.
+    if (!/^\d{4}-\d{2}-\d{2}T/.test(trimmed) && !/\d{2}:\d{2}:\d{2}/.test(trimmed)) return trimmed;
+  }
+  const ms = new Date(value).getTime();
+  if (Number.isNaN(ms)) return String(value);
+  return new Date(ms).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
 
 function CommunityPage() {
   const [isJoined, setIsJoined] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
   const [activeTab, setActiveTab] = useState('posts');
   const [sortBy, setSortBy] = useState('hot');
   const [communityName, setCommunityName] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
-  const { communities: communityList, loading: communitiesLoading } = useCommunities(200);
+  const { communities: communityList } = useCommunities(200);
 
   // Extract community name from URL
   useEffect(() => {
     const path = window.location.pathname;
-    const match = path.match(/\/r\/([^\/]+)/);
+    const match = path.match(/\/r\/([^/]+)/);
     if (match) {
       setCommunityName(match[1]);
     } else {
-      setCommunityName('general');
+      setCommunityName('');
     }
-  }, []);
-
-  // Seed posts storage once
-  useEffect(() => {
-    ensureSeeded();
   }, []);
 
   const community = useMemo(() => {
@@ -37,21 +48,56 @@ function CommunityPage() {
       name: `r/${slug || 'community'}`,
       displayName: `r/${slug || 'community'}`,
       description: 'Community details coming soon.',
-      icon: 'https://via.placeholder.com/80',
+      icon: DEFAULT_COMMUNITY_ICON,
       banner: 'https://via.placeholder.com/1200x200',
       members: 0,
       online: 0,
-      createdDate: new Date().toDateString(),
+      createdAt: new Date().toISOString(),
       type: 'Public',
       rules: [],
       moderators: []
     };
   }, [communityList, communityName]);
-  const mockPosts = getPosts(communityName);
+
+  const createdLabel = useMemo(() => {
+    return formatCommunityCreated(community?.createdAt || community?.createdDate || community?.created);
+  }, [community]);
+  // Backend posts use subreddit slug (without r/)
+  const subredditKey = communityName ? `${communityName}` : '';
+  const { posts, loading: postsLoading, error: postsError, refetch } = usePostsBySubreddit(subredditKey);
+
+  const getTimestampMs = (post) => {
+    const raw = post?.createdAt || post?.timestamp || post?.created || 0;
+    const ms = new Date(raw).getTime();
+    return Number.isNaN(ms) ? 0 : ms;
+  };
+
+  const sortedPosts = useMemo(() => {
+    const hotRank = (post, exponent = 1.5) => {
+      const score = Number(post?.score) || 0;
+      const ts = getTimestampMs(post);
+      const hoursSince = Math.max(0, (Date.now() - ts) / 3600000);
+      return score / Math.pow(hoursSince + 2, exponent);
+    };
+
+    const list = Array.isArray(posts) ? posts : [];
+    switch (sortBy) {
+      case 'new':
+        return [...list].sort((a, b) => getTimestampMs(b) - getTimestampMs(a));
+      case 'top':
+        return [...list].sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0) || getTimestampMs(b) - getTimestampMs(a));
+      case 'rising':
+        return [...list].sort((a, b) => hotRank(b, 1.15) - hotRank(a, 1.15) || getTimestampMs(b) - getTimestampMs(a));
+      case 'hot':
+      default:
+        return [...list].sort((a, b) => hotRank(b, 1.5) - hotRank(a, 1.5) || getTimestampMs(b) - getTimestampMs(a));
+    }
+  }, [posts, sortBy]);
 
   useEffect(() => {
     if (communityName) {
       setIsJoined(isJoinedStore(communityName));
+      setIsFavorite(isFavoriteCommunity(communityName));
     }
   }, [communityName]);
 
@@ -82,6 +128,11 @@ function CommunityPage() {
     }
   };
 
+  const handleToggleFavorite = () => {
+    const next = toggleFavoriteCommunity(communityName);
+    setIsFavorite(next);
+  };
+
   return (
     <div className="community-page">
       {/* Banner */}
@@ -93,7 +144,12 @@ function CommunityPage() {
       <div className="community-header">
         <div className="community-header-content">
           <div className="community-info">
-            <img src={community.icon} alt={community.name} className="community-icon-large" />
+            <img
+              src={community.icon || DEFAULT_COMMUNITY_ICON}
+              alt={community.name}
+              className="community-icon-large"
+              onError={(e) => { e.currentTarget.src = DEFAULT_COMMUNITY_ICON; }}
+            />
             <div className="community-title-section">
               <h1>{community.displayName}</h1>
               <p className="community-name">{community.name}</p>
@@ -103,13 +159,20 @@ function CommunityPage() {
             <button className={`join-btn ${isJoined ? 'joined' : ''}`} onClick={handleJoin}>
               {isJoined ? '✓ Joined' : '+ Join'}
             </button>
+            <button
+              className={`favorite-btn ${isFavorite ? 'favorited' : ''}`}
+              title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              onClick={handleToggleFavorite}
+              aria-label={isFavorite ? 'Unfavorite community' : 'Favorite community'}
+            >
+              {isFavorite ? '★' : '☆'}
+            </button>
             <button className="notify-btn" title="Turn on notifications">🔔</button>
             <button 
-              className="delete-btn" 
+              className="community-delete-btn" 
               title="Delete community" 
               onClick={handleDeleteCommunity}
               disabled={isDeleting}
-              style={{ background: 'red', color: 'white', padding: '8px 12px', borderRadius: '20px', cursor: isDeleting ? 'not-allowed' : 'pointer' }}
             >
               {isDeleting ? '⏳ Deleting...' : '🗑️ Delete'}
             </button>
@@ -165,19 +228,31 @@ function CommunityPage() {
               </div>
 
               <div className="posts-feed">
-                {mockPosts.map(post => (
-                  <div key={post.id} className="post-wrapper">
+                {postsLoading && <div className="loading">Loading posts...</div>}
+                {postsError && (
+                  <div className="error">
+                    Failed to load posts: {postsError}
+                    <button onClick={refetch} className="retry-btn">Retry</button>
+                  </div>
+                )}
+                {!postsLoading && !postsError && posts.length === 0 && (
+                  <div className="no-posts">No posts yet.</div>
+                )}
+                {!postsLoading && !postsError && sortedPosts.length > 0 && sortedPosts.map(post => (
+                  <div key={post.postId} className="post-wrapper">
                     {post.isPinned && <span className="pinned-badge">📌 Pinned by moderators</span>}
                     <Post 
-                      postId={post.id}
+                      postId={post.postId}
+                      communityKey={communityName}
                       title={post.title}
                       author={post.author}
-                      subreddit={communityName}
-                      timestamp={post.timestamp}
+                      authorId={post.authorId}
+                      subreddit={`r/${communityName}`}
+                      timestamp={post.createdAt || post.timestamp}
                       score={post.score}
                       commentCount={post.commentCount}
                       textBody={post.textBody}
-                      onCommentClick={() => navigate(`/r/${communityName}/comments/${post.id}?comment=1`)}
+                      onCommentClick={() => navigate(`/r/${communityName}/comments/${post.postId}?comment=1`)}
                     />
                   </div>
                 ))}
@@ -194,7 +269,7 @@ function CommunityPage() {
                   <strong>Type:</strong> <span>{community.type}</span>
                 </div>
                 <div className="detail-row">
-                  <strong>Created:</strong> <span>{community.createdDate}</span>
+                  <strong>Created:</strong> <span>{createdLabel}</span>
                 </div>
               </div>
             </div>
@@ -230,7 +305,7 @@ function CommunityPage() {
                 <span>Online</span>
               </div>
             </div>
-            <p className="created-date">{community.createdDate}</p>
+            <p className="created-date">{createdLabel}</p>
             <button 
               className="create-post-btn-full"
               onClick={() => navigate(`/r/${communityName}/submit`)}

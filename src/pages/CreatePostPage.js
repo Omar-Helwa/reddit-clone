@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './CreatePostPage.css';
-import { ensureSeeded } from '../data/mockData';
-import { addPost, joinCommunity, navigate, getJoinedCommunities } from '../utils/helpers';
+import { isJoined, joinCommunity, navigate, getJoinedCommunities } from '../utils/helpers';
+import { useCreatePost } from '../hooks/usePosts';
 import useCommunities from '../hooks/useCommunities';
+import { DEFAULT_COMMUNITY_ICON } from '../utils/placeholders';
+import { getCurrentUserId, getCurrentUser } from '../utils/auth';
 
 function CreatePostPage() {
+  const { createPost, loading: creatingPost, error: createError } = useCreatePost();
   const [communityName, setCommunityName] = useState('');
   const [canPost, setCanPost] = useState(false);
   const [title, setTitle] = useState('');
@@ -23,7 +26,35 @@ function CreatePostPage() {
 
   const { communities: communityList, loading: communitiesLoading } = useCommunities(200);
 
-  useEffect(() => { ensureSeeded(); }, []);
+  const normalizeCommunityName = (value) => (value || '').replace(/^r\//, '').trim();
+
+  const joinedSet = useMemo(() => {
+    const list = (joinedCommunities || []).map(normalizeCommunityName);
+    return new Set(list.filter((c) => c && c !== 'general'));
+  }, [joinedCommunities]);
+
+  const dbJoinedCommunities = useMemo(() => {
+    const list = Array.isArray(communityList) ? communityList : [];
+    if (list.length === 0) return [];
+    return list.filter((c) => {
+      const name = normalizeCommunityName(c?.name);
+      const displayName = normalizeCommunityName(c?.displayName);
+      return (name && joinedSet.has(name)) || (displayName && joinedSet.has(displayName));
+    });
+  }, [communityList, joinedSet]);
+
+  const isCommunityAllowed = useMemo(() => {
+    const allowed = new Set(
+      dbJoinedCommunities
+        .map((c) => normalizeCommunityName(c?.name || c?.displayName))
+        .filter(Boolean)
+    );
+    return (slug) => {
+      const s = normalizeCommunityName(slug);
+      if (!s || s === 'general') return false;
+      return allowed.has(s);
+    };
+  }, [dbJoinedCommunities]);
 
   useEffect(() => {
     const path = window.location.pathname;
@@ -33,28 +64,28 @@ function CreatePostPage() {
     const joined = getJoinedCommunities();
     setJoinedCommunities(joined);
 
-    if (name && name !== 'general') {
-      setCommunityName(name);
+    const normalized = normalizeCommunityName(name);
+    if (normalized && normalized !== 'general' && isJoined(normalized)) {
+      setCommunityName(normalized);
       setCanPost(true);
       setShowCommunitySelector(false);
-    } else {
-      if (joined.length > 0) {
-        setShowCommunitySelector(true);
-        setCommunityName('');
-        setCanPost(false);
-      } else {
-        setCommunityName('general');
-        setCanPost(true);
-        setShowCommunitySelector(false);
-      }
+      return;
     }
+
+    setShowCommunitySelector(true);
+    setCommunityName('');
+    setCanPost(false);
   }, []);
 
   useEffect(() => {
-    if (communityList.length > 0 && joinedCommunities.length === 0) {
-      setJoinedCommunities(communityList.map((c) => c.name));
+    if (!communityName) return;
+    if (communitiesLoading) return;
+    if (!isCommunityAllowed(communityName)) {
+      setShowCommunitySelector(true);
+      setCommunityName('');
+      setCanPost(false);
     }
-  }, [communityList, joinedCommunities.length]);
+  }, [communityName, communitiesLoading, isCommunityAllowed]);
 
   const remaining = useMemo(() => Math.max(0, 300 - title.length), [title]);
 
@@ -83,17 +114,25 @@ function CreatePostPage() {
   };
 
   const handleSelectCommunity = (community) => {
-    setCommunityName(community);
+    const normalized = normalizeCommunityName(community);
+    if (!isCommunityAllowed(normalized)) {
+      setError('Please choose a community you have already joined.');
+      return;
+    }
+    setError('');
+    setCommunityName(normalized);
     setCanPost(true);
     setShowCommunitySelector(false);
     setSearchTerm('');
   };
 
-  const filteredCommunities = (communityList.length > 0 ? communityList : joinedCommunities.map((name) => ({ name })))
-    .filter(comm => {
+  const filteredCommunities = useMemo(() => {
+    const base = dbJoinedCommunities;
+    return base.filter((comm) => {
       const value = (comm.name || comm.displayName || '').toLowerCase();
       return value.includes(searchTerm.toLowerCase());
     });
+  }, [dbJoinedCommunities, searchTerm]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -131,9 +170,29 @@ function CreatePostPage() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Backend requires JWT token for creating posts
+    const token = localStorage.getItem('userToken');
+    if (!token) {
+      setError('You are signed in without a token. Please log in again to create posts.');
+      navigate('/login');
+      return;
+    }
+
+    if (!communityName || normalizeCommunityName(communityName) === 'general') {
+      setError('You must choose a community.');
+      setShowCommunitySelector(true);
+      return;
+    }
+    if (!isCommunityAllowed(communityName)) {
+      setError('Please choose a community you have already joined.');
+      setShowCommunitySelector(true);
+      return;
+    }
+
     if (!canPost) {
       setError('You must join this community to post.');
       return;
@@ -143,10 +202,24 @@ function CreatePostPage() {
       return;
     }
 
+    if (postType === 'text' && !textBody.trim()) {
+      setError('Post body is required for text posts.');
+      return;
+    }
+
+    const subredditValue = (communityName || '').replace(/^r\//i, '');
+    const userId = getCurrentUserId();
+    const currentUser = getCurrentUser();
+
+    if (!userId) {
+      setError('You must be logged in to post.');
+      return;
+    }
+
     const payload = {
       title: title.trim(),
-      author: 'u/demo_user',
-      type: postType
+      subreddit: subredditValue,
+      type: postType,
     };
 
     if (postType === 'text') {
@@ -159,7 +232,7 @@ function CreatePostPage() {
         return;
       }
       payload.linkUrl = linkUrl.trim();
-      payload.textBody = textBody.trim();
+      if (textBody.trim()) payload.textBody = textBody.trim();
     }
 
     if (postType === 'image') {
@@ -168,7 +241,7 @@ function CreatePostPage() {
         return;
       }
       payload.imageUrl = imageUrl.trim();
-      payload.textBody = textBody.trim();
+      if (textBody.trim()) payload.textBody = textBody.trim();
     }
 
     if (postType === 'poll') {
@@ -186,8 +259,17 @@ function CreatePostPage() {
       }));
     }
 
-    const newPost = addPost(communityName, payload);
-    navigate(`/r/${communityName}/comments/${newPost.id}`);
+    try {
+      console.log('Creating post payload:', payload);
+      // Create post via API (saves to database)
+      const newPost = await createPost(payload);
+      console.log('Created post response:', newPost);
+      
+      navigate(`/r/${subredditValue}/comments/${newPost.postId}`);
+    } catch (err) {
+      console.error('Create post failed:', err);
+      setError(err.message || 'Failed to create post. Please try again.');
+    }
   };
 
   if (showCommunitySelector) {
@@ -212,19 +294,29 @@ function CreatePostPage() {
             <div className="community-list">
               {communitiesLoading ? (
                 <div className="no-communities">Loading communities...</div>
+              ) : joinedCommunities.length === 0 ? (
+                <div className="no-communities">
+                  <p>You haven’t joined any communities yet.</p>
+                  <button type="button" className="post-btn" onClick={() => navigate('/explore')}>Explore communities</button>
+                </div>
+              ) : dbJoinedCommunities.length === 0 ? (
+                <div className="no-communities">
+                  <p>You haven’t joined any communities that exist in the database yet.</p>
+                  <button type="button" className="post-btn" onClick={() => navigate('/explore')}>Explore communities</button>
+                </div>
               ) : filteredCommunities.length > 0 ? (
                 filteredCommunities.map((comm) => {
-                  const icon = comm.icon || 'https://via.placeholder.com/40';
+                  const icon = comm.icon || DEFAULT_COMMUNITY_ICON;
                   const display = comm.displayName || comm.name || 'Community';
                   const desc = comm.description || 'No description provided.';
                   return (
                     <button
                       key={comm._id || comm.name}
                       className="community-list-item"
-                      onClick={() => handleSelectCommunity(comm.name)}
+                      onClick={() => handleSelectCommunity(normalizeCommunityName(comm.name || comm.displayName))}
                     >
                       <div className="community-item-avatar">
-                        <img src={icon} alt={display} />
+                        <img src={icon} alt={display} onError={(e) => { e.currentTarget.src = DEFAULT_COMMUNITY_ICON; }} />
                       </div>
                       <div className="community-item-info">
                         <div className="community-item-name">{display}</div>
@@ -407,10 +499,13 @@ function CreatePostPage() {
           )}
 
           {error && <div className="error-msg">{error}</div>}
+          {createError && <div className="error-msg">{createError}</div>}
 
           <div className="form-actions">
-            <button type="button" className="cancel-btn" onClick={() => navigate(`/r/${communityName}`)}>Cancel</button>
-            <button type="submit" className="post-btn" disabled={!canPost}>Post</button>
+            <button type="button" className="cancel-btn" onClick={() => navigate(`/r/${communityName}`)} disabled={creatingPost}>Cancel</button>
+            <button type="submit" className="post-btn" disabled={!canPost || creatingPost}>
+              {creatingPost ? 'Posting...' : 'Post'}
+            </button>
           </div>
         </form>
       </div>

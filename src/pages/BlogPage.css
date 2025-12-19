@@ -2,7 +2,7 @@
   padding: 24px;
   max-width: 1050px;
   margin: 0 auto;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .blog-hero {
@@ -26,19 +26,19 @@
 }
 
 .post-card {
-  background: #ffffff;
-  color: #1a1a1b;
+  background: var(--card-bg);
+  color: var(--text-primary);
   border-radius: 12px;
   padding: 14px;
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--card-border);
 }
 
 .chip {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 999px;
-  background: #e8f3ff;
-  color: #0c6cf5;
+  background: var(--muted-blue);
+  color: var(--blue);
   font-weight: 700;
   font-size: 12px;
 }
@@ -46,7 +46,7 @@
 .text-btn {
   background: none;
   border: none;
-  color: #0c6cf5;
+  color: var(--blue);
   font-weight: 700;
   cursor: pointer;
   padding: 0;

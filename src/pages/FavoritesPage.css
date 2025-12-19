@@ -1,0 +1,150 @@
+.favorites-page {
+  padding: 16px;
+}
+
+.favorites-header {
+  max-width: 1100px;
+  margin: 0 auto 12px;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  opacity: 0.8;
+}
+
+.favorites-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .favorites-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+.favorites-sidebar {
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 12px;
+  height: fit-content;
+}
+
+.favorites-sidebar-title {
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.fav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 6px;
+  border-radius: 10px;
+}
+
+.fav-row:hover {
+  background: var(--hover);
+}
+
+.fav-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+.fav-remove {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.favorites-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.card.error {
+  border-color: var(--danger);
+}
+
+.card.hint {
+  opacity: 0.85;
+}
+
+.post-card {
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.post-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.subreddit {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--blue);
+}
+
+.star {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.title {
+  margin: 0 0 6px;
+}
+
+.excerpt {
+  margin: 0;
+  opacity: 0.85;
+  display: -webkit-box;
+  line-clamp: 3;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.open {
+  border: 1px solid var(--card-border);
+  background: transparent;
+  color: inherit;
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.empty {
+  opacity: 0.75;
+  padding: 8px 6px;
+}

@@ -1,5 +1,5 @@
 .my-community-page {
-  background: #f6f7f8;
+  background: var(--app-bg);
   min-height: 100vh;
   padding: 24px;
 }
@@ -42,8 +42,8 @@
 }
 
 .community-overview-card {
-  background: #ffffff;
-  border: 1px solid #ccc;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 16px;
@@ -58,29 +58,29 @@
 }
 
 .community-icon {
-  width: 80px;
-  height: 80px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  border: 3px solid #0079d3;
+  border: 2px solid #2f373db6;
 }
 
 .overview-header h2 {
   margin: 0;
   font-size: 24px;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .community-handle {
   margin: 4px 0;
-  color: #7c7c7c;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 .community-badge {
   display: inline-block;
   padding: 4px 10px;
-  background: #e8f3ff;
-  color: #0079d3;
+  background: var(--muted-blue);
+  color: var(--blue);
   border-radius: 12px;
   font-size: 12px;
   font-weight: 700;
@@ -97,20 +97,20 @@
   display: flex;
   flex-direction: column;
   padding: 16px;
-  background: #f6f7f8;
-  border: 1px solid #e6e6e6;
+  background: var(--hover);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
 }
 
 .stat-value {
   font-size: 24px;
   font-weight: 700;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .stat-label {
   font-size: 12px;
-  color: #7c7c7c;
+  color: var(--text-secondary);
   margin-top: 4px;
 }
 
@@ -138,9 +138,9 @@
 
 .secondary-action-btn {
   padding: 12px 24px;
-  background: #f6f7f8;
-  color: #1a1a1b;
-  border: 1px solid #ccc;
+  background: var(--hover);
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   font-weight: 700;
   font-size: 14px;
@@ -149,14 +149,14 @@
 }
 
 .secondary-action-btn:hover {
-  background: #e9ebed;
+  background: var(--hover);
 }
 
 .my-community-nav {
   display: flex;
   gap: 8px;
-  background: #ffffff;
-  border: 1px solid #ccc;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 12px 12px 0 0;
   padding: 8px 16px;
   border-bottom: none;
@@ -167,7 +167,7 @@
   background: none;
   border: none;
   border-bottom: 3px solid transparent;
-  color: #7c7c7c;
+  color: var(--text-secondary);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -175,17 +175,17 @@
 }
 
 .nav-tab:hover {
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .nav-tab.active {
-  color: #0079d3;
-  border-bottom-color: #0079d3;
+  color: var(--blue);
+  border-bottom-color: var(--blue);
 }
 
 .tab-content {
-  background: #ffffff;
-  border: 1px solid #ccc;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 0 0 12px 12px;
   padding: 24px;
   min-height: 400px;
@@ -194,7 +194,7 @@
 .overview-content h3 {
   margin: 0 0 20px 0;
   font-size: 20px;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .steps-grid {
@@ -206,8 +206,8 @@
 
 .step-card {
   padding: 20px;
-  background: #f6f7f8;
-  border: 1px solid #e6e6e6;
+  background: var(--hover);
+  border: 1px solid var(--card-border);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
@@ -221,13 +221,13 @@
 .step-card h4 {
   margin: 0;
   font-size: 16px;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .step-card p {
   margin: 0;
   font-size: 13px;
-  color: #7c7c7c;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
@@ -249,15 +249,15 @@
 
 .tips-card {
   padding: 20px;
-  background: #fff7e6;
-  border: 1px solid #ffb000;
+  background: var(--hover);
+  border: 1px solid var(--card-border);
   border-radius: 12px;
 }
 
 .tips-card h4 {
   margin: 0 0 12px 0;
   font-size: 16px;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .tips-card ul {
@@ -268,7 +268,7 @@
 .tips-card li {
   margin-bottom: 8px;
   font-size: 14px;
-  color: #1a1a1b;
+  color: var(--text-primary);
   line-height: 1.5;
 }
 
@@ -285,7 +285,7 @@
 .rules-content h3 {
   margin: 0;
   font-size: 20px;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .customize-section {
@@ -297,7 +297,7 @@
 .customize-section h4 {
   margin: 0;
   font-size: 16px;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .icon-preview,
@@ -311,48 +311,50 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  border: 2px solid #ccc;
+  border: 2px solid var(--card-border);
 }
 
 .placeholder-banner {
   width: 400px;
   height: 120px;
-  background: #e6e6e6;
+  background: var(--hover);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #7c7c7c;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 .upload-btn {
   padding: 8px 16px;
-  background: #f6f7f8;
-  border: 1px solid #ccc;
+  background: var(--hover);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
 }
 
 .upload-btn:hover {
-  background: #e9ebed;
+  background: var(--hover);
 }
 
 .description-input {
   width: 100%;
   padding: 12px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   font-size: 14px;
   font-family: inherit;
+  background: var(--card-bg);
+  color: var(--text-primary);
   resize: vertical;
 }
 
 .save-btn {
   align-self: flex-start;
   padding: 10px 20px;
-  background: #0079d3;
+  background: var(--blue);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -361,7 +363,7 @@
 }
 
 .save-btn:hover {
-  background: #006cbf;
+  background: #0066b8;
 }
 
 .color-picker-grid {
@@ -380,7 +382,7 @@
 }
 
 .color-option:hover {
-  border-color: #1a1a1b;
+  border-color: var(--text-primary);
 }
 
 .settings-list {
@@ -394,8 +396,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: #f6f7f8;
-  border: 1px solid #e6e6e6;
+  background: var(--hover);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
 }
 
@@ -403,13 +405,13 @@
   display: block;
   margin-bottom: 4px;
   font-size: 14px;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .setting-item p {
   margin: 0;
   font-size: 13px;
-  color: #7c7c7c;
+  color: var(--text-secondary);
 }
 
 .toggle {
@@ -432,7 +434,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #ccc;
+  background-color: var(--card-border);
   transition: 0.4s;
   border-radius: 28px;
 }
@@ -444,7 +446,7 @@
   width: 20px;
   left: 4px;
   bottom: 4px;
-  background-color: white;
+  background-color: var(--card-bg);
   transition: 0.4s;
   border-radius: 50%;
 }
@@ -460,7 +462,7 @@ input:checked + .slider:before {
 .save-settings-btn {
   align-self: flex-start;
   padding: 12px 24px;
-  background: #0079d3;
+  background: var(--blue);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -469,11 +471,11 @@ input:checked + .slider:before {
 }
 
 .save-settings-btn:hover {
-  background: #006cbf;
+  background: #0066b8;
 }
 
 .rules-description {
-  color: #7c7c7c;
+  color: var(--text-secondary);
   font-size: 14px;
   margin: 0;
 }
@@ -484,8 +486,8 @@ input:checked + .slider:before {
   align-items: center;
   justify-content: center;
   padding: 48px;
-  background: #f6f7f8;
-  border: 2px dashed #ccc;
+  background: var(--hover);
+  border: 2px dashed var(--card-border);
   border-radius: 12px;
   gap: 12px;
 }
@@ -496,7 +498,7 @@ input:checked + .slider:before {
 
 .add-rule-btn {
   padding: 10px 20px;
-  background: #0079d3;
+  background: var(--blue);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -505,19 +507,19 @@ input:checked + .slider:before {
 }
 
 .add-rule-btn:hover {
-  background: #006cbf;
+  background: #0066b8;
 }
 
 .rule-template {
   padding: 20px;
-  background: #f6f7f8;
+  background: var(--hover);
   border-radius: 12px;
 }
 
 .rule-template h4 {
   margin: 0 0 12px 0;
   font-size: 14px;
-  color: #1a1a1b;
+  color: var(--text-primary);
 }
 
 .template-buttons {
@@ -528,8 +530,8 @@ input:checked + .slider:before {
 
 .template-btn {
   padding: 8px 16px;
-  background: #ffffff;
-  border: 1px solid #ccc;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
@@ -538,9 +540,9 @@ input:checked + .slider:before {
 }
 
 .template-btn:hover {
-  background: #e8f3ff;
-  border-color: #0079d3;
-  color: #0079d3;
+  background: var(--muted-blue);
+  border-color: var(--blue);
+  color: var(--blue);
 }
 
 @media (max-width: 768px) {

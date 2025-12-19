@@ -6,31 +6,28 @@
 .sort-dropdown-trigger {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: var(--neutral-background, #ffffff);
-  border: 1px solid var(--neutral-border, #ccc);
-  border-radius: 4px;
+  gap: 6px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border, #edeff1);
+  border-radius: 20px;
   padding: 6px 12px;
   cursor: pointer;
   font-size: 14px;
   color: var(--text-primary, #1a1a1b);
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s ease;
 }
 
 .sort-dropdown-trigger:hover {
-  background: var(--neutral-background-hover, #f6f6f6);
-  border-color: var(--text-secondary, #818384);
+  background: var(--hover, #f6f7f8);
 }
 
 .sort-dropdown-trigger:focus {
   outline: none;
-  border-color: var(--primary-color, #0079d3);
-  box-shadow: 0 0 0 3px rgba(0, 121, 211, 0.1);
 }
 
 .sort-icon {
-  font-size: 12px;
+  font-size: 10px;
   transition: transform 0.2s ease;
 }
 
@@ -42,13 +39,14 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  background: var(--neutral-background, #ffffff);
-  border: 1px solid var(--neutral-border, #ccc);
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border, #edeff1);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 100;
-  min-width: 150px;
+  min-width: 120px;
   overflow: hidden;
+  padding: 8px 0;
 }
 
 .sort-option {
@@ -56,23 +54,22 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 12px 16px;
+  padding: 10px 16px;
   background: none;
   border: none;
   color: var(--text-primary, #1a1a1b);
   cursor: pointer;
   font-size: 14px;
   text-align: left;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.15s ease;
 }
 
 .sort-option:hover {
-  background-color: var(--neutral-background-hover, #f6f6f6);
+  background-color: var(--hover, #f6f7f8);
 }
 
 .sort-option.active {
-  background-color: rgba(0, 121, 211, 0.1);
-  color: var(--primary-color, #0079d3);
+  background-color: var(--hover, #f6f7f8);
   font-weight: 600;
 }
 
