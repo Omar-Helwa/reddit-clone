@@ -163,8 +163,8 @@
 }
 
 .settings-btn-filled {
-  background-color: var(--text-primary);
-  border: none;
+  background: none;
+    border: 1px solid var(--text-primary);
   color: var(--body-bg);
 }
 

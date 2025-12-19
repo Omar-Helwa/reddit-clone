@@ -1,5 +1,96 @@
-// Users API client
+// ==================== AUTHENTICATED USER DATA ENDPOINTS ====================
 import { apiFetch, API_BASE_URL } from './shared.js';
+/**
+ * Get all posts saved by the authenticated user
+ * @param {Object} params - Query params: limit, skip
+ * @returns {Promise<Object>} { items, count, limit, skip }
+ */
+export async function getMySavedPosts({ limit = 25, skip = 0 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit), skip: String(skip) });
+  return apiFetch(`/users/me/saved-posts?${params}`);
+}
+
+/**
+ * Get all comments written by the authenticated user
+ * @param {Object} params - Query params: limit, skip
+ * @returns {Promise<Object>} { items, count, limit, skip }
+ */
+export async function getMyComments({ limit = 25, skip = 0 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit), skip: String(skip) });
+  return apiFetch(`/users/me/comments?${params}`);
+}
+
+/**
+ * Get all posts hidden by the authenticated user
+ * @param {Object} params - Query params: limit, skip
+ * @returns {Promise<Object>} { items, count, limit, skip }
+ */
+export async function getMyHiddenPosts({ limit = 25, skip = 0 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit), skip: String(skip) });
+  return apiFetch(`/users/me/hidden-posts?${params}`);
+}
+
+/**
+ * Get all posts upvoted by the authenticated user
+ * @param {Object} params - Query params: limit, skip
+ * @returns {Promise<Object>} { items, count, limit, skip }
+ */
+export async function getMyUpvotedPosts({ limit = 25, skip = 0 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit), skip: String(skip) });
+  return apiFetch(`/users/me/upvoted-posts?${params}`);
+}
+
+/**
+ * Get all posts downvoted by the authenticated user
+ * @param {Object} params - Query params: limit, skip
+ * @returns {Promise<Object>} { items, count, limit, skip }
+ */
+export async function getMyDownvotedPosts({ limit = 25, skip = 0 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit), skip: String(skip) });
+  return apiFetch(`/users/me/downvoted-posts?${params}`);
+}
+
+/**
+ * Get all posts created by the authenticated user
+ * @param {Object} params - Query params: limit, skip
+ * @returns {Promise<Object>} { items, count, limit, skip }
+ */
+export async function getMyPosts({ limit = 25, skip = 0 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit), skip: String(skip) });
+  return apiFetch(`/users/me/posts?${params}`);
+}
+
+/**
+ * Get personalized feed for the authenticated user (excluding hidden posts)
+ * @param {Object} params - Query params: limit, skip
+ * @returns {Promise<Object>} { items, count, limit, skip }
+ */
+export async function getMyFeed({ limit = 25, skip = 0 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit), skip: String(skip) });
+  return apiFetch(`/users/me/feed?${params}`);
+}
+
+/**
+ * Get the list of users the authenticated user is following
+ * @param {Object} params - Query params: limit, skip
+ * @returns {Promise<Object>} { items, count, limit, skip }
+ */
+export async function getMyFollowing({ limit = 25, skip = 0 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit), skip: String(skip) });
+  return apiFetch(`/users/me/following?${params}`);
+}
+
+/**
+ * Get the list of users following the authenticated user
+ * @param {Object} params - Query params: limit, skip
+ * @returns {Promise<Object>} { items, count, limit, skip }
+ */
+export async function getMyFollowers({ limit = 25, skip = 0 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit), skip: String(skip) });
+  return apiFetch(`/users/me/followers?${params}`);
+}
+// Users API client
+
 
 /**
  * Fetch all users

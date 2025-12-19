@@ -2,7 +2,7 @@
 // Use empty string to leverage CRA proxy (configured in package.json)
 // The proxy forwards requests to http://98.66.152.246 to avoid CORS issues
 
-export const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+export const API_BASE_URL = "/api";
 
 /**
  * Generic fetch wrapper with error handling

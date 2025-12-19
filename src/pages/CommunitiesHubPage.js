@@ -42,6 +42,6 @@ function CommunitiesHubPage() {
       </section>
     </div>
   );
+
 }
-n
 export default CommunitiesHubPage;
