@@ -6,7 +6,6 @@ on:
       - master
 
 jobs:
- 
   deploy:
     runs-on: ubuntu-latest
     steps:
@@ -35,9 +34,7 @@ jobs:
 
       - name: Install dependencies and build
         run: |
-          ssh vps "cd ${{ secrets.VPS_TARGET_DIR }} && npm ci && npm run build"
-        env:
-          REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
+          ssh vps "source ~/.nvm/nvm.sh && cd ${{ secrets.VPS_TARGET_DIR }} && npm ci && REACT_APP_API_URL='${{ secrets.REACT_APP_API_URL }}' npm run build"
 
       - name: Deploy build to web directory
         run: |
