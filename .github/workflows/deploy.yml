@@ -1,0 +1,67 @@
+name: Test and Deploy to VPS
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --watchAll=false --passWithNoTests
+
+      - name: Build project
+        run: npm run build
+        env:
+          REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Check required secrets
+        run: |
+          test -n "${{ secrets.VPS_HOST }}" || { echo 'Missing VPS_HOST secret'; exit 1; }
+          test -n "${{ secrets.VPS_USER }}" || { echo 'Missing VPS_USER secret'; exit 1; }
+          test -n "${{ secrets.VPS_PRIVATE_KEY }}" || { echo 'Missing VPS_PRIVATE_KEY secret'; exit 1; }
+          test -n "${{ secrets.VPS_TARGET_DIR }}" || { echo 'Missing VPS_TARGET_DIR secret'; exit 1; }
+          test -n "${{ secrets.VPS_WEB_DIR }}" || { echo 'Missing VPS_WEB_DIR secret'; exit 1; }
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          # printf is safer than echo for keys; the final \n ensures the required trailing newline
+          printf "%s\n" "${{ secrets.VPS_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          printf "Host vps\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/id_rsa\n  StrictHostKeyChecking no\n" "${{ secrets.VPS_HOST }}" "${{ secrets.VPS_USER }}" > ~/.ssh/config
+
+      - name: Sync repository to VPS
+        run: |
+          rsync -az --delete --exclude '.git/' --exclude 'node_modules/' ./ vps:${{ secrets.VPS_TARGET_DIR }}
+
+      - name: Install dependencies and build
+        run: |
+          ssh vps "cd ${{ secrets.VPS_TARGET_DIR }} && npm ci && npm run build"
+        env:
+          REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
+
+      - name: Deploy build to web directory
+        run: |
+          ssh vps "sudo cp -r ${{ secrets.VPS_TARGET_DIR }}/build/* ${{ secrets.VPS_WEB_DIR }}/"

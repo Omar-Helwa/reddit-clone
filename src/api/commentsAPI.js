@@ -5,7 +5,7 @@
 
 // Use empty string when proxy is configured in package.json
 // React dev server will proxy requests to http://98.66.152.246
-const API_BASE_URL = '';
+import { apiFetch, API_BASE_URL } from './shared.js';
 
 /**
  * Generic fetch wrapper for API calls
