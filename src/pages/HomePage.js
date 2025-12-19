@@ -72,55 +72,57 @@ function HomePage() {
         </div>
       </aside>
 
-      <section className="home-main-content">
-        <div className="home-sort-bar">
-          <SortDropdown currentSort={sortBy} onSortChange={setSortBy} />
-          <button className="view-toggle-btn">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-              <rect x="2" y="3" width="7" height="6" rx="1"/>
-              <rect x="11" y="3" width="7" height="6" rx="1"/>
-              <rect x="2" y="11" width="7" height="6" rx="1"/>
-              <rect x="11" y="11" width="7" height="6" rx="1"/>
-            </svg>
-            <span className="view-icon-chevron">▼</span>
-          </button>
-        </div>
-        <PostList sortBy={sortBy} />
-      </section>
+      <div className="home-page-inner">
+        <section className="home-main-content">
+          <div className="home-sort-bar">
+            <SortDropdown currentSort={sortBy} onSortChange={setSortBy} />
+            <button className="view-toggle-btn">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                <rect x="2" y="3" width="7" height="6" rx="1"/>
+                <rect x="11" y="3" width="7" height="6" rx="1"/>
+                <rect x="2" y="11" width="7" height="6" rx="1"/>
+                <rect x="11" y="11" width="7" height="6" rx="1"/>
+              </svg>
+              <span className="view-icon-chevron">▼</span>
+            </button>
+          </div>
+          <PostList sortBy={sortBy} />
+        </section>
 
-      <aside className="home-right-sidebar">
-        <div className="sidebar-widget">
-          <div className="widget-header">
-            <h3>Recent Posts</h3>
-            <span className="widget-action" onClick={handleClearRecentPosts} style={{ cursor: 'pointer' }}>Clear</span>
-          </div>
-          <div className="recent-posts">
-            {loading && (
-              <div className="recent-post-item">Loading recent posts...</div>
-            )}
-            {error && !loading && (
-              <div className="recent-post-item">Failed to load recent posts</div>
-            )}
-            {!loading && !error && recentPosts.length === 0 && (
-              <div className="recent-post-item">No recent posts yet</div>
-            )}
-            {!loading && !error && recentPosts.map((post) => (
-              <div
-                key={post.id || post.title}
-                className="recent-post-item"
-                role="button"
-                onClick={() => navigate(post.path)}
-              >
-                <div className="recent-post-dot" aria-hidden="true" />
-                <div className="recent-post-body">
-                  <div className="recent-post-title">{post.title}</div>
-                  <div className="recent-post-meta">{post.subreddit} • {post.meta}</div>
+        <aside className="home-right-sidebar">
+          <div className="sidebar-widget">
+            <div className="widget-header">
+              <h3>Recent Posts</h3>
+              <span className="widget-action" onClick={handleClearRecentPosts} style={{ cursor: 'pointer' }}>Clear</span>
+            </div>
+            <div className="recent-posts">
+              {loading && (
+                <div className="recent-post-item">Loading recent posts...</div>
+              )}
+              {error && !loading && (
+                <div className="recent-post-item">Failed to load recent posts</div>
+              )}
+              {!loading && !error && recentPosts.length === 0 && (
+                <div className="recent-post-item">No recent posts yet</div>
+              )}
+              {!loading && !error && recentPosts.map((post) => (
+                <div
+                  key={post.id || post.title}
+                  className="recent-post-item"
+                  role="button"
+                  onClick={() => navigate(post.path)}
+                >
+                  <div className="recent-post-dot" aria-hidden="true" />
+                  <div className="recent-post-body">
+                    <div className="recent-post-title">{post.title}</div>
+                    <div className="recent-post-meta">{post.subreddit} • {post.meta}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </aside>
+        </aside>
+      </div>
     </main>
   );
 }
