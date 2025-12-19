@@ -71,6 +71,36 @@ const Post = ({
   const [localScore, setLocalScore] = useState(Number(score) || 0);
   const [resolvedAuthorName, setResolvedAuthorName] = useState(null);
 
+  // Helper functions to get/set user votes from localStorage
+  const getVoteKey = (userId, postIdVal) => `vote_${userId}_${postIdVal}`;
+  
+  const getUserVote = (postIdVal) => {
+    const userId = getCurrentUserId();
+    if (!userId || !postIdVal) return null;
+    const vote = localStorage.getItem(getVoteKey(userId, postIdVal));
+    return vote === 'up' || vote === 'down' ? vote : null;
+  };
+  
+  const setUserVote = (postIdVal, vote) => {
+    const userId = getCurrentUserId();
+    if (!userId || !postIdVal) return;
+    const key = getVoteKey(userId, postIdVal);
+    if (vote === null) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, vote);
+    }
+  };
+
+  // Load user's previous vote on mount
+  useEffect(() => {
+    if (postId) {
+      const previousVote = getUserVote(postId);
+      setLocalVote(previousVote);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postId]);
+
   const crosspostOriginInfo = useMemo(() => parseCrosspostOriginFromText(textBody), [textBody]);
   const originPostId = crosspostOriginInfo?.postId || postId;
   const isCrosspost = Boolean(crosspostOriginInfo);
@@ -162,62 +192,41 @@ const Post = ({
       navigate('/login');
       return;
     }
+    
     const prevVote = localVote;
     const prevScore = localScore;
+    
+    // If already upvoted, clicking again removes the vote (toggle off)
+    // If downvoted or no vote, clicking upvote sets it to up
     const nextVote = prevVote === 'up' ? null : 'up';
-    const delta = prevVote === 'up' ? -1 : (prevVote === 'down' ? 2 : 1);
+    
+    // Calculate score delta based on previous vote state
+    let delta = 0;
+    if (prevVote === 'up') {
+      // Removing upvote: -1
+      delta = -1;
+    } else if (prevVote === 'down') {
+      // Switching from downvote to upvote: +2 (remove -1, add +1)
+      delta = 2;
+    } else {
+      // No previous vote, adding upvote: +1
+      delta = 1;
+    }
+    
     const optimisticScore = prevScore + delta;
     setLocalVote(nextVote);
     setLocalScore(optimisticScore);
+    setUserVote(postId, nextVote); // Persist vote to localStorage
 
-    if (voteEndpointsSupported === false) {
-      if (scoreUpdateSupported === false) return;
-      try {
-        const updated = await postsAPI.update(postId, { score: optimisticScore });
-        scoreUpdateSupported = true;
-        const nextScore = Number(updated?.score);
-        if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
-      } catch (err) {
-        const msg = String(err?.message || '');
-        if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
-          scoreUpdateSupported = false;
-          return;
-        }
-        setLocalVote(prevVote);
-        setLocalScore(prevScore);
-      }
-      return;
-    }
-
+    // Try to update the backend score (fire and forget, don't revert on failure)
+    // The backend doesn't track per-user votes, so we just update the score
     try {
-      const updated = await postsAPI.upvote(postId);
-      voteEndpointsSupported = true;
-      const nextScore = Number(updated?.score);
-      if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
-      setLocalVote('up');
-    } catch (e) {
-      const msg = String(e?.message || '');
-      if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
-        voteEndpointsSupported = false;
-        if (scoreUpdateSupported === false) return;
-        try {
-          const updated = await postsAPI.update(postId, { score: optimisticScore });
-          scoreUpdateSupported = true;
-          const nextScore = Number(updated?.score);
-          if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
-        } catch (err) {
-          const msg2 = String(err?.message || '');
-          if (/status:\s*404/i.test(msg2) || /\b404\b/.test(msg2)) {
-            scoreUpdateSupported = false;
-            return;
-          }
-          setLocalVote(prevVote);
-          setLocalScore(prevScore);
-        }
-      } else {
-        setLocalVote(prevVote);
-        setLocalScore(prevScore);
+      if (voteEndpointsSupported !== false) {
+        await postsAPI.update(postId, { score: optimisticScore });
       }
+    } catch (err) {
+      // Silently fail - localStorage already has the correct state
+      console.warn('Failed to sync vote to backend:', err);
     }
   };
 
@@ -228,62 +237,40 @@ const Post = ({
       navigate('/login');
       return;
     }
+    
     const prevVote = localVote;
     const prevScore = localScore;
+    
+    // If already downvoted, clicking again removes the vote (toggle off)
+    // If upvoted or no vote, clicking downvote sets it to down
     const nextVote = prevVote === 'down' ? null : 'down';
-    const delta = prevVote === 'down' ? 1 : (prevVote === 'up' ? -2 : -1);
+    
+    // Calculate score delta based on previous vote state
+    let delta = 0;
+    if (prevVote === 'down') {
+      // Removing downvote: +1
+      delta = 1;
+    } else if (prevVote === 'up') {
+      // Switching from upvote to downvote: -2 (remove +1, add -1)
+      delta = -2;
+    } else {
+      // No previous vote, adding downvote: -1
+      delta = -1;
+    }
+    
     const optimisticScore = prevScore + delta;
     setLocalVote(nextVote);
     setLocalScore(optimisticScore);
+    setUserVote(postId, nextVote); // Persist vote to localStorage
 
-    if (voteEndpointsSupported === false) {
-      if (scoreUpdateSupported === false) return;
-      try {
-        const updated = await postsAPI.update(postId, { score: optimisticScore });
-        scoreUpdateSupported = true;
-        const nextScore = Number(updated?.score);
-        if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
-      } catch (err) {
-        const msg = String(err?.message || '');
-        if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
-          scoreUpdateSupported = false;
-          return;
-        }
-        setLocalVote(prevVote);
-        setLocalScore(prevScore);
-      }
-      return;
-    }
-
+    // Try to update the backend score (fire and forget, don't revert on failure)
     try {
-      const updated = await postsAPI.downvote(postId);
-      voteEndpointsSupported = true;
-      const nextScore = Number(updated?.score);
-      if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
-      setLocalVote('down');
-    } catch (e) {
-      const msg = String(e?.message || '');
-      if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
-        voteEndpointsSupported = false;
-        if (scoreUpdateSupported === false) return;
-        try {
-          const updated = await postsAPI.update(postId, { score: optimisticScore });
-          scoreUpdateSupported = true;
-          const nextScore = Number(updated?.score);
-          if (!Number.isNaN(nextScore)) setLocalScore(nextScore);
-        } catch (err) {
-          const msg2 = String(err?.message || '');
-          if (/status:\s*404/i.test(msg2) || /\b404\b/.test(msg2)) {
-            scoreUpdateSupported = false;
-            return;
-          }
-          setLocalVote(prevVote);
-          setLocalScore(prevScore);
-        }
-      } else {
-        setLocalVote(prevVote);
-        setLocalScore(prevScore);
+      if (voteEndpointsSupported !== false) {
+        await postsAPI.update(postId, { score: optimisticScore });
       }
+    } catch (err) {
+      // Silently fail - localStorage already has the correct state
+      console.warn('Failed to sync vote to backend:', err);
     }
   };
 
@@ -383,23 +370,28 @@ const Post = ({
             ) : (
               <span className="subreddit-name">{subreddit}</span>
             )}
-            <span className="separator">•</span>
-            {authorHref ? (
-              <span className="post-meta">
-                Posted by{' '}
-                <button
-                  type="button"
-                  className="post-author-link"
-                  onClick={() => navigate(authorHref)}
-                >
-                  u/{normalizedAuthor}
-                </button>
-              </span>
-            ) : (
-              <span className="post-meta">Posted by u/{normalizedAuthor}</span>
+            {/* Only show publisher row if author is not unknown and not empty */}
+            {(normalizedAuthor && normalizedAuthor !== 'unknown') && (
+              <div className="post-publisher-row">
+                {authorHref ? (
+                  <span className="post-meta">
+                    Posted by{' '}
+                    <button
+                      type="button"
+                      className="post-author-link"
+                      onClick={() => navigate(authorHref)}
+                    >
+                      u/{normalizedAuthor}
+                    </button>
+                  </span>
+                ) : (
+                  <span className="post-meta">Posted by u/{normalizedAuthor}</span>
+                )}
+                <span className="separator">•</span>
+                <span className="post-timestamp">{timestampLabel}</span>
+              </div>
             )}
-            <span className="separator">•</span>
-            <span className="post-timestamp">{timestampLabel}</span>
+            {/* If author is unknown or empty, do not render anything for publisher */}
           </div>
           <div className="post-menu">
             <button aria-label="Save" className="menu-button">🔖</button>

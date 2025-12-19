@@ -1,32 +1,46 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './CommentList.css';
 import { getUser } from '../../api/usersApi';
 import { navigate } from '../../utils/helpers';
 import commentsAPI from '../../api/commentsAPI';
-import { getUserToken, isLoggedIn } from '../../utils/auth';
+import { getCurrentUserId, getUserToken, isLoggedIn } from '../../utils/auth';
 import { DEFAULT_USER_ICON } from '../../utils/placeholders';
 
-let commentVoteEndpointsSupported = null; // null | true | false
 let commentScoreUpdateSupported = null; // null | true | false
 
 const COMMENT_INDENT_STEP = 28; // px between each nesting rail
 
 const usernameCache = new Map(); // userId -> username
 
-const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply, autoFocus = false }) => {
+// Helper functions to get/set user votes from localStorage for comments
+const getCommentVoteKey = (userId, commentId) => `comment_vote_${userId}_${commentId}`;
+
+const getUserCommentVote = (commentId) => {
+  const userId = getCurrentUserId();
+  if (!userId || !commentId) return null;
+  const vote = localStorage.getItem(getCommentVoteKey(userId, commentId));
+  return vote === 'up' || vote === 'down' ? vote : null;
+};
+
+const setUserCommentVote = (commentId, vote) => {
+  const userId = getCurrentUserId();
+  if (!userId || !commentId) return;
+  const key = getCommentVoteKey(userId, commentId);
+  if (vote === null) {
+    localStorage.removeItem(key);
+  } else {
+    localStorage.setItem(key, vote);
+  }
+};
+
+// eslint-disable-next-line no-unused-vars
+const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply, autoFocus = false, postAuthorId = null }) => {
   const [expandedComments, setExpandedComments] = useState({});
-  const [newComment, setNewComment] = useState('');
+  const [collapsedComments, setCollapsedComments] = useState({}); // Track collapsed comments
   const [replyDrafts, setReplyDrafts] = useState({});
-  const textareaRef = useRef(null);
   const [usernamesById, setUsernamesById] = useState({});
   const [localVotes, setLocalVotes] = useState({}); // commentId -> 'up' | 'down' | null
   const [localScores, setLocalScores] = useState({}); // commentId -> number
-
-  useEffect(() => {
-    if (autoFocus && textareaRef.current) {
-      textareaRef.current.focus();
-    }
-  }, [autoFocus]);
 
   useEffect(() => {
     const ids = new Set();
@@ -68,16 +82,6 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
       ...prev,
       [commentId]: !prev[commentId]
     }));
-  };
-
-  const handleSubmitNew = () => {
-    if (!newComment.trim()) return;
-    if (typeof onSubmitNewComment === 'function') {
-      onSubmitNewComment(newComment);
-    } else {
-      console.log('Submit comment:', { postId, parentCommentId: null, text: newComment });
-    }
-    setNewComment('');
   };
 
   const handleSubmitReplyLocal = (commentId) => {
@@ -126,12 +130,15 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
     const userId = comment.userId ? String(comment.userId) : '';
     const resolved = (userId && (usernamesById[userId] || usernameCache.get(userId))) || null;
     const authorLabel = resolved ? `u/${resolved}` : (userId ? `u/${userId.substring(0, 8)}` : 'u/unknown');
+    const isOP = postAuthorId && userId && String(postAuthorId) === String(userId);
 
     const baseScore = Number(comment.score);
     const score = Number.isNaN(baseScore)
       ? (localScores[commentId] ?? 0)
       : (localScores[commentId] ?? baseScore);
-    const vote = localVotes[commentId] ?? null;
+    // Load previous vote from localStorage if not already in state
+    const storedVote = localVotes[commentId] ?? getUserCommentVote(commentId);
+    const vote = storedVote;
 
     const persistScoreFallback = async (optimisticScore) => {
       if (commentScoreUpdateSupported === false) return null;
@@ -157,113 +164,121 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
 
       const prevVote = vote;
       const prevScore = score;
+      
+      // Toggle: if already voted in this direction, remove vote; otherwise set vote
       const nextVote = prevVote === direction ? null : direction;
-      const delta = direction === 'up'
-        ? (prevVote === 'up' ? -1 : (prevVote === 'down' ? 2 : 1))
-        : (prevVote === 'down' ? 1 : (prevVote === 'up' ? -2 : -1));
+      
+      // Calculate delta based on previous vote state
+      let delta = 0;
+      if (direction === 'up') {
+        if (prevVote === 'up') {
+          delta = -1; // Removing upvote
+        } else if (prevVote === 'down') {
+          delta = 2; // Switching from down to up
+        } else {
+          delta = 1; // New upvote
+        }
+      } else {
+        if (prevVote === 'down') {
+          delta = 1; // Removing downvote
+        } else if (prevVote === 'up') {
+          delta = -2; // Switching from up to down
+        } else {
+          delta = -1; // New downvote
+        }
+      }
+      
       const optimisticScore = prevScore + delta;
 
       setLocalVotes((prev) => ({ ...prev, [commentId]: nextVote }));
       setLocalScores((prev) => ({ ...prev, [commentId]: optimisticScore }));
+      setUserCommentVote(commentId, nextVote); // Persist vote to localStorage
 
-      if (commentVoteEndpointsSupported === false) {
-        try {
-          const updated = await persistScoreFallback(optimisticScore);
-          const nextScore = Number(updated?.score);
-          if (!Number.isNaN(nextScore)) {
-            setLocalScores((prev) => ({ ...prev, [commentId]: nextScore }));
-          }
-        } catch {
-          setLocalVotes((prev) => ({ ...prev, [commentId]: prevVote }));
-          setLocalScores((prev) => ({ ...prev, [commentId]: prevScore }));
-        }
-        return;
-      }
-
+      // Try to update backend (fire and forget)
       try {
-        const updated = direction === 'up'
-          ? await commentsAPI.upvote(commentId)
-          : await commentsAPI.downvote(commentId);
-        commentVoteEndpointsSupported = true;
-        const nextScore = Number(updated?.score);
-        if (!Number.isNaN(nextScore)) {
-          setLocalScores((prev) => ({ ...prev, [commentId]: nextScore }));
-        }
-        setLocalVotes((prev) => ({ ...prev, [commentId]: direction }));
+        await commentsAPI.update(commentId, { score: optimisticScore });
       } catch (err) {
-        const msg = String(err?.message || '');
-        if (/status:\s*404/i.test(msg) || /\b404\b/.test(msg)) {
-          commentVoteEndpointsSupported = false;
-          try {
-            const updated = await persistScoreFallback(optimisticScore);
-            const nextScore = Number(updated?.score);
-            if (!Number.isNaN(nextScore)) {
-              setLocalScores((prev) => ({ ...prev, [commentId]: nextScore }));
-            }
-          } catch {
-            setLocalVotes((prev) => ({ ...prev, [commentId]: prevVote }));
-            setLocalScores((prev) => ({ ...prev, [commentId]: prevScore }));
-          }
-          return;
-        }
-
-        setLocalVotes((prev) => ({ ...prev, [commentId]: prevVote }));
-        setLocalScores((prev) => ({ ...prev, [commentId]: prevScore }));
+        console.warn('Failed to sync comment vote to backend:', err);
       }
     };
     
     const indentPx = depth * COMMENT_INDENT_STEP;
     const commentStyle = { marginLeft: `${indentPx}px` };
     const avatarSrc = comment.avatar || comment.userAvatar || comment.authorIcon || DEFAULT_USER_ICON;
+    const isCollapsed = collapsedComments[commentId] || false;
+
+    const toggleCollapse = () => {
+      setCollapsedComments(prev => ({ ...prev, [commentId]: !prev[commentId] }));
+    };
 
     return (
-      <div key={commentId} className="comment" style={commentStyle} data-depth={depth}>
-        <div className="comment-thread" aria-hidden="true">
-          {depth > 0 && <span className="comment-thread-line" />}
-          <span className="comment-thread-node">
-            <span className="comment-thread-dot" />
-          </span>
-        </div>
-
-        <div className="comment-card">
+      <div key={commentId} className={`comment ${isCollapsed ? 'collapsed' : ''}`} style={commentStyle} data-depth={depth}>
+        {depth > 0 && (
+          <div className="comment-thread-line-vertical">
+            <button
+              type="button"
+              className="comment-collapse-btn reddit-collapse-btn on-thread"
+              onClick={toggleCollapse}
+              aria-label={isCollapsed ? "Expand replies" : "Collapse replies"}
+              title={isCollapsed ? "Expand replies" : "Collapse replies"}
+            >
+              <span className="collapse-circle">{isCollapsed ? '+' : '–'}</span>
+            </button>
+          </div>
+        )}
+        <div className="comment-card reddit-style">
           <div className="comment-header">
             <img
               src={avatarSrc}
-              alt={authorLabel}
+              alt=""
               className="comment-avatar"
               onError={(e) => { e.currentTarget.src = DEFAULT_USER_ICON; }}
             />
-            <div className="comment-header-text">
-              <a
-                href={userId ? `/user/${userId}` : '#'}
-                className="comment-author"
-                onClick={(e) => {
-                  if (!userId) {
-                    e.preventDefault();
-                    return;
-                  }
+            <a
+              href={userId ? `/user/${userId}` : '#'}
+              className="comment-author"
+              onClick={(e) => {
+                if (!userId) {
                   e.preventDefault();
-                  navigate(`/user/${userId}`);
-                }}
-              >
-                {authorLabel}
-              </a>
-              <span className="comment-timestamp">{timestamp}</span>
-            </div>
-            <span className="comment-score-chip">{score} pts</span>
+                  return;
+                }
+                e.preventDefault();
+                navigate(`/user/${userId}`);
+              }}
+            >
+              {authorLabel}
+            </a>
+            {isOP && <span className="comment-op-tag">OP</span>}
+            <span className="comment-separator">•</span>
+            <span className="comment-timestamp">{timestamp}</span>
           </div>
 
-          <div className="comment-body">
-            <p>{comment.text}</p>
-          </div>
+          {/* Always show toolbar, only hide body/replies when collapsed */}
+          {!isCollapsed && (
+            <div className="comment-body">
+              <p>{comment.text}</p>
+            </div>
+          )}
 
           <div className="comment-toolbar">
-            <div className="comment-vote-group" aria-label="Comment voting">
+            {/* Collapse button for top-level (no thread line) */}
+            {depth === 0 && (
               <button
                 type="button"
-                className={`comment-toolbar-btn vote ${vote === 'up' ? 'active' : ''}`}
+                className="comment-collapse-btn reddit-collapse-btn on-thread"
+                onClick={toggleCollapse}
+                aria-label={isCollapsed ? "Expand replies" : "Collapse replies"}
+                title={isCollapsed ? "Expand replies" : "Collapse replies"}
+              >
+                <span className="collapse-circle">{isCollapsed ? '+' : '–'}</span>
+              </button>
+            )}
+            <div className="comment-vote-group">
+              <button
+                type="button"
+                className={`comment-vote-btn ${vote === 'up' ? 'upvoted' : ''}`}
                 onClick={() => handleVote('up')}
-                aria-label="Upvote comment"
+                aria-label="Upvote"
               >
                 ▲
               </button>
@@ -272,22 +287,30 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
               </span>
               <button
                 type="button"
-                className={`comment-toolbar-btn vote ${vote === 'down' ? 'active' : ''}`}
+                className={`comment-vote-btn ${vote === 'down' ? 'downvoted' : ''}`}
                 onClick={() => handleVote('down')}
-                aria-label="Downvote comment"
+                aria-label="Downvote"
               >
                 ▼
               </button>
             </div>
             <button
-              className="comment-toolbar-btn reply"
+              className="comment-action-btn"
               onClick={() => toggleReply(commentId)}
             >
-              Reply
+              💬 Reply
             </button>
+            <button className="comment-action-btn">
+              🏆 Award
+            </button>
+            <button className="comment-action-btn">
+              ↗ Share
+            </button>
+            <button className="comment-more-btn">⋯</button>
           </div>
 
-          {expandedComments[commentId] && (
+          {/* Reply form only if not collapsed */}
+          {!isCollapsed && expandedComments[commentId] && (
             <div className="reply-form">
               <textarea
                 className="reply-textarea"
@@ -297,23 +320,26 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
               />
               <div className="reply-buttons">
                 <button 
-                  className="reply-submit"
-                  onClick={() => handleSubmitReplyLocal(commentId)}
-                >
-                  Comment
-                </button>
-                <button 
                   className="reply-cancel"
                   onClick={() => toggleReply(commentId)}
                 >
                   Cancel
                 </button>
+                <button 
+                  className="reply-submit"
+                  onClick={() => handleSubmitReplyLocal(commentId)}
+                >
+                  Comment
+                </button>
               </div>
             </div>
           )}
+
+          {/* Expand button for collapsed state (optional, handled by thread line button) */}
         </div>
 
-        {comment.replies && comment.replies.length > 0 && (
+        {/* Only show replies if not collapsed */}
+        {!isCollapsed && comment.replies && comment.replies.length > 0 && (
           <div className="comment-replies">
             {comment.replies.map(reply => renderComment(reply, depth + 1, visited))}
           </div>
@@ -324,28 +350,7 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
 
   return (
     <div className="comment-list-container">
-      <div className="new-comment-form">
-        <h3>Comment as User</h3>
-        <textarea
-          className="comment-textarea"
-          placeholder="What are your thoughts?"
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          ref={textareaRef}
-          rows="4"
-        />
-        <div className="form-buttons">
-          <button 
-            className="submit-button"
-            onClick={handleSubmitNew}
-          >
-            Comment
-          </button>
-        </div>
-      </div>
-
       <div className="comments-section">
-        <h3>Comments ({comments.length})</h3>
         {comments.length > 0 ? (
           <div className="comment-list">
             {(() => {

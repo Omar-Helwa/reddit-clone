@@ -58,12 +58,24 @@ export async function createCommunity(communityData) {
   
   console.log('Creating community with payload:', payload);
   
+  // Get token for authorization
+  let authHeaders = {};
+  try {
+    const token = localStorage.getItem('userToken');
+    if (token) {
+      authHeaders = { Authorization: `Bearer ${token}` };
+    }
+  } catch (e) {
+    // ignore
+  }
+
   const response = await fetch(url, {
     method: 'POST',
     body: JSON.stringify(payload),
     redirect: 'follow',
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
     },
   });
   

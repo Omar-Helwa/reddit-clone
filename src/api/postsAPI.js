@@ -10,23 +10,27 @@ const API_BASE_URL = '';
 
 /**
  * Generic fetch wrapper for API calls
+ * Authorization token is only sent for non-GET requests (POST, PUT, PATCH, DELETE)
  * @param {string} endpoint - API endpoint (e.g., '/posts', '/posts/123')
  * @param {object} options - Fetch options (method, headers, body, etc.)
  */
 async function fetchAPI(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
+  const method = (options.method || 'GET').toUpperCase();
   
-  // Attach bearer token if available
+  // Only attach bearer token for non-GET requests
   let tokenHeaders = {};
-  try {
-    const token = localStorage.getItem('userToken');
-    const envToken = process.env.REACT_APP_API_TOKEN;
-    const bearer = token || envToken;
-    if (bearer) {
-      tokenHeaders = { Authorization: `Bearer ${bearer}` };
+  if (method !== 'GET') {
+    try {
+      const token = localStorage.getItem('userToken');
+      const envToken = process.env.REACT_APP_API_TOKEN;
+      const bearer = token || envToken;
+      if (bearer) {
+        tokenHeaders = { Authorization: `Bearer ${bearer}` };
+      }
+    } catch (e) {
+      // localStorage might be unavailable; ignore
     }
-  } catch (e) {
-    // localStorage might be unavailable; ignore
   }
 
   const config = {

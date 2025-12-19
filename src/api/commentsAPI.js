@@ -9,20 +9,25 @@ const API_BASE_URL = '';
 
 /**
  * Generic fetch wrapper for API calls
+ * Authorization token is only sent for non-GET requests (POST, PUT, PATCH, DELETE)
  * @param {string} endpoint - API endpoint (e.g., '/comments', '/comments/123')
  * @param {object} options - Fetch options (method, headers, body, etc.)
  */
 async function fetchAPI(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
+  const method = (options.method || 'GET').toUpperCase();
   
+  // Only attach bearer token for non-GET requests
   let tokenHeaders = {};
-  try {
-    const token = localStorage.getItem('userToken');
-    if (token) {
-      tokenHeaders = { Authorization: `Bearer ${token}` };
+  if (method !== 'GET') {
+    try {
+      const token = localStorage.getItem('userToken');
+      if (token) {
+        tokenHeaders = { Authorization: `Bearer ${token}` };
+      }
+    } catch (e) {
+      // ignore
     }
-  } catch (e) {
-    // ignore
   }
 
   const config = {

@@ -4,7 +4,7 @@ import { isJoined, joinCommunity, navigate, getJoinedCommunities } from '../util
 import { useCreatePost } from '../hooks/usePosts';
 import useCommunities from '../hooks/useCommunities';
 import { DEFAULT_COMMUNITY_ICON } from '../utils/placeholders';
-import { getCurrentUserId } from '../utils/auth';
+import { getCurrentUserId, getCurrentUser } from '../utils/auth';
 
 function CreatePostPage() {
   const { createPost, loading: creatingPost, error: createError } = useCreatePost();
@@ -209,6 +209,7 @@ function CreatePostPage() {
 
     const subredditValue = (communityName || '').replace(/^r\//i, '');
     const userId = getCurrentUserId();
+    const currentUser = getCurrentUser();
 
     if (!userId) {
       setError('You must be logged in to post.');
@@ -217,14 +218,8 @@ function CreatePostPage() {
 
     const payload = {
       title: title.trim(),
-      userId,
       subreddit: subredditValue,
       type: postType,
-      // optional but accepted by backend
-      upvotes: 0,
-      downvotes: 0,
-      score: 0,
-      commentCount: 0,
     };
 
     if (postType === 'text') {
@@ -237,7 +232,7 @@ function CreatePostPage() {
         return;
       }
       payload.linkUrl = linkUrl.trim();
-      payload.textBody = textBody.trim();
+      if (textBody.trim()) payload.textBody = textBody.trim();
     }
 
     if (postType === 'image') {
@@ -246,7 +241,7 @@ function CreatePostPage() {
         return;
       }
       payload.imageUrl = imageUrl.trim();
-      payload.textBody = textBody.trim();
+      if (textBody.trim()) payload.textBody = textBody.trim();
     }
 
     if (postType === 'poll') {

@@ -6,18 +6,23 @@ export const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 /**
  * Generic fetch wrapper with error handling
+ * Authorization token is only sent for non-GET requests (POST, PUT, PATCH, DELETE)
  */
 export async function apiFetch(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
+  const method = (options.method || 'GET').toUpperCase();
   
+  // Only attach bearer token for non-GET requests
   let tokenHeaders = {};
-  try {
-    const token = localStorage.getItem('userToken');
-    if (token) {
-      tokenHeaders = { Authorization: `Bearer ${token}` };
+  if (method !== 'GET') {
+    try {
+      const token = localStorage.getItem('userToken');
+      if (token) {
+        tokenHeaders = { Authorization: `Bearer ${token}` };
+      }
+    } catch (e) {
+      // ignore if localStorage unavailable
     }
-  } catch (e) {
-    // ignore if localStorage unavailable
   }
 
   const config = {
