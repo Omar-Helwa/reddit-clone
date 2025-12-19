@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useMyProfileData } from '../hooks/useMyProfileData';
 import './ProfilePage.css';
 import { getCurrentUser, getCurrentUserId } from '../utils/auth';
 import { getUser } from '../api/usersApi';
@@ -75,13 +76,31 @@ function ProfilePage({ onNavigate }) {
     loadUserData();
   }, []);
 
-  const [userPosts] = useState([]);
-  const [userComments] = useState([]);
+  // Profile data hook
+  const {
+    posts: userPosts,
+    comments: userComments,
+    savedPosts,
+    hiddenPosts,
+    upvotedPosts,
+    downvotedPosts,
+    loading: profileLoading,
+    error: profileError
+  } = useMyProfileData();
 
-  if (loading) {
+
+  if (loading || profileLoading) {
     return (
       <div className="profile-page">
         <div className="profile-loading">Loading profile...</div>
+      </div>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <div className="profile-page">
+        <div className="profile-error">{profileError}</div>
       </div>
     );
   }
@@ -219,14 +238,27 @@ function ProfilePage({ onNavigate }) {
 
           {/* Tab Content */}
           <div className="profile-tab-content">
-            {activeTab === 'overview' && renderEmptyState('overview')}
+            {activeTab === 'overview' && (
+              userPosts.length === 0 && userComments.length === 0
+                ? renderEmptyState('overview')
+                : <>
+                    <div className="posts-list">
+                      {userPosts.map((post) => (
+                        <div key={post._id} className="profile-post-item">{post.title}</div>
+                      ))}
+                    </div>
+                    <div className="comments-list">
+                      {userComments.map((comment) => (
+                        <div key={comment._id} className="profile-comment-item">{comment.text}</div>
+                      ))}
+                    </div>
+                  </>
+            )}
             {activeTab === 'posts' && (
               userPosts.length === 0 ? renderEmptyState('posts') : (
                 <div className="posts-list">
                   {userPosts.map((post) => (
-                    <div key={post.id} className="profile-post-item">
-                      {post.title}
-                    </div>
+                    <div key={post._id} className="profile-post-item">{post.title}</div>
                   ))}
                 </div>
               )
@@ -235,18 +267,48 @@ function ProfilePage({ onNavigate }) {
               userComments.length === 0 ? renderEmptyState('comments') : (
                 <div className="comments-list">
                   {userComments.map((comment) => (
-                    <div key={comment.id} className="profile-comment-item">
-                      {comment.text}
-                    </div>
+                    <div key={comment._id} className="profile-comment-item">{comment.text}</div>
                   ))}
                 </div>
               )
             )}
-            {activeTab === 'saved' && renderEmptyState('saved')}
+            {activeTab === 'saved' && (
+              savedPosts.length === 0 ? renderEmptyState('saved') : (
+                <div className="posts-list">
+                  {savedPosts.map((post) => (
+                    <div key={post._id} className="profile-post-item">{post.title}</div>
+                  ))}
+                </div>
+              )
+            )}
             {activeTab === 'history' && renderEmptyState('history')}
-            {activeTab === 'hidden' && renderEmptyState('hidden')}
-            {activeTab === 'upvoted' && renderEmptyState('upvoted')}
-            {activeTab === 'downvoted' && renderEmptyState('downvoted')}
+            {activeTab === 'hidden' && (
+              hiddenPosts.length === 0 ? renderEmptyState('hidden') : (
+                <div className="posts-list">
+                  {hiddenPosts.map((post) => (
+                    <div key={post._id} className="profile-post-item">{post.title}</div>
+                  ))}
+                </div>
+              )
+            )}
+            {activeTab === 'upvoted' && (
+              upvotedPosts.length === 0 ? renderEmptyState('upvoted') : (
+                <div className="posts-list">
+                  {upvotedPosts.map((post) => (
+                    <div key={post._id} className="profile-post-item">{post.title}</div>
+                  ))}
+                </div>
+              )
+            )}
+            {activeTab === 'downvoted' && (
+              downvotedPosts.length === 0 ? renderEmptyState('downvoted') : (
+                <div className="posts-list">
+                  {downvotedPosts.map((post) => (
+                    <div key={post._id} className="profile-post-item">{post.title}</div>
+                  ))}
+                </div>
+              )
+            )}
           </div>
         </main>
 

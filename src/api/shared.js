@@ -8,21 +8,17 @@ export const API_BASE_URL = "/api";
  * Generic fetch wrapper with error handling
  * Authorization token is only sent for non-GET requests (POST, PUT, PATCH, DELETE)
  */
+
 export async function apiFetch(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
-  const method = (options.method || 'GET').toUpperCase();
-  
-  // Only attach bearer token for non-GET requests
   let tokenHeaders = {};
-  if (method !== 'GET') {
-    try {
-      const token = localStorage.getItem('userToken');
-      if (token) {
-        tokenHeaders = { Authorization: `Bearer ${token}` };
-      }
-    } catch (e) {
-      // ignore if localStorage unavailable
+  try {
+    const token = localStorage.getItem('userToken');
+    if (token) {
+      tokenHeaders = { Authorization: `Bearer ${token}` };
     }
+  } catch (e) {
+    // ignore if localStorage unavailable
   }
 
   const config = {
