@@ -8,8 +8,6 @@ import { DEFAULT_USER_ICON } from '../../utils/placeholders';
 
 let commentScoreUpdateSupported = null; // null | true | false
 
-const COMMENT_INDENT_STEP = 28; // px between each nesting rail
-
 const usernameCache = new Map(); // userId -> username
 
 // Helper functions to get/set user votes from localStorage for comments
@@ -202,42 +200,73 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
       }
     };
     
-    const indentPx = depth * COMMENT_INDENT_STEP;
-    const commentStyle = { marginLeft: `${indentPx}px` };
     const avatarSrc = comment.avatar || comment.userAvatar || comment.authorIcon || DEFAULT_USER_ICON;
     const isCollapsed = collapsedComments[commentId] || false;
+    const hasReplies = comment.replies && comment.replies.length > 0;
+    const replyCount = countReplies(comment);
 
     const toggleCollapse = () => {
       setCollapsedComments(prev => ({ ...prev, [commentId]: !prev[commentId] }));
     };
 
+    // Count total replies recursively
+    function countReplies(c) {
+      if (!c.replies || !c.replies.length) return 0;
+      return c.replies.reduce((sum, r) => sum + 1 + countReplies(r), 0);
+    }
+
     return (
-      <div key={commentId} className={`comment ${isCollapsed ? 'collapsed' : ''}`} style={commentStyle} data-depth={depth}>
-        {depth > 0 && (
-          <div className="comment-thread-line-vertical">
-            <button
-              type="button"
-              className="comment-collapse-btn reddit-collapse-btn on-thread"
-              onClick={toggleCollapse}
-              aria-label={isCollapsed ? "Expand replies" : "Collapse replies"}
-              title={isCollapsed ? "Expand replies" : "Collapse replies"}
-            >
-              <span className="collapse-circle">{isCollapsed ? '+' : '–'}</span>
-            </button>
-          </div>
-        )}
-        <div className="comment-card reddit-style">
-          <div className="comment-header">
+      <div 
+        key={commentId} 
+        className={`comment ${isCollapsed ? 'collapsed' : ''}`} 
+        data-depth={depth}
+      >
+        {/* Thread Column - contains avatar with collapse button and thread line */}
+        <div className="comment-thread-col">
+          {/* Avatar with collapse button overlay */}
+          <div 
+            className="comment-avatar-container"
+            onClick={toggleCollapse}
+            title={isCollapsed ? "Expand thread" : "Collapse thread"}
+          >
             <img
               src={avatarSrc}
               alt=""
               className="comment-avatar"
               onError={(e) => { e.currentTarget.src = DEFAULT_USER_ICON; }}
             />
+            <button
+              type="button"
+              className="comment-collapse-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCollapse();
+              }}
+              aria-label={isCollapsed ? "Expand comment" : "Collapse comment"}
+            >
+              {isCollapsed ? '+' : '−'}
+            </button>
+          </div>
+          
+          {/* Thread line - only show if has replies and not collapsed */}
+          {hasReplies && !isCollapsed && (
+            <div 
+              className="comment-thread-line"
+              onClick={toggleCollapse}
+              title="Collapse thread"
+            />
+          )}
+        </div>
+
+        {/* Main Content Column */}
+        <div className="comment-main">
+          {/* Meta Row - author, timestamp (always visible) */}
+          <div className="comment-meta" onClick={toggleCollapse}>
             <a
               href={userId ? `/user/${userId}` : '#'}
               className="comment-author"
               onClick={(e) => {
+                e.stopPropagation();
                 if (!userId) {
                   e.preventDefault();
                   return;
@@ -251,99 +280,91 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
             {isOP && <span className="comment-op-tag">OP</span>}
             <span className="comment-separator">•</span>
             <span className="comment-timestamp">{timestamp}</span>
-          </div>
-
-          {/* Always show toolbar, only hide body/replies when collapsed */}
-          {!isCollapsed && (
-            <div className="comment-body">
-              <p>{comment.text}</p>
-            </div>
-          )}
-
-          <div className="comment-toolbar">
-            {/* Collapse button for top-level (no thread line) */}
-            {depth === 0 && (
-              <button
-                type="button"
-                className="comment-collapse-btn reddit-collapse-btn on-thread"
-                onClick={toggleCollapse}
-                aria-label={isCollapsed ? "Expand replies" : "Collapse replies"}
-                title={isCollapsed ? "Expand replies" : "Collapse replies"}
-              >
-                <span className="collapse-circle">{isCollapsed ? '+' : '–'}</span>
-              </button>
-            )}
-            <div className="comment-vote-group">
-              <button
-                type="button"
-                className={`comment-vote-btn ${vote === 'up' ? 'upvoted' : ''}`}
-                onClick={() => handleVote('up')}
-                aria-label="Upvote"
-              >
-                ▲
-              </button>
-              <span className={`comment-vote-score ${vote === 'up' ? 'upvoted' : vote === 'down' ? 'downvoted' : ''}`}>
-                {score}
+            {isCollapsed && replyCount > 0 && (
+              <span className="comment-collapsed-info">
+                ({replyCount} {replyCount === 1 ? 'reply' : 'replies'})
               </span>
-              <button
-                type="button"
-                className={`comment-vote-btn ${vote === 'down' ? 'downvoted' : ''}`}
-                onClick={() => handleVote('down')}
-                aria-label="Downvote"
-              >
-                ▼
-              </button>
-            </div>
-            <button
-              className="comment-action-btn"
-              onClick={() => toggleReply(commentId)}
-            >
-              💬 Reply
-            </button>
-            <button className="comment-action-btn">
-              🏆 Award
-            </button>
-            <button className="comment-action-btn">
-              ↗ Share
-            </button>
-            <button className="comment-more-btn">⋯</button>
+            )}
           </div>
 
-          {/* Reply form only if not collapsed */}
-          {!isCollapsed && expandedComments[commentId] && (
-            <div className="reply-form">
-              <textarea
-                className="reply-textarea"
-                placeholder="What are your thoughts?"
-                value={replyDrafts[commentId] || ''}
-                onChange={(e) => setReplyDrafts((prev) => ({ ...prev, [commentId]: e.target.value }))}
-              />
-              <div className="reply-buttons">
-                <button 
-                  className="reply-cancel"
+          {/* Content Area - Body, Toolbar, Reply Form (hidden when collapsed) */}
+          {!isCollapsed && (
+            <div className="comment-content-area">
+              <div className="comment-body">
+                <p>{comment.text}</p>
+              </div>
+
+              <div className="comment-toolbar">
+                <div className="comment-vote-group">
+                  <button
+                    type="button"
+                    className={`comment-vote-btn ${vote === 'up' ? 'upvoted' : ''}`}
+                    onClick={() => handleVote('up')}
+                    aria-label="Upvote"
+                  >
+                    ▲
+                  </button>
+                  <span className={`comment-vote-score ${vote === 'up' ? 'upvoted' : vote === 'down' ? 'downvoted' : ''}`}>
+                    {score}
+                  </span>
+                  <button
+                    type="button"
+                    className={`comment-vote-btn ${vote === 'down' ? 'downvoted' : ''}`}
+                    onClick={() => handleVote('down')}
+                    aria-label="Downvote"
+                  >
+                    ▼
+                  </button>
+                </div>
+                <button
+                  className="comment-action-btn"
                   onClick={() => toggleReply(commentId)}
                 >
-                  Cancel
+                  💬 <span>Reply</span>
                 </button>
-                <button 
-                  className="reply-submit"
-                  onClick={() => handleSubmitReplyLocal(commentId)}
-                >
-                  Comment
+                <button className="comment-action-btn">
+                  🏆 <span>Award</span>
                 </button>
+                <button className="comment-action-btn">
+                  ↗ <span>Share</span>
+                </button>
+                <button className="comment-more-btn" aria-label="More options">⋯</button>
               </div>
+
+              {expandedComments[commentId] && (
+                <div className="reply-form">
+                  <textarea
+                    className="reply-textarea"
+                    placeholder="What are your thoughts?"
+                    value={replyDrafts[commentId] || ''}
+                    onChange={(e) => setReplyDrafts((prev) => ({ ...prev, [commentId]: e.target.value }))}
+                  />
+                  <div className="reply-buttons">
+                    <button 
+                      className="reply-cancel"
+                      onClick={() => toggleReply(commentId)}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      className="reply-submit"
+                      onClick={() => handleSubmitReplyLocal(commentId)}
+                    >
+                      Comment
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Expand button for collapsed state (optional, handled by thread line button) */}
+          {/* Replies (hidden when collapsed) */}
+          {!isCollapsed && hasReplies && (
+            <div className="comment-replies">
+              {comment.replies.map(reply => renderComment(reply, depth + 1, visited))}
+            </div>
+          )}
         </div>
-
-        {/* Only show replies if not collapsed */}
-        {!isCollapsed && comment.replies && comment.replies.length > 0 && (
-          <div className="comment-replies">
-            {comment.replies.map(reply => renderComment(reply, depth + 1, visited))}
-          </div>
-        )}
       </div>
     );
   };

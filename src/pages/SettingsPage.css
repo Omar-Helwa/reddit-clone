@@ -1,6 +1,6 @@
 .settings-page {
   min-height: 100vh;
-  background-color: #FFFFFF;
+  background-color: var(--body-bg);
   display: flex;
 }
 
@@ -10,10 +10,10 @@
   top: 57px;
   width: 270px;
   height: calc(100vh - 57px);
-  background-color: #FFFFFF;
+  background-color: var(--body-bg);
   overflow-y: auto;
   z-index: 10;
-  border-right: 1px solid #EDEFF1;
+  border-right: 1px solid var(--card-border);
 }
 
 .settings-left-sidebar::-webkit-scrollbar {
@@ -39,7 +39,7 @@
 .settings-title {
   font-size: 22px;
   font-weight: 600;
-  color: #1A1A1B;
+  color: var(--text-primary);
   margin: 0 0 20px;
 }
 
@@ -47,7 +47,7 @@
 .settings-tabs {
   display: flex;
   gap: 8px;
-  border-bottom: 1px solid #EDEFF1;
+  border-bottom: 1px solid var(--card-border);
   margin-bottom: 24px;
 }
 
@@ -57,27 +57,27 @@
   border: none;
   font-size: 14px;
   font-weight: 500;
-  color: #576F76;
+  color: var(--text-secondary);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   transition: all 0.2s;
 }
 
 .settings-tab:hover {
-  color: #1A1A1B;
+  color: var(--text-primary);
 }
 
 .settings-tab.active {
-  color: #1A1A1B;
+  color: var(--text-primary);
   font-weight: 600;
-  border-bottom-color: #1A1A1B;
+  border-bottom-color: var(--text-primary);
 }
 
 /* Section Titles */
 .settings-section-title {
   font-size: 11px;
   font-weight: 700;
-  color: #576F76;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin: 24px 0 16px;
@@ -93,13 +93,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid #EDEFF1;
+  border-bottom: 1px solid var(--card-border);
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
 .settings-row:hover {
-  background-color: #F6F7F8;
+  background-color: var(--hover);
   margin: 0 -12px;
   padding: 12px;
   border-radius: 4px;
@@ -114,12 +114,12 @@
 .settings-row-label {
   font-size: 14px;
   font-weight: 400;
-  color: #1A1A1B;
+  color: var(--text-primary);
 }
 
 .settings-row-description {
   font-size: 12px;
-  color: #7C7C7C;
+  color: var(--text-secondary);
 }
 
 .settings-row-right {
@@ -130,15 +130,15 @@
 
 .settings-row-value {
   font-size: 14px;
-  color: #7C7C7C;
+  color: var(--text-secondary);
 }
 
 .settings-row-value.link {
-  color: #0079D3;
+  color: var(--accent);
 }
 
 .settings-row-arrow {
-  color: #878A8C;
+  color: var(--text-secondary);
   font-size: 18px;
 }
 
@@ -154,22 +154,22 @@
 
 .settings-btn-outline {
   background: none;
-  border: 1px solid #1A1A1B;
-  color: #1A1A1B;
+  border: 1px solid var(--text-primary);
+  color: var(--text-primary);
 }
 
 .settings-btn-outline:hover {
-  background-color: #F6F7F8;
+  background-color: var(--hover);
 }
 
 .settings-btn-filled {
-  background-color: #1A1A1B;
+  background-color: var(--text-primary);
   border: none;
-  color: #FFFFFF;
+  color: var(--body-bg);
 }
 
 .settings-btn-filled:hover {
-  background-color: #333;
+  opacity: 0.85;
 }
 
 .settings-btn-danger {
@@ -204,7 +204,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #D7D7D7;
+  background-color: var(--card-border);
   transition: 0.3s;
   border-radius: 24px;
 }
@@ -222,7 +222,7 @@
 }
 
 input:checked + .toggle-slider {
-  background-color: #0079D3;
+  background-color: var(--accent);
 }
 
 input:checked + .toggle-slider:before {
@@ -235,7 +235,7 @@ input:checked + .toggle-slider:before {
   justify-content: space-between;
   align-items: center;
   padding: 16px 0;
-  border-bottom: 1px solid #EDEFF1;
+  border-bottom: 1px solid var(--card-border);
 }
 
 .account-auth-left {
@@ -247,12 +247,12 @@ input:checked + .toggle-slider:before {
 .account-auth-name {
   font-size: 14px;
   font-weight: 600;
-  color: #1A1A1B;
+  color: var(--text-primary);
 }
 
 .account-auth-description {
   font-size: 12px;
-  color: #7C7C7C;
+  color: var(--text-secondary);
 }
 
 /* Input fields for editable settings */
@@ -261,58 +261,58 @@ input:checked + .toggle-slider:before {
   flex-direction: column;
   gap: 8px;
   padding: 12px 0;
-  border-bottom: 1px solid #EDEFF1;
+  border-bottom: 1px solid var(--card-border);
 }
 
 .settings-input {
   width: 100%;
   max-width: 400px;
   padding: 10px 12px;
-  border: 1px solid #EDEFF1;
+  border: 1px solid var(--card-border);
   border-radius: 4px;
   font-size: 14px;
-  color: #1A1A1B;
-  background-color: #F6F7F8;
+  color: var(--text-primary);
+  background-color: var(--hover);
 }
 
 .settings-input:focus {
   outline: none;
-  border-color: #0079D3;
-  background-color: #FFFFFF;
+  border-color: var(--accent);
+  background-color: var(--card-bg);
 }
 
 .settings-textarea {
   width: 100%;
   max-width: 400px;
   padding: 10px 12px;
-  border: 1px solid #EDEFF1;
+  border: 1px solid var(--card-border);
   border-radius: 4px;
   font-size: 14px;
-  color: #1A1A1B;
-  background-color: #F6F7F8;
+  color: var(--text-primary);
+  background-color: var(--hover);
   resize: vertical;
   font-family: inherit;
 }
 
 .settings-textarea:focus {
   outline: none;
-  border-color: #0079D3;
-  background-color: #FFFFFF;
+  border-color: var(--accent);
+  background-color: var(--card-bg);
 }
 
 .settings-select {
   padding: 10px 12px;
-  border: 1px solid #EDEFF1;
+  border: 1px solid var(--card-border);
   border-radius: 4px;
   font-size: 14px;
-  color: #1A1A1B;
-  background-color: #F6F7F8;
+  color: var(--text-primary);
+  background-color: var(--hover);
   cursor: pointer;
 }
 
 .settings-select:focus {
   outline: none;
-  border-color: #0079D3;
+  border-color: var(--accent);
 }
 
 /* Avatar Section */
@@ -327,7 +327,7 @@ input:checked + .toggle-slider:before {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background-color: #EDEFF1;
+  background-color: var(--card-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -344,7 +344,7 @@ input:checked + .toggle-slider:before {
 /* Password Section */
 .password-section {
   padding: 12px 0;
-  border-bottom: 1px solid #EDEFF1;
+  border-bottom: 1px solid var(--card-border);
 }
 
 .password-inputs {
@@ -378,7 +378,7 @@ input:checked + .toggle-slider:before {
   gap: 12px;
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid #EDEFF1;
+  border-top: 1px solid var(--card-border);
 }
 
 .save-message {
@@ -391,13 +391,13 @@ input:checked + .toggle-slider:before {
 .settings-section-title-large {
   font-size: 18px;
   font-weight: 600;
-  color: #1A1A1B;
+  color: var(--text-primary);
   margin: 32px 0 4px;
 }
 
 .settings-section-subtitle {
   font-size: 14px;
-  color: #7C7C7C;
+  color: var(--text-secondary);
   margin: 0 0 16px;
 }
 

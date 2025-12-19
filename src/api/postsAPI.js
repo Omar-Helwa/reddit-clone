@@ -141,6 +141,26 @@ export const postsAPI = {
   }),
 
   /**
+   * Save a post to the user's saved posts
+   * If the post was hidden, it will be removed from hiddenPosts
+   * @param {string} id - Post ID
+   * @returns {Promise<Object>} Updated user object with savedPosts
+   */
+  save: (id) => fetchAPI(`/posts/${id}/save`, {
+    method: 'POST',
+  }),
+
+  /**
+   * Hide a post from the user's feed
+   * If the post was saved, it will be removed from savedPosts
+   * @param {string} id - Post ID
+   * @returns {Promise<Object>} Updated user object with hiddenPosts
+   */
+  hide: (id) => fetchAPI(`/posts/${id}/hide`, {
+    method: 'POST',
+  }),
+
+  /**
    * Pin a post
    * @param {string} id - Post ID
    * @returns {Promise<Object>} Updated post

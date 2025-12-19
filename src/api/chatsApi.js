@@ -159,8 +159,12 @@ export const deleteMessage = async (chatId, messageId) => {
  */
 export const searchChats = async (query) => {
   try {
+    console.log('🔄 Calling GET /chats/search with query:', query);
     const response = await apiFetch(`/chats/search?q=${encodeURIComponent(query)}`);
-    return Array.isArray(response) ? response : [];
+    console.log('✅ GET /chats/search response:', response);
+    // Backend returns paginated response: { items: [...], count, limit, skip }
+    const items = response?.items || response;
+    return Array.isArray(items) ? items : [];
   } catch (error) {
     console.error('Error searching chats:', error);
     throw error;

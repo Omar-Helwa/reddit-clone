@@ -8,92 +8,150 @@
   margin: 0;
 }
 
-/* Comment Item */
+/* ===== REDDIT-STYLE COMMENT TREE ===== */
+
+/* Comment Item - uses flexbox for proper alignment */
 .comment {
   position: relative;
-  padding: 12px 0;
-  padding-left: 16px;
+  display: flex;
+  padding-top: 8px;
 }
 
-.comment.collapsed {
-  padding-bottom: 8px;
+.comment.collapsed > .comment-thread-col > .comment-thread-line,
+.comment.collapsed .comment-content-area,
+.comment.collapsed .comment-replies {
+  display: none;
 }
 
-/* Thread line for nested comments */
-.comment-thread-line-vertical {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: #EDEFF1;
+/* Thread Column - contains avatar, collapse button, and thread line */
+.comment-thread-col {
+  position: relative;
   display: flex;
-  align-items: flex-start;
-  z-index: 1;
-}
-.comment-thread-line-vertical:hover {
-  background: #0079D3;
-}
-.comment-collapse-btn.on-thread {
-  position: absolute;
-  left: -12px;
-  top: 8px;
-  z-index: 2;
-  width: 22px;
-  height: 22px;
-  background: #fff;
-  border: 1px solid #edeff1;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-  color: #878a8c;
-  border-radius: 50%;
-  font-size: 14px;
-  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  transition: background 0.15s, color 0.15s, border 0.15s;
-}
-.comment-collapse-btn.on-thread:hover {
-  background: #edeff1;
-  color: #1a1a1b;
-  border: 1px solid #d7dadc;
-}
-
-.comment-card.reddit-style {
-  background: #fff;
-  border: 1px solid #edeff1;
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-  transition: box-shadow 0.15s, border 0.15s;
-  margin-bottom: 8px;
-  padding: 12px 12px 8px 12px;
-}
-
-.comment-card.reddit-style:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  border: 1px solid #d7dadc;
-}
-
-/* Comment Header */
-.comment-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.comment-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
+  width: 24px;
   flex-shrink: 0;
 }
 
+@media (min-width: 640px) {
+  .comment-thread-col {
+    width: 32px;
+  }
+}
+
+/* Avatar Container - holds avatar and collapse button overlay */
+.comment-avatar-container {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+@media (min-width: 640px) {
+  .comment-avatar-container {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.comment-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  transition: opacity 0.15s;
+}
+
+/* Collapse Button - overlays avatar on hover */
+.comment-collapse-btn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--neutral-background-container-strong, var(--hover));
+  border: none;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 400;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  z-index: 2;
+  line-height: 1;
+}
+
+.comment-avatar-container:hover .comment-collapse-btn,
+.comment.collapsed .comment-collapse-btn {
+  display: flex;
+}
+
+.comment-avatar-container:hover .comment-avatar {
+  opacity: 0;
+}
+
+.comment.collapsed .comment-avatar {
+  opacity: 0;
+}
+
+.comment-collapse-btn:hover {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+/* Thread Line - vertical line from avatar down */
+.comment-thread-line {
+  flex: 1;
+  width: 2px;
+  min-height: 8px;
+  background: var(--card-border);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  margin-top: 4px;
+}
+
+.comment-thread-line:hover {
+  background: var(--accent);
+}
+
+/* Hide thread line when no replies */
+.comment:not(:has(.comment-replies .comment)) > .comment-thread-col > .comment-thread-line {
+  display: none;
+}
+
+/* Main Content Column */
+.comment-main {
+  flex: 1;
+  min-width: 0;
+  padding-left: 8px;
+}
+
+/* Meta Row - author, timestamp */
+.comment-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 24px;
+  cursor: pointer;
+}
+
+@media (min-width: 640px) {
+  .comment-meta {
+    min-height: 32px;
+  }
+}
+
 .comment-author {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: #1A1A1B;
+  color: var(--text-primary);
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .comment-author:hover {
@@ -101,37 +159,56 @@
 }
 
 .comment-op-tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: #0079D3;
   color: #FFFFFF;
   font-size: 10px;
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
   text-transform: uppercase;
+  line-height: 1.2;
 }
 
 .comment-separator {
-  color: #7C7C7C;
+  color: var(--text-secondary);
   font-size: 12px;
+  margin: 0 2px;
 }
 
 .comment-timestamp {
   font-size: 12px;
-  color: #7C7C7C;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Collapsed Reply Count */
+.comment-collapsed-info {
+  font-size: 12px;
+  color: var(--accent);
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+/* Content Area - Body and Actions */
+.comment-content-area {
+  padding-left: 0;
+  margin-top: 4px;
 }
 
 /* Comment Body */
 .comment-body {
   margin: 0 0 8px;
-  padding-left: 36px;
+  padding: 0;
 }
 
 .comment-body p {
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
-  color: #1A1A1B;
+  color: var(--text-primary);
   word-break: break-word;
 }
 
@@ -140,77 +217,16 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding-left: 36px;
-}
-
-.comment-collapse-btn.reddit-collapse-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border: none;
-  background: #edeff1;
-  color: #878a8c;
-  cursor: pointer;
-  font-size: 14px;
-  border-radius: 50%;
-  margin-right: 4px;
-  transition: background 0.15s, color 0.15s;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-}
-.comment-collapse-btn.reddit-collapse-btn:hover {
-  background: #d7dadc;
-  color: #1a1a1b;
-}
-.collapse-circle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  font-size: 16px;
-  font-weight: bold;
-  border-radius: 50%;
-}
-.comment-expand-btn.reddit-expand-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: none;
-  background: #edeff1;
-  color: #0079d3;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 16px;
-  margin-left: 36px;
-  transition: background 0.15s, color 0.15s;
-}
-.comment-expand-btn.reddit-expand-btn:hover {
-  background: #d7dadc;
-  color: #005999;
-}
-.expand-circle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  font-size: 16px;
-  font-weight: bold;
-  border-radius: 50%;
-  background: #fff;
-  color: #0079d3;
-  border: 1px solid #0079d3;
+  flex-wrap: wrap;
+  padding: 0;
+  margin-bottom: 4px;
 }
 
 .comment-vote-group {
   display: flex;
   align-items: center;
   gap: 2px;
-  background: #F6F7F8;
+  background: var(--hover);
   border-radius: 16px;
   padding: 2px 6px;
 }
@@ -249,7 +265,7 @@
 .comment-vote-score {
   font-size: 12px;
   font-weight: 600;
-  color: #1A1A1B;
+  color: var(--text-primary);
   min-width: 24px;
   text-align: center;
 }
@@ -269,7 +285,7 @@
   padding: 6px 10px;
   border: none;
   background: transparent;
-  color: #576F76;
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
@@ -278,7 +294,7 @@
 }
 
 .comment-action-btn:hover {
-  background: #F6F7F8;
+  background: var(--hover);
 }
 
 .comment-more-btn {
@@ -289,56 +305,40 @@
   height: 28px;
   border: none;
   background: transparent;
-  color: #878A8C;
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 16px;
-  border-radius: 4px;
+  border-radius: 50%;
+  transition: background 0.15s;
 }
 
 .comment-more-btn:hover {
-  background: #F6F7F8;
-}
-
-/* Expand button for collapsed comments */
-.comment-expand-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border: none;
-  background: transparent;
-  color: #0079D3;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  margin-left: 36px;
-}
-
-.comment-expand-btn:hover {
-  text-decoration: underline;
+  background: var(--hover);
 }
 
 /* Reply Form */
 .reply-form {
   margin: 12px 0 0;
-  padding-left: 36px;
+  padding: 0;
 }
 
 .reply-textarea {
   width: 100%;
   min-height: 100px;
   padding: 12px;
-  border: 1px solid #EDEFF1;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   font-size: 14px;
   font-family: inherit;
   resize: vertical;
   margin-bottom: 8px;
+  background: var(--card-bg);
+  color: var(--text-primary);
 }
 
 .reply-textarea:focus {
   outline: none;
-  border-color: #0079D3;
+  border-color: var(--accent);
 }
 
 .reply-buttons {
@@ -351,7 +351,7 @@
   padding: 8px 16px;
   border: none;
   background: transparent;
-  color: #576F76;
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -359,13 +359,13 @@
 }
 
 .reply-cancel:hover {
-  background: #F6F7F8;
+  background: var(--hover);
 }
 
 .reply-submit {
   padding: 8px 16px;
   border: none;
-  background: #0079D3;
+  background: var(--accent);
   color: #FFFFFF;
   font-size: 14px;
   font-weight: 600;
@@ -374,18 +374,22 @@
 }
 
 .reply-submit:hover {
-  background: #006CBF;
+  background: var(--accent);
+  opacity: 0.9;
 }
 
-/* Comment Replies */
+/* Comment Replies - nested structure */
 .comment-replies {
   margin-top: 0;
+  padding-left: 0;
 }
+
+/* Nested comment indentation handled by thread-col width */
 
 /* No Comments */
 .no-comments {
   text-align: center;
-  color: #7C7C7C;
+  color: var(--text-secondary);
   padding: 32px 0;
   margin: 0;
   font-size: 14px;
@@ -393,17 +397,20 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .comment {
-    padding-left: 12px;
+  .comment-thread-col {
+    width: 20px;
   }
-
-  .comment-body,
-  .comment-toolbar,
-  .reply-form {
-    padding-left: 28px;
+  
+  .comment-avatar-container {
+    width: 20px;
+    height: 20px;
   }
 
   .comment-action-btn span {
     display: none;
+  }
+  
+  .comment-collapse-btn {
+    font-size: 14px;
   }
 }

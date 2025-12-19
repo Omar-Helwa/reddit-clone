@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './SettingsPage.css';
 import { getCurrentUserId } from '../utils/auth';
-import { updateUser, getUser } from '../api/usersApi';
+import { updateUser, getUser, toggleNsfw, toggleAllowFollow } from '../api/usersApi';
 import CommunityList from '../features/communities/CommunityList';
 
 function SettingsPage({ onNavigate }) {
@@ -84,6 +84,8 @@ function SettingsPage({ onNavigate }) {
             displayName: userData.username || '',
             image: userData.image || '',
             about: userData.bio || '',
+            nsfw: userData.nsfw || false,
+            allowFollow: userData.allowFollowing !== false, // default to true if not set
           }));
         }
       } catch (error) {
@@ -93,8 +95,23 @@ function SettingsPage({ onNavigate }) {
     loadUserData();
   }, []);
 
-  const handleChange = (field, value) => {
+  const handleChange = async (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    
+    // Call dedicated API endpoints for specific settings
+    try {
+      if (field === 'nsfw') {
+        await toggleNsfw(value);
+        console.log('✅ NSFW setting updated:', value);
+      } else if (field === 'allowFollow') {
+        await toggleAllowFollow(value);
+        console.log('✅ Allow follow setting updated:', value);
+      }
+    } catch (error) {
+      console.error(`Failed to update ${field}:`, error);
+      // Revert the state change on error
+      setFormData((prev) => ({ ...prev, [field]: !value }));
+    }
   };
 
   const handlePasswordChange = (field, value) => {

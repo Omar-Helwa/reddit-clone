@@ -136,3 +136,66 @@ export async function deleteUser(id) {
     method: 'DELETE',
   });
 }
+
+// ==================== USER SETTINGS ENDPOINTS ====================
+
+/**
+ * Toggle NSFW content preference for authenticated user
+ * @param {boolean} nsfw - NSFW preference
+ * @returns {Promise<Object>} Updated user object
+ */
+export async function toggleNsfw(nsfw) {
+  return apiFetch('/users/me/nsfw', {
+    method: 'PATCH',
+    body: JSON.stringify({ nsfw }),
+  });
+}
+
+/**
+ * Toggle whether the user allows others to follow them
+ * @param {boolean} allowFollowing - Allow following preference
+ * @returns {Promise<Object>} Updated user object
+ */
+export async function toggleAllowFollow(allowFollowing) {
+  return apiFetch('/users/me/allow-follow', {
+    method: 'PATCH',
+    body: JSON.stringify({ allowFollowing }),
+  });
+}
+
+// ==================== USER SOCIAL ENDPOINTS ====================
+
+/**
+ * Block another user
+ * Blocking removes any existing follow relationships in both directions
+ * @param {string} userId - Target user's ID to block
+ * @returns {Promise<Object>} Authenticated user object with updated blockedUsers array
+ */
+export async function blockUser(userId) {
+  return apiFetch(`/users/${userId}/block`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * Follow another user
+ * The target user must allow followers
+ * @param {string} userId - Target user's ID to follow
+ * @returns {Promise<Object>} Target user object with updated followers
+ */
+export async function followUser(userId) {
+  return apiFetch(`/users/${userId}/follow`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * Unfollow a previously followed user
+ * @param {string} userId - Target user's ID to unfollow
+ * @returns {Promise<Object>} Target user object with updated followers
+ */
+export async function unfollowUser(userId) {
+  return apiFetch(`/users/${userId}/follow`, {
+    method: 'DELETE',
+  });
+}
