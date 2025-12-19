@@ -54,7 +54,7 @@ const CommunityList = () => {
     { label: 'Home', href: '/', icon: 'home' },
     { label: 'Popular', href: '/popular', icon: 'popular' },
     { label: 'Explore', href: '/explore', icon: 'explore' },
-    { label: 'All', href: '/communities', icon: 'all' },
+    { label: 'All', href: '/all', icon: 'all' },
   ];
 
   const { communities, loading, error } = useCommunities();

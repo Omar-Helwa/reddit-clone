@@ -35,6 +35,8 @@ import NotificationsPage from './pages/NotificationsPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import FavoritesPage from './pages/FavoritesPage';
+import AllPage from './pages/AllPage';
+import ManageCommunitiesPage from './pages/ManageCommunitiesPage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -50,6 +52,8 @@ function App() {
       if (!isLoggedIn() && shouldRequireAuth(p)) return 'login';
       if (matchesRoute(p, 'explore')) return 'explore';
       if (matchesRoute(p, 'popular')) return 'popular';
+      if (matchesRoute(p, 'all')) return 'all';
+      if (matchesRoute(p, 'communities/manage')) return 'manage-communities';
       if (matchesRoute(p, 'create-community')) return 'create-community';
       if (matchesRoute(p, 'accessibility')) return 'accessibility';
       if (matchesRoute(p, 'developer-platform')) return 'developer-platform';
@@ -115,6 +119,10 @@ function App() {
         return <ExplorePage />;
       case 'popular':
         return <PopularPage />;
+      case 'all':
+        return <AllPage />;
+      case 'manage-communities':
+        return <ManageCommunitiesPage />;
       case 'create-community':
         return <StartCommunityPage onNavigate={handleNavigate} />;
       case 'accessibility':
