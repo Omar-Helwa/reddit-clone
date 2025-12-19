@@ -374,8 +374,14 @@
   border-color: rgba(0, 121, 211, 0.35);
 }
 
-.action-button .icon {
-  font-size: 14px;
+.action-button svg.icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.action-button:hover svg.icon {
+  stroke: var(--blue);
 }
 
 .action-button .count {
@@ -434,10 +440,20 @@
 }
 
 .more-button {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  padding: 4px 8px;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.more-button svg {
+  color: var(--text-secondary);
+  transition: color 0.15s ease;
+}
+
+.more-button:hover svg {
+  color: var(--text-primary);
 }
 
 /* More Menu Dropdown */

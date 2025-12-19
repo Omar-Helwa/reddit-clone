@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import Post from './Post';
 import './PostList.css';
 import { navigate } from '../../utils/helpers';
@@ -6,6 +6,7 @@ import { usePosts } from '../../hooks/usePosts';
 
 const PostList = ({ sortBy = 'BEST' }) => {
   const { posts, loading, error, refetch } = usePosts();
+  const [hiddenPostIds, setHiddenPostIds] = useState([]);
 
   console.log('📊 PostList sortBy:', sortBy, 'posts count:', posts?.length);
 
@@ -26,30 +27,33 @@ const PostList = ({ sortBy = 'BEST' }) => {
     };
 
     const list = Array.isArray(posts) ? posts : [];
+    // Filter out hidden posts
+    const visiblePosts = list.filter(p => !hiddenPostIds.includes(p?.postId));
+    
     let sorted;
     switch (sortBy) {
       case 'NEW':
-        sorted = [...list].sort((a, b) => getTimestampMs(b) - getTimestampMs(a));
+        sorted = [...visiblePosts].sort((a, b) => getTimestampMs(b) - getTimestampMs(a));
         break;
       case 'TOP':
-        sorted = [...list].sort(
+        sorted = [...visiblePosts].sort(
           (a, b) => (Number(b.score) || 0) - (Number(a.score) || 0) || getTimestampMs(b) - getTimestampMs(a)
         );
         break;
       case 'RISING':
-        sorted = [...list].sort((a, b) => hotRank(b, 1.15) - hotRank(a, 1.15) || getTimestampMs(b) - getTimestampMs(a));
+        sorted = [...visiblePosts].sort((a, b) => hotRank(b, 1.15) - hotRank(a, 1.15) || getTimestampMs(b) - getTimestampMs(a));
         break;
       case 'HOT':
-        sorted = [...list].sort((a, b) => hotRank(b, 1.5) - hotRank(a, 1.5) || getTimestampMs(b) - getTimestampMs(a));
+        sorted = [...visiblePosts].sort((a, b) => hotRank(b, 1.5) - hotRank(a, 1.5) || getTimestampMs(b) - getTimestampMs(a));
         break;
       case 'BEST':
       default:
-        sorted = [...list].sort((a, b) => hotRank(b, 1.35) - hotRank(a, 1.35) || getTimestampMs(b) - getTimestampMs(a));
+        sorted = [...visiblePosts].sort((a, b) => hotRank(b, 1.35) - hotRank(a, 1.35) || getTimestampMs(b) - getTimestampMs(a));
         break;
     }
     console.log('📋 First 3 sorted:', sorted.slice(0, 3).map(p => ({ title: p.title?.substring(0, 20), score: p.score, time: p.createdAt })));
     return sorted;
-  }, [posts, sortBy]);
+  }, [posts, sortBy, hiddenPostIds]);
 
   const handleCommentClick = (post) => {
     const slug = (post?.subreddit || '').replace(/^r\//, '');
@@ -61,6 +65,10 @@ const PostList = ({ sortBy = 'BEST' }) => {
     const slug = String(subreddit || '').replace(/^r\//, '');
     if (!slug) return;
     navigate(`/r/${slug}`);
+  };
+
+  const handleHidePost = (postId) => {
+    setHiddenPostIds(prev => [...prev, postId]);
   };
 
   if (loading) {
@@ -101,6 +109,7 @@ const PostList = ({ sortBy = 'BEST' }) => {
                 subredditIcon={post?.subredditIcon}
                 onCommentClick={() => handleCommentClick(post)}
                 onSubredditClick={() => handleSubredditClick(subreddit)}
+                onHide={handleHidePost}
               />
             );
           })

@@ -55,6 +55,14 @@ function SettingsPage({ onNavigate }) {
     emailWeeklyRecap: false,
     emailWeeklyTopic: false,
     unsubscribeAllEmails: true,
+    socialLinks: {
+      twitter: '',
+      instagram: '',
+      facebook: '',
+      github: '',
+      youtube: '',
+      website: ''
+    }
   });
   
   const [passwordData, setPasswordData] = useState({
@@ -66,6 +74,16 @@ function SettingsPage({ onNavigate }) {
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+  
+  // Email editing state
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [emailSuccess, setEmailSuccess] = useState('');
+  
+  // Social links editing state
+  const [editingSocialLinks, setEditingSocialLinks] = useState(false);
+  const [socialLinksError, setSocialLinksError] = useState('');
+  const [socialLinksSuccess, setSocialLinksSuccess] = useState('');
   
   // Notification modal state
   const [notificationModal, setNotificationModal] = useState({ open: false, setting: '', title: '' });
@@ -86,6 +104,14 @@ function SettingsPage({ onNavigate }) {
             about: userData.bio || '',
             nsfw: userData.nsfw || false,
             allowFollow: userData.allowFollowing !== false, // default to true if not set
+            socialLinks: {
+              twitter: userData.socialLinks?.twitter || '',
+              instagram: userData.socialLinks?.instagram || '',
+              facebook: userData.socialLinks?.facebook || '',
+              github: userData.socialLinks?.github || '',
+              youtube: userData.socialLinks?.youtube || '',
+              website: userData.socialLinks?.website || ''
+            }
           }));
         }
       } catch (error) {
@@ -106,11 +132,20 @@ function SettingsPage({ onNavigate }) {
       } else if (field === 'allowFollow') {
         await toggleAllowFollow(value);
         console.log('✅ Allow follow setting updated:', value);
+        // Show temporary success message
+        const message = value 
+          ? 'People can now follow you!' 
+          : 'You have disabled followers. People cannot follow you anymore.';
+        setSaveMessage(`✅ ${message}`);
+        setTimeout(() => setSaveMessage(''), 3000);
       }
     } catch (error) {
       console.error(`Failed to update ${field}:`, error);
       // Revert the state change on error
       setFormData((prev) => ({ ...prev, [field]: !value }));
+      // Show error message
+      setSaveMessage(`❌ Failed to update setting: ${error.message}`);
+      setTimeout(() => setSaveMessage(''), 4000);
     }
   };
 
@@ -118,6 +153,52 @@ function SettingsPage({ onNavigate }) {
     setPasswordData((prev) => ({ ...prev, [field]: value }));
     setPasswordError('');
     setPasswordSuccess('');
+  };
+
+  const handleUpdateEmail = async () => {
+    try {
+      setEmailError('');
+      setEmailSuccess('');
+
+      // Validation
+      if (!formData.email) {
+        setEmailError('Email cannot be empty');
+        return;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setEmailError('Please enter a valid email address');
+        return;
+      }
+
+      const { updateEmail } = await import('../api/usersApi');
+      await updateEmail(formData.email);
+      
+      setEmailSuccess('✅ Email updated successfully!');
+      setEditingEmail(false);
+      setTimeout(() => setEmailSuccess(''), 3000);
+    } catch (error) {
+      console.error('Failed to update email:', error);
+      setEmailError('❌ Failed to update email: ' + error.message);
+    }
+  };
+
+  const handleUpdateSocialLinks = async () => {
+    try {
+      setSocialLinksError('');
+      setSocialLinksSuccess('');
+
+      const { updateSocialLinks } = await import('../api/usersApi');
+      await updateSocialLinks(formData.socialLinks);
+      
+      setSocialLinksSuccess('✅ Social links updated successfully!');
+      setEditingSocialLinks(false);
+      setTimeout(() => setSocialLinksSuccess(''), 3000);
+    } catch (error) {
+      console.error('Failed to update social links:', error);
+      setSocialLinksError('❌ Failed to update social links: ' + error.message);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -436,14 +517,44 @@ function SettingsPage({ onNavigate }) {
           <div className="settings-section">
             <h3 className="settings-section-title">General</h3>
 
-            <div className="settings-row">
+            {/* Email Address - Editable */}
+            <div className="settings-row-editable">
               <div className="settings-row-left">
                 <span className="settings-row-label">Email address</span>
               </div>
-              <div className="settings-row-right">
-                <span className="settings-row-value">{formData.email || 'Not set'}</span>
-                <span className="settings-row-arrow">›</span>
-              </div>
+              {editingEmail ? (
+                <div className="settings-edit-container">
+                  <input
+                    type="email"
+                    className="settings-input"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="your.email@example.com"
+                  />
+                  {emailError && <p className="error-message">{emailError}</p>}
+                  {emailSuccess && <p className="success-message">{emailSuccess}</p>}
+                  <div className="settings-edit-buttons">
+                    <button className="settings-btn settings-btn-filled" onClick={handleUpdateEmail}>
+                      Save
+                    </button>
+                    <button 
+                      className="settings-btn settings-btn-outline"
+                      onClick={() => {
+                        setEditingEmail(false);
+                        setEmailError('');
+                        setEmailSuccess('');
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="settings-row-right" onClick={() => setEditingEmail(true)} style={{ cursor: 'pointer' }}>
+                  <span className="settings-row-value">{formData.email || 'Not set'}</span>
+                  <span className="settings-row-arrow">›</span>
+                </div>
+              )}
             </div>
 
             <div className="settings-row">
@@ -629,13 +740,99 @@ function SettingsPage({ onNavigate }) {
               </div>
             </div>
 
-            <div className="settings-row">
+            {/* Social Links - Editable */}
+            <div className="settings-row-editable">
               <div className="settings-row-left">
                 <span className="settings-row-label">Social links</span>
               </div>
-              <div className="settings-row-right">
-                <span className="settings-row-arrow">›</span>
-              </div>
+              {editingSocialLinks ? (
+                <div className="settings-edit-container social-links-edit">
+                  <div className="social-link-input-group">
+                    <label>Twitter</label>
+                    <input
+                      type="url"
+                      className="settings-input"
+                      value={formData.socialLinks.twitter}
+                      onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, twitter: e.target.value } })}
+                      placeholder="https://twitter.com/yourhandle"
+                    />
+                  </div>
+                  <div className="social-link-input-group">
+                    <label>Instagram</label>
+                    <input
+                      type="url"
+                      className="settings-input"
+                      value={formData.socialLinks.instagram}
+                      onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, instagram: e.target.value } })}
+                      placeholder="https://instagram.com/yourhandle"
+                    />
+                  </div>
+                  <div className="social-link-input-group">
+                    <label>Facebook</label>
+                    <input
+                      type="url"
+                      className="settings-input"
+                      value={formData.socialLinks.facebook}
+                      onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, facebook: e.target.value } })}
+                      placeholder="https://facebook.com/yourprofile"
+                    />
+                  </div>
+                  <div className="social-link-input-group">
+                    <label>GitHub</label>
+                    <input
+                      type="url"
+                      className="settings-input"
+                      value={formData.socialLinks.github}
+                      onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, github: e.target.value } })}
+                      placeholder="https://github.com/yourusername"
+                    />
+                  </div>
+                  <div className="social-link-input-group">
+                    <label>YouTube</label>
+                    <input
+                      type="url"
+                      className="settings-input"
+                      value={formData.socialLinks.youtube}
+                      onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, youtube: e.target.value } })}
+                      placeholder="https://youtube.com/@yourchannel"
+                    />
+                  </div>
+                  <div className="social-link-input-group">
+                    <label>Website</label>
+                    <input
+                      type="url"
+                      className="settings-input"
+                      value={formData.socialLinks.website}
+                      onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, website: e.target.value } })}
+                      placeholder="https://yourwebsite.com"
+                    />
+                  </div>
+                  {socialLinksError && <p className="error-message">{socialLinksError}</p>}
+                  {socialLinksSuccess && <p className="success-message">{socialLinksSuccess}</p>}
+                  <div className="settings-edit-buttons">
+                    <button className="settings-btn settings-btn-filled" onClick={handleUpdateSocialLinks}>
+                      Save
+                    </button>
+                    <button 
+                      className="settings-btn settings-btn-outline"
+                      onClick={() => {
+                        setEditingSocialLinks(false);
+                        setSocialLinksError('');
+                        setSocialLinksSuccess('');
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="settings-row-right" onClick={() => setEditingSocialLinks(true)} style={{ cursor: 'pointer' }}>
+                  <span className="settings-row-value">
+                    {Object.values(formData.socialLinks).some(link => link) ? 'Configured' : 'Not set'}
+                  </span>
+                  <span className="settings-row-arrow">›</span>
+                </div>
+              )}
             </div>
 
             <div className="account-auth-row">

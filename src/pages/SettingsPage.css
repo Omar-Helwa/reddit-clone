@@ -733,3 +733,49 @@ input:checked + .toggle-slider:before {
     justify-content: flex-end;
   }
 }
+
+/* Editable Fields Styles */
+.settings-row-editable {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.settings-edit-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--hover);
+  border-radius: 8px;
+}
+
+.settings-edit-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.social-links-edit {
+  max-width: 600px;
+}
+
+.social-link-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.social-link-input-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.social-link-input-group input {
+  width: 100%;
+}

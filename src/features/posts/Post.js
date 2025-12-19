@@ -59,7 +59,10 @@ const Post = ({
   onCommentClick,
   onSubredditClick,
   onUpvote,
-  onDownvote
+  onDownvote,
+  onSave,
+  onHide,
+  onRefresh
 }) => {
   const [shareOpen, setShareOpen] = useState(false);
   const [awardOpen, setAwardOpen] = useState(false);
@@ -381,13 +384,53 @@ const Post = ({
     setMoreMenuOpen(false);
   };
 
-  const handleSavePost = () => {
-    setIsSaved(!isSaved);
+  const handleSavePost = async () => {
+    if (!isLoggedIn()) {
+      navigate('/login');
+      return;
+    }
+    
+    try {
+      await postsAPI.save(postId);
+      setIsSaved(!isSaved);
+      console.log('Post saved to backend:', postId);
+      
+      // Notify parent component if callback provided
+      if (onSave) {
+        onSave(postId);
+      }
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (err) {
+      console.error('Failed to save post:', err);
+    }
+    
     setMoreMenuOpen(false);
   };
 
-  const handleHidePost = () => {
-    setIsHidden(true);
+  const handleHidePost = async () => {
+    if (!isLoggedIn()) {
+      navigate('/login');
+      return;
+    }
+    
+    try {
+      await postsAPI.hide(postId);
+      setIsHidden(true);
+      console.log('Post hidden in backend:', postId);
+      
+      // Notify parent component if callback provided
+      if (onHide) {
+        onHide(postId);
+      }
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (err) {
+      console.error('Failed to hide post:', err);
+    }
+    
     setMoreMenuOpen(false);
   };
 
@@ -465,19 +508,23 @@ const Post = ({
             {/* If author is unknown or empty, do not render anything for publisher */}
           </div>
           <div className="post-menu">
-            <button 
-              className={`join-button ${isJoined ? 'joined' : ''}`}
-              onClick={handleJoinToggle}
-            >
-              {isJoined ? 'Joined' : 'Join'}
-            </button>
+            {!isJoined && (
+              <button 
+                className="join-button"
+                onClick={handleJoinToggle}
+              >
+                Join
+              </button>
+            )}
             <div className="post-more-menu-container">
               <button 
                 aria-label="More options" 
                 className="menu-button more-button"
                 onClick={() => setMoreMenuOpen(!moreMenuOpen)}
               >
-                •••
+                <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+                  <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM18 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
               </button>
               {moreMenuOpen && (
                 <div className="post-more-menu">
@@ -575,7 +622,9 @@ const Post = ({
             onClick={onCommentClick}
             aria-label="Comments"
           >
-            <span className="icon">💬</span>
+            <svg className="icon" viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M2 5.5C2 4.11929 3.11929 3 4.5 3H15.5C16.8807 3 18 4.11929 18 5.5V12.5C18 13.8807 16.8807 15 15.5 15H11L7 18V15H4.5C3.11929 15 2 13.8807 2 12.5V5.5Z"/>
+            </svg>
             <span className="count">{commentCount}</span>
           </button>
           
@@ -584,7 +633,9 @@ const Post = ({
             aria-label="Share"
             onClick={handleOpenShare}
           >
-            <span className="icon">↗</span>
+            <svg className="icon" viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M4 12v4a2 2 0 002 2h8a2 2 0 002-2v-4M12 3l-2-2m0 0L8 3m2-2v11"/>
+            </svg>
             <span className="count">Share</span>
           </button>
           

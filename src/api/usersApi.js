@@ -1,5 +1,7 @@
 // ==================== AUTHENTICATED USER DATA ENDPOINTS ====================
 import { apiFetch, API_BASE_URL } from './shared.js';
+import { getCurrentUserId } from '../utils/auth.js';
+
 /**
  * Get all posts saved by the authenticated user
  * @param {Object} params - Query params: limit, skip
@@ -254,6 +256,39 @@ export async function toggleAllowFollow(allowFollowing) {
   });
 }
 
+/**
+ * Update user's email address
+ * @param {string} email - New email address
+ * @returns {Promise<Object>} Updated user object
+ */
+export async function updateEmail(email) {
+  const userId = getCurrentUserId();
+  if (!userId) throw new Error('No user logged in');
+  return updateUser(userId, { email });
+}
+
+/**
+ * Update user's password
+ * @param {string} newPassword - New password
+ * @returns {Promise<Object>} Updated user object
+ */
+export async function updatePassword(newPassword) {
+  const userId = getCurrentUserId();
+  if (!userId) throw new Error('No user logged in');
+  return updateUser(userId, { password: newPassword });
+}
+
+/**
+ * Update user's social links
+ * @param {Object} socialLinks - Social links object (e.g., { twitter: 'url', facebook: 'url' })
+ * @returns {Promise<Object>} Updated user object
+ */
+export async function updateSocialLinks(socialLinks) {
+  const userId = getCurrentUserId();
+  if (!userId) throw new Error('No user logged in');
+  return updateUser(userId, { socialLinks });
+}
+
 // ==================== USER SOCIAL ENDPOINTS ====================
 
 /**
@@ -265,6 +300,42 @@ export async function toggleAllowFollow(allowFollowing) {
 export async function blockUser(userId) {
   return apiFetch(`/users/${userId}/block`, {
     method: 'POST',
+  });
+}
+
+/**
+ * Unblock a previously blocked user
+ * @param {string} userId - Target user's ID to unblock
+ * @returns {Promise<Object>} Authenticated user object with updated blockedUsers array
+ */
+export async function unblockUser(userId) {
+  return apiFetch(`/users/${userId}/block`, {
+    method: 'DELETE',
+  });
+}
+
+/**
+ * Get list of users blocked by the authenticated user
+ * @param {Object} params - Query params: limit, skip
+ * @returns {Promise<Object>} { items, count, limit, skip }
+ */
+export async function getMyBlockedUsers({ limit = 25, skip = 0 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit), skip: String(skip) });
+  return apiFetch(`/users/me/blocked?${params}`);
+}
+
+/**
+ * Report a user for violations
+ * @param {string} userId - Target user's ID to report
+ * @param {Object} reportData - Report details
+ * @param {string} reportData.reason - Reason for the report
+ * @param {string} [reportData.description] - Additional details
+ * @returns {Promise<Object>} Report confirmation
+ */
+export async function reportUser(userId, reportData) {
+  return apiFetch(`/users/${userId}/report`, {
+    method: 'POST',
+    body: JSON.stringify(reportData),
   });
 }
 
@@ -289,4 +360,25 @@ export async function unfollowUser(userId) {
   return apiFetch(`/users/${userId}/follow`, {
     method: 'DELETE',
   });
+}
+/**
+ * Get all posts created by a specific user (public data)
+ * @param {string} userId - Target user's ID
+ * @param {Object} params - Query params: limit, skip
+ * @returns {Promise<Object>} { items, count, limit, skip }
+ */
+export async function getUserPosts(userId, { limit = 25, skip = 0 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit), skip: String(skip) });
+  return apiFetch(`/users/${userId}/posts?${params}`);
+}
+
+/**
+ * Get all comments written by a specific user (public data)
+ * @param {string} userId - Target user's ID
+ * @param {Object} params - Query params: limit, skip
+ * @returns {Promise<Object>} { items, count, limit, skip }
+ */
+export async function getUserComments(userId, { limit = 25, skip = 0 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit), skip: String(skip) });
+  return apiFetch(`/users/${userId}/comments?${params}`);
 }
