@@ -136,7 +136,6 @@ export async function loginUser(usernameOrEmail, password) {
   };
 
   const url = `${API_BASE_URL}/auth/login`;
-  console.log('Auth login URL:', url, 'payload:', payload);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -146,7 +145,6 @@ export async function loginUser(usernameOrEmail, password) {
 
   if (!response.ok) {
     const text = await response.text().catch(() => '');
-    console.error('Login failed response:', response.status, text);
     let parsed = {};
     try { parsed = JSON.parse(text); } catch (e) {}
     throw new Error(parsed.error || parsed.message || text || `HTTP ${response.status}`);
@@ -154,7 +152,6 @@ export async function loginUser(usernameOrEmail, password) {
 
   const result = await response.json();
   // Expect backend to return { user: {...}, token: '...' }
-  console.log('Login success payload keys:', Object.keys(result || {}));
   if (result?.token) {
     return result;
   }
@@ -185,8 +182,6 @@ export async function createUser(userData) {
     createdAt: Date.now() // Send as timestamp number, not ISO string
   };
   
-  console.log('Creating user with payload:', payload);
-  
   const response = await fetch(url, {
     method: 'POST',
     body: JSON.stringify(payload),
@@ -202,7 +197,6 @@ export async function createUser(userData) {
   }
   
   const result = await response.json();
-  console.log('User created:', result);
   return result;
 }
 

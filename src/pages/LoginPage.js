@@ -48,7 +48,6 @@ function LoginPage() {
 
         // Call API to validate credentials against DB
         const authResult = await loginUser(usernameOrEmail, password);
-        console.log('Auth result keys:', Object.keys(authResult || {}));
 
         // Expected shape: { user, token }
         if (!authResult?.user) {
@@ -56,7 +55,6 @@ function LoginPage() {
         }
 
         if (!authResult?.token) {
-          console.warn('No token returned from login response');
         }
 
         const userToStore = {
@@ -71,7 +69,6 @@ function LoginPage() {
         // Redirect to home page
         window.location.href = '/';
       } catch (error) {
-        console.error('Login failed:', error);
         setErrors(prev => ({
           ...prev,
           submit: error.message || 'Login failed. Please try again.'
@@ -95,7 +92,6 @@ function LoginPage() {
         setCurrentUser(user);
         window.location.href = '/';
       } catch (error) {
-        console.error('Google login failed:', error);
         setErrors((prev) => ({
           ...prev,
           submit: error.message || 'Google login failed. Please try again.',
@@ -105,7 +101,6 @@ function LoginPage() {
   };
 
   const handleAppleLogin = () => {
-    console.log('Apple login clicked');
     // TODO: Implement Apple OAuth
     alert('Apple login will be implemented');
   };

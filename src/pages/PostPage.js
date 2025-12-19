@@ -134,7 +134,6 @@ function PostPage() {
     try {
       await postsAPI.update(postId, { score: optimisticScore });
     } catch (err) {
-      console.warn('Failed to sync vote to backend:', err);
     }
   };
 
@@ -165,7 +164,6 @@ function PostPage() {
     try {
       await postsAPI.update(postId, { score: optimisticScore });
     } catch (err) {
-      console.warn('Failed to sync vote to backend:', err);
     }
   };
 
@@ -194,7 +192,6 @@ function PostPage() {
       setNewCommentText('');
       refetchComments();
     } catch (err) {
-      console.error('Create comment error:', err);
       alert('Failed to create comment: ' + (err?.message || 'Unknown error'));
     }
   };
@@ -224,7 +221,6 @@ function PostPage() {
       });
       refetchComments();
     } catch (err) {
-      console.error('Reply error:', err);
       alert('Failed to create reply: ' + (err?.message || 'Unknown error'));
     }
   };

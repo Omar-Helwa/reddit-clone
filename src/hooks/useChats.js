@@ -41,12 +41,9 @@ const useChats = (userId = null) => {
     setError(null);
     try {
       const data = userId ? await fetchChatsForUser(userId) : await fetchChats();
-      console.log('📥 Loaded chats:', data);
-      console.log('📊 Chats count:', Array.isArray(data) ? data.length : 'NOT AN ARRAY');
       setChats(sortChats(data));
     } catch (err) {
       setError(err.message || 'Failed to load chats');
-      console.error('Error loading chats:', err);
     } finally {
       setChatsLoading(false);
       setChatsRefreshing(false);
@@ -118,7 +115,6 @@ const useChats = (userId = null) => {
       }
     } catch (err) {
       setError(err.message || 'Failed to load messages');
-      console.error('Error loading messages:', err);
     } finally {
       setMessagesLoading(false);
       setMessagesRefreshing(false);
@@ -203,7 +199,6 @@ const useChats = (userId = null) => {
       return response;
     } catch (err) {
       setError(err.message || 'Failed to send message');
-      console.error('Error sending message:', err);
       throw err;
     } finally {
       setSending(false);
@@ -235,7 +230,6 @@ const useChats = (userId = null) => {
       return newChat;
     } catch (err) {
       setError(err.message || 'Failed to create chat');
-      console.error('Error creating chat:', err);
       throw err;
     } finally {
       setChatsLoading(false);
@@ -270,7 +264,6 @@ const useChats = (userId = null) => {
       }
       return false;
     } catch (err) {
-      console.error('Error deleting message:', err);
       return false;
     }
   }, [activeChat]);

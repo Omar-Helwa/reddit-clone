@@ -96,8 +96,6 @@ export function useComments(postId) {
       // Primary fetch by postId
       const result = await commentsAPI.getByPostId(postId);
       const commentsList = Array.isArray(result) ? result : (result?.items ?? []);
-      console.log('Comments fetch raw:', result);
-      console.log('Comments list length:', commentsList.length);
 
       // If server-side filter returns nothing, fallback to list-all and filter client-side
       let finalComments = commentsList;
@@ -105,17 +103,14 @@ export function useComments(postId) {
         const allResult = await commentsAPI.listAll();
         const allComments = Array.isArray(allResult) ? allResult : (allResult?.items ?? []);
         const filtered = allComments.filter(c => normalizeId(c.postId) === normalizeId(postId));
-        console.log('Fallback all comments length:', allComments.length, 'filtered:', filtered.length);
         finalComments = filtered;
       }
 
       const transformedComments = finalComments.map(transformComment);
       const tree = buildCommentTree(transformedComments);
-      console.log('Comments transformed:', transformedComments);
       setComments(tree);
     } catch (err) {
       setError(err.message || 'Failed to fetch comments');
-      console.error('Comments fetch error:', err);
       setComments([]);
     } finally {
       setLoading(false);
@@ -159,7 +154,6 @@ export function useComment(commentId) {
       setComment(transformedComment);
     } catch (err) {
       setError(err.message || 'Failed to fetch comment');
-      console.error('Comment fetch error:', err);
       setComment(null);
     } finally {
       setLoading(false);
@@ -204,7 +198,6 @@ export function useCommentReplies(commentId) {
       setReplies(transformedReplies);
     } catch (err) {
       setError(err.message || 'Failed to fetch replies');
-      console.error('Comment replies fetch error:', err);
       setReplies([]);
     } finally {
       setLoading(false);
@@ -241,7 +234,6 @@ export function useCreateComment() {
       return transformedComment;
     } catch (err) {
       setError(err.message || 'Failed to create comment');
-      console.error('Create comment error:', err);
       throw err;
     } finally {
       setLoading(false);
@@ -273,7 +265,6 @@ export function useCreateCommentReply() {
       return transformedComment;
     } catch (err) {
       setError(err.message || 'Failed to create reply');
-      console.error('Create reply error:', err);
       throw err;
     } finally {
       setLoading(false);
@@ -304,7 +295,6 @@ export function useCommentVote() {
       return transformComment(result);
     } catch (err) {
       setError(err.message || 'Failed to upvote comment');
-      console.error('Upvote comment error:', err);
       throw err;
     } finally {
       setLoading(false);
@@ -320,7 +310,6 @@ export function useCommentVote() {
       return transformComment(result);
     } catch (err) {
       setError(err.message || 'Failed to downvote comment');
-      console.error('Downvote comment error:', err);
       throw err;
     } finally {
       setLoading(false);

@@ -122,7 +122,6 @@ function CommunityPage() {
       navigate('/');
     } catch (err) {
       alert('Failed to delete community: ' + err.message);
-      console.error('Error deleting community:', err);
     } finally {
       setIsDeleting(false);
     }

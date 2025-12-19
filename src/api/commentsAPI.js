@@ -49,7 +49,7 @@ async function fetchAPI(endpoint, options = {}) {
     
     return await response.json();
   } catch (error) {
-    console.error(`API Error [${endpoint}]:`, error);
+    // Silent fail
     throw error;
   }
 }
@@ -110,7 +110,6 @@ export const commentsAPI = {
       payload.parentCommentId = commentData.parentCommentId;
     }
     
-    console.log('Creating comment with payload:', payload);
     return fetchAPI(`/comments`, {
       method: 'POST',
       body: JSON.stringify(payload),

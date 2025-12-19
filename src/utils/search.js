@@ -32,11 +32,10 @@ export async function searchUsers(query, limit = 10) {
         title: user.displayName || user.username,
         subtitle: `u/${user.username}`,
         avatar: user.image,
-        link: `/user/${user._id}`,
+        link: `/user/${user.username}`,
       }))
       .slice(0, limit);
   } catch (error) {
-    console.error('User search failed:', error);
     return [];
   }
 }
@@ -78,7 +77,6 @@ export async function searchPosts(query, limit = 15) {
       .filter(Boolean)
       .slice(0, limit);
   } catch (error) {
-    console.error('Post search failed:', error);
     return [];
   }
 }
@@ -113,7 +111,6 @@ export async function searchCommunities(query, limit = 10) {
       }))
       .slice(0, limit);
   } catch (error) {
-    console.error('Community search failed:', error);
     return [];
   }
 }
@@ -137,7 +134,6 @@ export async function universalSearch(query) {
 
     return { users, posts, communities };
   } catch (error) {
-    console.error('Universal search failed:', error);
     return { users: [], posts: [], communities: [] };
   }
 }

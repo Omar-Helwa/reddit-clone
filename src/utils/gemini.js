@@ -14,7 +14,6 @@ const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/
  */
 export async function summarizePost(title, content) {
   if (!GEMINI_API_KEY) {
-    console.warn('Gemini API key not configured. Set REACT_APP_GEMINI_API_KEY environment variable.');
     return fallbackSummarize(title, content);
   }
 
@@ -53,7 +52,6 @@ export async function summarizePost(title, content) {
 
     return summary;
   } catch (error) {
-    console.error('Gemini summarization failed:', error);
     // Fall back to simple summary
     return fallbackSummarize(title, content);
   }
@@ -94,7 +92,6 @@ export async function summarizePosts(posts) {
       summarizePost(post.title, post.textBody || post.content)
         .then(summary => ({ ...post, summary }))
         .catch(err => {
-          console.error(`Failed to summarize post ${post.postId}:`, err);
           return { ...post, summary: post.textBody?.substring(0, 100) || 'No summary available' };
         })
     )

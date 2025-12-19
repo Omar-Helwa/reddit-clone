@@ -56,8 +56,6 @@ export async function createCommunity(communityData) {
     createdDate: new Date().toISOString()
   };
   
-  console.log('Creating community with payload:', payload);
-  
   // Get token for authorization
   let authHeaders = {};
   try {
@@ -85,7 +83,6 @@ export async function createCommunity(communityData) {
   }
   
   const result = await response.json();
-  console.log('Community created:', result);
   return result;
 }
 

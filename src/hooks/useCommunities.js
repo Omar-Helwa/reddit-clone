@@ -17,7 +17,6 @@ export default function useCommunities(limit = 50) {
         setCommunities(items);
       } catch (err) {
         if (!active) return;
-        console.error('Failed to load communities', err);
         setError(err);
       } finally {
         if (active) setLoading(false);

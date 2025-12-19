@@ -2,13 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import './Post.css';
 import postsAPI from '../../api/postsAPI';
 import { getJoinedCommunities, navigate, joinCommunity, leaveCommunity } from '../../utils/helpers';
-import { getCurrentUser, getCurrentUserId, getUserToken, isLoggedIn } from '../../utils/auth';
+import { getCurrentUserId, getUserToken, isLoggedIn } from '../../utils/auth';
 import { AWARD_CATALOG, addPostAward, getPostAwards } from '../../utils/awards';
-import { DEFAULT_COMMUNITY_ICON, DEFAULT_USER_ICON } from '../../utils/placeholders';
+import { DEFAULT_COMMUNITY_ICON } from '../../utils/placeholders';
 import { getUser } from '../../api/usersApi';
-
-let voteEndpointsSupported = null; // null | true | false
-let scoreUpdateSupported = null; // null | true | false
 
 const CROSSPOSTED_ORIGINS_KEY = 'crosspostedOriginPostIds';
 
@@ -229,10 +226,8 @@ const Post = ({
     try {
       if (nextVote === 'up') {
         await postsAPI.upvote(postId);
-        console.log('Upvote saved to backend for post:', postId);
       }
     } catch (err) {
-      console.warn('Failed to save upvote to backend:', err);
     }
   };
 
@@ -273,10 +268,8 @@ const Post = ({
     try {
       if (nextVote === 'down') {
         await postsAPI.downvote(postId);
-        console.log('Downvote saved to backend for post:', postId);
       }
     } catch (err) {
-      console.warn('Failed to save downvote to backend:', err);
     }
   };
 
@@ -393,7 +386,6 @@ const Post = ({
     try {
       await postsAPI.save(postId);
       setIsSaved(!isSaved);
-      console.log('Post saved to backend:', postId);
       
       // Notify parent component if callback provided
       if (onSave) {
@@ -403,7 +395,6 @@ const Post = ({
         onRefresh();
       }
     } catch (err) {
-      console.error('Failed to save post:', err);
     }
     
     setMoreMenuOpen(false);
@@ -418,7 +409,6 @@ const Post = ({
     try {
       await postsAPI.hide(postId);
       setIsHidden(true);
-      console.log('Post hidden in backend:', postId);
       
       // Notify parent component if callback provided
       if (onHide) {
@@ -428,7 +418,6 @@ const Post = ({
         onRefresh();
       }
     } catch (err) {
-      console.error('Failed to hide post:', err);
     }
     
     setMoreMenuOpen(false);

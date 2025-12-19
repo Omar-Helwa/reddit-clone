@@ -23,7 +23,6 @@ const CommentSection = ({ postId }) => {
       setNewCommentText('');
       refetch(); // Refresh comments
     } catch (err) {
-      console.error('Failed to create comment:', err);
     }
   };
 
@@ -32,7 +31,6 @@ const CommentSection = ({ postId }) => {
       await upvoteComment(commentId);
       refetch();
     } catch (err) {
-      console.error('Upvote failed:', err);
     }
   };
 
@@ -41,7 +39,6 @@ const CommentSection = ({ postId }) => {
       await downvoteComment(commentId);
       refetch();
     } catch (err) {
-      console.error('Downvote failed:', err);
     }
   };
 

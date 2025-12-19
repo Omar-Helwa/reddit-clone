@@ -8,8 +8,6 @@ const PostList = ({ sortBy = 'BEST' }) => {
   const { posts, loading, error, refetch } = usePosts();
   const [hiddenPostIds, setHiddenPostIds] = useState([]);
 
-  console.log('📊 PostList sortBy:', sortBy, 'posts count:', posts?.length);
-
   const getTimestampMs = (post) => {
     const raw = post?.createdAt || post?.timestamp || post?.created || 0;
     const ms = new Date(raw).getTime();
@@ -17,8 +15,6 @@ const PostList = ({ sortBy = 'BEST' }) => {
   };
 
   const sortedPosts = useMemo(() => {
-    console.log('🔄 Sorting posts by:', sortBy, 'count:', posts?.length);
-    
     const hotRank = (post, exponent = 1.5) => {
       const score = Number(post?.score) || 0;
       const ts = getTimestampMs(post);
@@ -51,7 +47,6 @@ const PostList = ({ sortBy = 'BEST' }) => {
         sorted = [...visiblePosts].sort((a, b) => hotRank(b, 1.35) - hotRank(a, 1.35) || getTimestampMs(b) - getTimestampMs(a));
         break;
     }
-    console.log('📋 First 3 sorted:', sorted.slice(0, 3).map(p => ({ title: p.title?.substring(0, 20), score: p.score, time: p.createdAt })));
     return sorted;
   }, [posts, sortBy, hiddenPostIds]);
 

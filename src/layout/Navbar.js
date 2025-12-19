@@ -71,7 +71,6 @@ function AppNavbar({ onNavigate }) {
       const results = await universalSearch(searchQuery);
       setSearchResults(results);
     } catch (error) {
-      console.error('Search failed:', error);
     }
   };
 
@@ -89,7 +88,6 @@ function AppNavbar({ onNavigate }) {
         const results = await universalSearch(searchQuery);
         setSearchResults(results);
       } catch (error) {
-        console.error('Search failed:', error);
       }
     }
   };

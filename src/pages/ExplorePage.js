@@ -107,7 +107,7 @@ function ExplorePage() {
       const desc = (c.description || '').toLowerCase();
       return wellnessKeywords.some(kw => name.includes(kw) || desc.includes(kw));
     }).slice(0, 6);
-  }, [communities]);
+  }, [communities, wellnessKeywords]);
 
   return (
     <div className={`explore-page ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>

@@ -43,7 +43,6 @@ const ChatWindow = ({
       setSelectedFiles([]);
       setReplyingTo(null);
     } catch (error) {
-      console.error('Failed to send message:', error);
     }
   };
 

@@ -44,7 +44,7 @@ function PopularPage() {
         subredditSlug: (p.subreddit || '').replace(/^r\//, ''),
         trendingImage: p.imageUrl || placeholderImages[index % placeholderImages.length],
       }));
-  }, [posts]);
+  }, [posts, placeholderImages]);
 
   const formatTimeAgo = (dateStr) => {
     if (!dateStr) return '';

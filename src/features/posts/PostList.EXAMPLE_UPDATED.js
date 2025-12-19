@@ -33,7 +33,6 @@ const PostList = () => {
       await upvotePost(postId);
       refetch(); // Refresh posts
     } catch (err) {
-      console.error('Upvote failed:', err);
     }
   };
 
@@ -42,7 +41,6 @@ const PostList = () => {
       await downvotePost(postId);
       refetch(); // Refresh posts
     } catch (err) {
-      console.error('Downvote failed:', err);
     }
   };
 

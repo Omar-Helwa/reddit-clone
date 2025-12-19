@@ -115,7 +115,6 @@ function SettingsPage({ onNavigate }) {
           }));
         }
       } catch (error) {
-        console.error('Failed to load user data:', error);
       }
     };
     loadUserData();
@@ -128,10 +127,8 @@ function SettingsPage({ onNavigate }) {
     try {
       if (field === 'nsfw') {
         await toggleNsfw(value);
-        console.log('✅ NSFW setting updated:', value);
       } else if (field === 'allowFollow') {
         await toggleAllowFollow(value);
-        console.log('✅ Allow follow setting updated:', value);
         // Show temporary success message
         const message = value 
           ? 'People can now follow you!' 
@@ -140,7 +137,6 @@ function SettingsPage({ onNavigate }) {
         setTimeout(() => setSaveMessage(''), 3000);
       }
     } catch (error) {
-      console.error(`Failed to update ${field}:`, error);
       // Revert the state change on error
       setFormData((prev) => ({ ...prev, [field]: !value }));
       // Show error message
@@ -179,7 +175,6 @@ function SettingsPage({ onNavigate }) {
       setEditingEmail(false);
       setTimeout(() => setEmailSuccess(''), 3000);
     } catch (error) {
-      console.error('Failed to update email:', error);
       setEmailError('❌ Failed to update email: ' + error.message);
     }
   };
@@ -196,7 +191,6 @@ function SettingsPage({ onNavigate }) {
       setEditingSocialLinks(false);
       setTimeout(() => setSocialLinksSuccess(''), 3000);
     } catch (error) {
-      console.error('Failed to update social links:', error);
       setSocialLinksError('❌ Failed to update social links: ' + error.message);
     }
   };
@@ -240,7 +234,6 @@ function SettingsPage({ onNavigate }) {
       localStorage.clear();
       window.location.href = '/login';
     } catch (error) {
-      console.error('Failed to change password:', error);
       setPasswordError('❌ Failed to change password: ' + error.message);
     }
   };
@@ -276,7 +269,6 @@ function SettingsPage({ onNavigate }) {
       setSaveMessage('✅ Settings saved to database!');
       setTimeout(() => setSaveMessage(''), 4000);
     } catch (error) {
-      console.error('Failed to save settings:', error);
       setSaveMessage('❌ Failed to save: ' + error.message);
     } finally {
       setSaving(false);
@@ -372,7 +364,6 @@ function SettingsPage({ onNavigate }) {
         return;
       }
 
-      console.log(`Deleting account for user: ${username} (${userId})`);
 
       // Step 1: Delete all user's posts
       try {
@@ -385,15 +376,12 @@ function SettingsPage({ onNavigate }) {
           String(post.authorId) === String(userId) ||
           String(post.userId) === String(userId)
         );
-        console.log(`Found ${userPosts.length} posts to delete`);
         
         for (const post of userPosts) {
           const postId = post._id || post.id;
           await postsAPI.delete(postId);
-          console.log(`Deleted post: ${postId}`);
         }
       } catch (error) {
-        console.error('Error deleting posts:', error);
       }
 
       // Step 2: Delete all user's comments
@@ -404,15 +392,12 @@ function SettingsPage({ onNavigate }) {
         const userComments = allComments.filter(comment => 
           comment.userId === userId || String(comment.userId) === String(userId)
         );
-        console.log(`Found ${userComments.length} comments to delete`);
         
         for (const comment of userComments) {
           const commentId = comment._id || comment.id;
           await commentsAPI.default.delete(commentId);
-          console.log(`Deleted comment: ${commentId}`);
         }
       } catch (error) {
-        console.error('Error deleting comments:', error);
       }
 
       // Step 3: Delete all user's chats
@@ -421,20 +406,16 @@ function SettingsPage({ onNavigate }) {
         const userChats = allChats.filter(chat => 
           chat.participants?.some(p => p.username === username || p === username)
         );
-        console.log(`Found ${userChats.length} chats to delete`);
         
         for (const chat of userChats) {
           await deleteChat(chat._id);
-          console.log(`Deleted chat: ${chat._id}`);
         }
       } catch (error) {
-        console.error('Error deleting chats:', error);
       }
 
       // Step 4: Delete user account from MongoDB
       await deleteUser(userId);
       
-      console.log('Account and all associated data deleted successfully');
       
       // Clear user data from localStorage
       clearCurrentUser();
@@ -444,7 +425,6 @@ function SettingsPage({ onNavigate }) {
       // Redirect to home page
       window.location.href = '/';
     } catch (error) {
-      console.error('Failed to delete account:', error);
       alert('Failed to delete account: ' + error.message);
     }
   };

@@ -25,7 +25,6 @@ function UsersDemo() {
       setUsers(response.items || []);
     } catch (err) {
       setError(err.message);
-      console.error('Failed to fetch users:', err);
     } finally {
       setLoading(false);
     }

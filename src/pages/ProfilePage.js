@@ -1,17 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useMyProfileData } from '../hooks/useMyProfileData';
 import './ProfilePage.css';
 import { getCurrentUser, getCurrentUserId } from '../utils/auth';
 import { 
   getUser, 
   followUser, 
-  unfollowUser, 
-  blockUser, 
-  unblockUser, 
-  getMyBlockedUsers, 
-  reportUser,
-  getUserPosts,
-  getUserComments 
+  unfollowUser
 } from '../api/usersApi';
 import CommunityList from '../features/communities/CommunityList';
 import Post from '../features/posts/Post';
@@ -28,12 +22,43 @@ function ProfilePage({ onNavigate }) {
   const [viewedUserId, setViewedUserId] = useState(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [isBlocked, setIsBlocked] = useState(false);
-  const dropdownRef = useRef(null);
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  // Update currentPath when location changes
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setCurrentPath(window.location.pathname);
+    };
+    
+    // Listen for popstate (back/forward navigation)
+    window.addEventListener('popstate', handleLocationChange);
+    
+    // Store the original pushState and replaceState
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
+    
+    // Override pushState to trigger our handler
+    window.history.pushState = function(...args) {
+      originalPushState.apply(window.history, args);
+      handleLocationChange();
+    };
+    
+    // Override replaceState to trigger our handler
+    window.history.replaceState = function(...args) {
+      originalReplaceState.apply(window.history, args);
+      handleLocationChange();
+    };
+    
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
+    };
+  }, []);
 
   useEffect(() => {
     const loadUserData = async () => {
+      setLoading(true);
       try {
         const storedUser = getCurrentUser();
         const currentUserId = getCurrentUserId();
@@ -43,15 +68,42 @@ function ProfilePage({ onNavigate }) {
         const query = new URLSearchParams(window.location.search);
         const userFromQuery = query.get('user');
 
-        const userIdToLoad = userFromPath || userFromQuery || currentUserId;
+        let userIdToLoad = userFromPath || userFromQuery || currentUserId;
         if (!userIdToLoad) return;
 
-        // Check if viewing own profile
-        const viewingOwnProfile = userIdToLoad === currentUserId;
-        setIsOwnProfile(viewingOwnProfile);
-        setViewedUserId(userIdToLoad);
+        // If userIdToLoad looks like a username (not a MongoDB ObjectId), find the user by username
+        const isMongoId = /^[a-f\d]{24}$/i.test(userIdToLoad);
+        let userData = null;
+        
+        if (!isMongoId && userIdToLoad !== currentUserId) {
+          // It's a username - need to find the user first
+          const { listUsers } = await import('../api/usersApi');
+          try {
+            const response = await listUsers({ limit: 500 });
+            const users = response.items || [];
+            const foundUser = users.find(u => 
+              u.username?.toLowerCase() === userIdToLoad.toLowerCase()
+            );
+            if (foundUser) {
+              userData = foundUser;
+              userIdToLoad = foundUser._id;
+            }
+          } catch (err) {
+            // Failed to find user by username
+          }
+        }
+        
+        // If we didn't find by username search, try direct API call
+        if (!userData) {
+          userData = await getUser(userIdToLoad);
+        }
 
-        const userData = await getUser(userIdToLoad);
+        // Check if viewing own profile
+        const viewingOwnProfile = userIdToLoad === currentUserId || 
+          userData?.username?.toLowerCase() === storedUser?.username?.toLowerCase();
+        setIsOwnProfile(viewingOwnProfile);
+        setViewedUserId(userData?._id || userIdToLoad);
+
         const createdDate = new Date(userData.createdAt || Date.now());
         const now = new Date();
         const yearsDiff = Math.floor((now - createdDate) / (365.25 * 24 * 60 * 60 * 1000));
@@ -71,14 +123,13 @@ function ProfilePage({ onNavigate }) {
             month: 'long',
             day: 'numeric',
           }),
-          avatar: userData.image || storedUser?.image || null,
+          avatar: userData.image || null,
           bio: userData.bio || '',
           email: userData.email,
-          _id: userIdToLoad,
+          _id: userData._id || userIdToLoad,
           isNSFW: userData.isNSFW || false,
         });
       } catch (error) {
-        console.error('Failed to load user:', error);
         const storedUser = getCurrentUser();
         if (storedUser) {
           setUser({
@@ -102,7 +153,7 @@ function ProfilePage({ onNavigate }) {
       }
     };
     loadUserData();
-  }, []);
+  }, [currentPath]);  // Re-run when path changes
 
   // State for other user's public data
   const [otherUserPosts, setOtherUserPosts] = useState([]);
@@ -115,76 +166,43 @@ function ProfilePage({ onNavigate }) {
       const fetchOtherUserData = async () => {
         setOtherUserLoading(true);
         try {
-          console.log('Fetching data for other user:', viewedUserId);
-          
           // Try to fetch user-specific posts first
           let userPosts = [];
           try {
-            const postsResponse = await getUserPosts(viewedUserId, { limit: 100 });
-            userPosts = postsResponse.items || postsResponse || [];
-            console.log('Fetched user posts via API:', userPosts.length);
-          } catch (err) {
-            console.log('User posts endpoint not available, falling back to filtering all posts:', err.message);
             // Fallback: Fetch all posts and filter by user
             const postsResponse = await postsAPI.getAll();
-            console.log('Posts response:', postsResponse);
             
             // Handle paginated response - extract items array
             const allPosts = Array.isArray(postsResponse) ? postsResponse : (postsResponse.items || []);
-            console.log('All posts fetched:', allPosts.length);
             
             userPosts = allPosts.filter(post => {
-              const match = post.userId === viewedUserId || 
+              return post.userId === viewedUserId || 
                 post.authorId === viewedUserId ||
                 String(post.userId) === String(viewedUserId) ||
                 String(post.authorId) === String(viewedUserId) ||
                 post.author === user.username;
-              if (match) {
-                console.log('Post matched for user:', { 
-                  postId: post._id, 
-                  postUserId: post.userId, 
-                  postAuthorId: post.authorId,
-                  postAuthor: post.author,
-                  viewedUserId 
-                });
-              }
-              return match;
             });
-            console.log('Filtered user posts:', userPosts.length, 'for userId:', viewedUserId);
+          } catch (err) {
+            // Silent fail
           }
           setOtherUserPosts(userPosts);
 
           // Try to fetch user-specific comments first
           let userComments = [];
           try {
-            const commentsResponse = await getUserComments(viewedUserId, { limit: 100 });
-            userComments = commentsResponse.items || commentsResponse || [];
-            console.log('Fetched user comments via API:', userComments.length);
-          } catch (err) {
-            console.log('User comments endpoint not available, falling back to filtering all comments:', err.message);
             // Fallback: Fetch all comments and filter by user
             const commentsResponse = await commentsAPI.listAll();
-            console.log('Comments response:', commentsResponse);
             
             // Handle paginated response - extract items array
             const allComments = Array.isArray(commentsResponse) ? commentsResponse : (commentsResponse.items || []);
-            console.log('All comments fetched:', allComments.length);
             
             userComments = allComments.filter(comment => {
-              const match = comment.userId === viewedUserId ||
+              return comment.userId === viewedUserId ||
                 String(comment.userId) === String(viewedUserId) ||
                 comment.author === user.username;
-              if (match) {
-                console.log('Comment matched for user:', { 
-                  commentId: comment._id, 
-                  commentUserId: comment.userId,
-                  commentAuthor: comment.author,
-                  viewedUserId 
-                });
-              }
-              return match;
             });
-            console.log('Filtered user comments:', userComments.length, 'for userId:', viewedUserId);
+          } catch (err) {
+            // Silent fail
           }
           setOtherUserComments(userComments);
           
@@ -199,23 +217,10 @@ function ProfilePage({ onNavigate }) {
             );
             setIsFollowing(isCurrentlyFollowing);
           } catch (err) {
-            console.error('Failed to check following status:', err);
-          }
-
-          // Check if current user has blocked this user
-          try {
-            const blockedData = await getMyBlockedUsers({ limit: 1000 });
-            const blockedList = blockedData.items || [];
-            const isCurrentlyBlocked = blockedList.some(blockedUser => 
-              String(blockedUser._id) === String(viewedUserId) ||
-              String(blockedUser.userId) === String(viewedUserId)
-            );
-            setIsBlocked(isCurrentlyBlocked);
-          } catch (err) {
-            console.error('Failed to check blocked status:', err);
+            // Silent fail
           }
         } catch (err) {
-          console.error('Failed to load other user data:', err);
+          // Silent fail
         } finally {
           setOtherUserLoading(false);
         }
@@ -258,7 +263,6 @@ function ProfilePage({ onNavigate }) {
     
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('Profile page visible, refreshing data...');
         refreshProfileData();
       }
     };
@@ -299,9 +303,7 @@ function ProfilePage({ onNavigate }) {
     setFollowLoading(true);
     try {
       if (isFollowing) {
-        console.log('Unfollowing user:', viewedUserId);
         const result = await unfollowUser(viewedUserId);
-        console.log('Unfollow result:', result);
         setIsFollowing(false);
         
         // Update follower count
@@ -309,9 +311,7 @@ function ProfilePage({ onNavigate }) {
           setUser({ ...user, followers: Math.max(0, user.followers - 1) });
         }
       } else {
-        console.log('Following user:', viewedUserId);
         const result = await followUser(viewedUserId);
-        console.log('Follow result:', result);
         setIsFollowing(true);
         
         // Update follower count
@@ -320,7 +320,6 @@ function ProfilePage({ onNavigate }) {
         }
       }
     } catch (error) {
-      console.error('Failed to toggle follow:', error);
       const errorMessage = error.message || 'Unknown error occurred';
       
       // Provide more specific error messages
@@ -345,22 +344,27 @@ function ProfilePage({ onNavigate }) {
       navigate('/login');
       return;
     }
-
-    // Check if user is blocked
-    if (isBlocked) {
-      alert('You have blocked this user. Please unblock them first to start a chat.');
-      return;
-    }
     
     try {
       const currentUser = getCurrentUser();
+      // Backend expects user1 and user2 objects, not participants array
       const chatData = {
-        participants: [currentUser._id, viewedUserId]
+        user1: {
+          id: currentUser._id,
+          name: currentUser.username || currentUser.displayName || 'User',
+          image: currentUser.image ? { link: currentUser.image } : {},
+        },
+        user2: {
+          id: user._id || viewedUserId,
+          name: user.username || user.displayName || 'User',
+          image: user.avatar ? { link: user.avatar } : {},
+        },
+        lastMessage: '',
+        updatedAt: new Date(),
       };
       const chat = await createChat(chatData);
       navigate(`/chat/${chat._id}`);
     } catch (error) {
-      console.error('Failed to create chat:', error);
       const errorMessage = error.message || 'Unknown error occurred';
       
       if (errorMessage.includes('blocked')) {
@@ -370,100 +374,6 @@ function ProfilePage({ onNavigate }) {
       }
     }
   };
-
-  // Handle block/unblock user
-  const handleBlockToggle = async () => {
-    if (!getCurrentUserId()) {
-      navigate('/login');
-      return;
-    }
-
-    const action = isBlocked ? 'unblock' : 'block';
-    // eslint-disable-next-line no-restricted-globals
-    if (!confirm(`Are you sure you want to ${action} this user?`)) {
-      return;
-    }
-
-    try {
-      if (isBlocked) {
-        await unblockUser(viewedUserId);
-        setIsBlocked(false);
-        alert('User unblocked successfully.');
-      } else {
-        await blockUser(viewedUserId);
-        setIsBlocked(true);
-        setIsFollowing(false); // Blocking removes follow relationship
-        alert('User blocked successfully. They cannot message you anymore.');
-      }
-      setShowDropdown(false);
-    } catch (error) {
-      console.error('Failed to toggle block:', error);
-      alert('Failed to ' + action + ' user: ' + error.message);
-    }
-  };
-
-  // Handle share profile
-  const handleShare = () => {
-    const profileUrl = `${window.location.origin}/user/${user.username}`;
-    
-    // Try to use the Web Share API if available
-    if (navigator.share) {
-      navigator.share({
-        title: `${user.displayName}'s Profile`,
-        text: `Check out ${user.displayName} on Reddit`,
-        url: profileUrl
-      }).catch(err => {
-        if (err.name !== 'AbortError') {
-          console.error('Error sharing:', err);
-        }
-      });
-    } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(profileUrl).then(() => {
-        alert('Profile link copied to clipboard!');
-      }).catch(err => {
-        console.error('Failed to copy:', err);
-        alert('Failed to copy link. URL: ' + profileUrl);
-      });
-    }
-    setShowDropdown(false);
-  };
-
-  // Handle report user
-  const handleReport = async () => {
-    if (!getCurrentUserId()) {
-      navigate('/login');
-      return;
-    }
-
-    const reason = prompt('Please provide a reason for reporting this profile:');
-    if (!reason || reason.trim() === '') {
-      return;
-    }
-
-    try {
-      await reportUser(viewedUserId, { reason: reason.trim() });
-      alert('Thank you for your report. We will review this profile.');
-      setShowDropdown(false);
-    } catch (error) {
-      console.error('Failed to report user:', error);
-      alert('Failed to submit report: ' + error.message);
-    }
-  };
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
-    };
-
-    if (showDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showDropdown]);
 
 
   if (loading || profileLoading) {
@@ -504,34 +414,56 @@ function ProfilePage({ onNavigate }) {
   
   const tabs = isOwnProfile ? allTabs : allTabs.filter(tab => tab.public);
 
-  const renderEmptyState = (type) => (
-    <div className="profile-empty-state">
-      <div className="empty-state-icon">
-        <svg viewBox="0 0 80 80" width="80" height="80">
-          <ellipse cx="40" cy="60" rx="20" ry="6" fill="#EDEFF1"/>
-          <path d="M30 35 Q30 25 40 25 Q50 25 50 35 L50 50 Q50 55 45 55 L35 55 Q30 55 30 50 Z" fill="#EDEFF1"/>
-          <circle cx="35" cy="42" r="4" fill="#FF4500"/>
-          <circle cx="45" cy="42" r="4" fill="#FF4500"/>
-        </svg>
+  const renderEmptyState = (type) => {
+    // Different messages for own profile vs viewing another user
+    const getTitle = () => {
+      if (isOwnProfile) {
+        switch (type) {
+          case 'posts': return "You don't have any posts yet";
+          case 'comments': return "You don't have any comments yet";
+          case 'saved': return "You haven't saved anything yet";
+          case 'history': return "No browsing history";
+          case 'hidden': return "No hidden posts";
+          case 'upvoted': return "You haven't upvoted anything yet";
+          case 'downvoted': return "You haven't downvoted anything yet";
+          case 'overview': return "You don't have any posts yet";
+          default: return "Nothing here yet";
+        }
+      } else {
+        const username = user?.username || 'This user';
+        switch (type) {
+          case 'posts': return `${username} hasn't posted anything yet`;
+          case 'comments': return `${username} hasn't commented yet`;
+          case 'overview': return `${username} hasn't posted anything yet`;
+          default: return "Nothing here yet";
+        }
+      }
+    };
+
+    return (
+      <div className="profile-empty-state">
+        <div className="empty-state-icon">
+          <svg viewBox="0 0 80 80" width="80" height="80">
+            <ellipse cx="40" cy="60" rx="20" ry="6" fill="#EDEFF1"/>
+            <path d="M30 35 Q30 25 40 25 Q50 25 50 35 L50 50 Q50 55 45 55 L35 55 Q30 55 30 50 Z" fill="#EDEFF1"/>
+            <circle cx="35" cy="42" r="4" fill="#FF4500"/>
+            <circle cx="45" cy="42" r="4" fill="#FF4500"/>
+          </svg>
+        </div>
+        <h3 className="empty-state-title">{getTitle()}</h3>
+        {isOwnProfile && (
+          <>
+            <p className="empty-state-text">
+              Any posts you make to communities will be hidden from your profile. To show them, update your settings.
+            </p>
+            <button className="empty-state-btn" onClick={() => onNavigate('settings', '/settings')}>
+              Update Settings
+            </button>
+          </>
+        )}
       </div>
-      <h3 className="empty-state-title">
-        {type === 'posts' && "You don't have any posts yet"}
-        {type === 'comments' && "You don't have any comments yet"}
-        {type === 'saved' && "You haven't saved anything yet"}
-        {type === 'history' && "No browsing history"}
-        {type === 'hidden' && "No hidden posts"}
-        {type === 'upvoted' && "You haven't upvoted anything yet"}
-        {type === 'downvoted' && "You haven't downvoted anything yet"}
-        {type === 'overview' && "You don't have any posts yet"}
-      </h3>
-      <p className="empty-state-text">
-        Any posts you make to communities will be hidden from your profile. To show them, update your settings.
-      </p>
-      <button className="empty-state-btn" onClick={() => onNavigate('settings', '/settings')}>
-        Update Settings
-      </button>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="profile-page">
@@ -783,44 +715,6 @@ function ProfilePage({ onNavigate }) {
               <div className="profile-card-name-row">
                 <span className="profile-card-name">{user.displayName}</span>
                 {user.isNSFW && <span className="nsfw-badge small">18+</span>}
-                
-                {/* Three-dot menu - only show when viewing another user's profile */}
-                {!isOwnProfile && (
-                  <div className="profile-menu-container" ref={dropdownRef}>
-                    <button 
-                      className="profile-menu-btn"
-                      onClick={() => setShowDropdown(!showDropdown)}
-                      title="More options"
-                    >
-                      <svg viewBox="0 0 20 20" width="20" height="20" fill="currentColor">
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
-                      </svg>
-                    </button>
-                    
-                    {showDropdown && (
-                      <div className="profile-dropdown-menu">
-                        <button className="dropdown-item" onClick={handleShare}>
-                          <svg viewBox="0 0 20 20" width="20" height="20" fill="currentColor">
-                            <path d="M15 8a3 3 0 11-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
-                          </svg>
-                          Share
-                        </button>
-                        <button className="dropdown-item" onClick={handleBlockToggle}>
-                          <svg viewBox="0 0 20 20" width="20" height="20" fill="currentColor">
-                            <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd"/>
-                          </svg>
-                          {isBlocked ? 'Unblock Account' : 'Block Account'}
-                        </button>
-                        <button className="dropdown-item" onClick={handleReport}>
-                          <svg viewBox="0 0 20 20" width="20" height="20" fill="currentColor">
-                            <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd"/>
-                          </svg>
-                          Report Profile
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
               
               {/* Follow and Chat buttons - only show when viewing another user's profile */}

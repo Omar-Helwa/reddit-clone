@@ -260,14 +260,11 @@ function CreatePostPage() {
     }
 
     try {
-      console.log('Creating post payload:', payload);
       // Create post via API (saves to database)
       const newPost = await createPost(payload);
-      console.log('Created post response:', newPost);
       
       navigate(`/r/${subredditValue}/comments/${newPost.postId}`);
     } catch (err) {
-      console.error('Create post failed:', err);
       setError(err.message || 'Failed to create post. Please try again.');
     }
   };

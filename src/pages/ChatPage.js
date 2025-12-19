@@ -72,7 +72,6 @@ function ChatPage() {
     try {
       await sendChatMessage(content);
     } catch (err) {
-      console.error('Failed to send message:', err);
     }
   };
   const handleDeleteMessage = async (messageId) => {
@@ -81,7 +80,6 @@ function ChatPage() {
       if (typeof window !== 'undefined' && !window.confirm('Delete this message?')) return;
       await deleteChatMessage(messageId);
     } catch (err) {
-      console.error('Failed to delete message:', err);
     }
   };
 
