@@ -53,10 +53,23 @@ function HomePage() {
     setHiddenPostIds(prev => [...prev, ...currentPostIds]);
   };
 
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => !prev);
+  };
+
   return (
-    <main className="home-page">
-      <aside className="home-sidebar">
-        <CommunityList />
+    <main className={`home-page ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <aside className={`home-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <button className="sidebar-toggle-btn" onClick={toggleSidebar} title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+          <svg viewBox="0 0 20 20" fill="currentColor" className={sidebarCollapsed ? 'rotated' : ''}>
+            <path d="M12.5 4L6.5 10L12.5 16" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+        <div className="sidebar-content">
+          <CommunityList />
+        </div>
       </aside>
 
       <section className="home-main-content">

@@ -3,40 +3,112 @@
   grid-template-columns: 1fr minmax(0, 600px) 320px;
   gap: 24px;
   padding: 12px 20px 32px 20px;
-  padding-left: 290px;
+  padding-left: 270px;
   max-width: 1400px;
   margin: 0 auto;
+  transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.home-page.sidebar-collapsed {
+  padding-left: 60px;
 }
 
 .home-sidebar {
   position: fixed;
   left: 0;
   top: 48px;
-  width: 270px;
+  width: 256px;
   height: calc(100vh - 48px);
-  overflow-y: auto;
-  padding: 12px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  overflow: hidden;
+  padding: 8px 0;
   background: var(--body-bg);
   z-index: 50;
+  border-right: 1px solid var(--card-border);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.home-sidebar::-webkit-scrollbar {
-  width: 6px;
+.home-sidebar.collapsed {
+  width: 48px;
 }
 
-.home-sidebar::-webkit-scrollbar-track {
+.sidebar-content {
+  height: calc(100% - 40px);
+  overflow-y: auto;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.home-sidebar.collapsed .sidebar-content {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Sidebar Toggle Button */
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-secondary);
+  z-index: 10;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-toggle-btn:hover {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+.sidebar-toggle-btn svg {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-toggle-btn svg.rotated {
+  transform: rotate(180deg);
+}
+
+/* Custom Scrollbar for Sidebar */
+.sidebar-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.home-sidebar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
-.home-sidebar::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
+.sidebar-content:hover::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.4);
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.6);
+}
+
+/* Firefox scrollbar */
+.sidebar-content {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.sidebar-content:hover {
+  scrollbar-color: rgba(128, 128, 128, 0.4) transparent;
 }
 
 .home-main-content {

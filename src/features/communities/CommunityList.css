@@ -1,14 +1,14 @@
 .community-list-container {
   background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: none;
+  box-shadow: none;
 }
 
 .nav-icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   fill: currentColor;
   flex-shrink: 0;
 }
@@ -21,33 +21,35 @@
 }
 
 .star-icon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.5;
 }
 
 .chevron-icon {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
-  transition: transform 0.2s ease;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-separator {
   height: 1px;
   background: var(--card-border);
-  margin: 12px 0;
+  margin: 8px 12px;
 }
 
 .primary-nav {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding: 12px;
+  gap: 0;
+  padding: 8px 8px;
   background: var(--card-bg);
 }
 
@@ -55,10 +57,10 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 8px;
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: 400;
   font-size: 14px;
   text-decoration: none;
   transition: background-color 0.15s ease;
@@ -69,9 +71,9 @@
 }
 
 .nav-pill-special {
-  margin-top: 8px;
-  padding-top: 12px;
-  border-top: 1px solid var(--card-border);
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: none;
 }
 
 .pill-label {
@@ -115,7 +117,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 12px 10px 20px;
   background: none;
   border: none;
   cursor: pointer;
@@ -126,35 +128,68 @@
   background: var(--hover);
 }
 
+.section-header:hover .chevron {
+  opacity: 1;
+}
+
 .section-title {
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-  color: #878a8c;
+  color: #818384;
 }
 
 .chevron {
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
   color: var(--text-secondary);
-  transition: transform 0.2s ease;
+  opacity: 0.7;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease;
+  border-radius: 4px;
+}
+
+.chevron:hover {
+  background: var(--hover);
 }
 
 .chevron.expanded svg {
   transform: rotate(180deg);
 }
 
+.section-content {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .community-list {
-  max-height: 120px;
+  max-height: 200px;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
   margin: 0;
+  /* Custom scrollbar - hidden by default, shown on hover */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.community-list:hover {
+  scrollbar-color: rgba(128, 128, 128, 0.4) transparent;
 }
 
 .community-list::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .community-list::-webkit-scrollbar-track {
@@ -162,12 +197,17 @@
 }
 
 .community-list::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
+  background: transparent;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.community-list:hover::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.4);
 }
 
 .community-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(128, 128, 128, 0.6);
 }
 
 .community-list.loading {
@@ -183,9 +223,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  padding: 5px 10px;
-  border-radius: 6px;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 0;
   transition: background-color 0.15s ease;
 }
 
@@ -196,15 +236,15 @@
 .community-link {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex: 1;
   text-decoration: none;
   min-width: 0;
 }
 
 .community-icon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
@@ -212,8 +252,8 @@
 }
 
 .community-name {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -301,12 +341,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 8px;
+  padding: 8px 20px;
   color: var(--text-primary);
   text-decoration: none;
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  border-radius: 0;
   transition: all 0.15s ease;
 }
 
@@ -315,25 +355,7 @@
 }
 
 .policies-section {
-  padding: 4px 8px;
-}
-
-/* Scrollbar Styling */
-.community-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.community-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.community-list::-webkit-scrollbar-thumb {
-  background: var(--neutral-border, #ccc);
-  border-radius: 3px;
-}
-
-.community-list::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary, #818384);
+  padding: 4px 0;
 }
 
 /* Responsive Design */

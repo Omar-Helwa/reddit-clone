@@ -296,84 +296,150 @@ function AppNavbar({ onNavigate }) {
                 <div className="profile-dropdown">
                   {currentUser && (
                     <>
-                      <div className="dropdown-section">
-                        <div className="dropdown-user-info">
-                          <img 
-                            src={currentUser.image || "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png"} 
-                            alt="avatar" 
-                            className="dropdown-avatar"
-                          />
-                          <div className="dropdown-user-details">
-                            <div className="dropdown-username">{currentUser.username ? `u/${currentUser.username}` : 'u/user'}</div>
-                            <div className="dropdown-karma">0 karma</div>
-                          </div>
+                      {/* View Profile Section */}
+                      <button 
+                        className="dropdown-item profile-header-item" 
+                        onClick={() => handleNavClick('profile', '/profile')}
+                      >
+                        <img 
+                          src={currentUser.image || "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png"} 
+                          alt="avatar" 
+                          className="dropdown-profile-avatar"
+                        />
+                        <div className="dropdown-text-group">
+                          <span className="dropdown-text-primary">View Profile</span>
+                          <span className="dropdown-text-secondary">{currentUser.username ? `u/${currentUser.username}` : 'u/user'}</span>
                         </div>
-                      </div>
+                      </button>
+
+                      <div className="dropdown-divider" />
+
+                      {/* User Actions */}
+                      <button className="dropdown-item" onClick={() => handleNavClick('edit-avatar', '/edit-avatar')}>
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M10 12a4 4 0 100-8 4 4 0 000 8zm0 2c-4 0-8 2-8 4v2h16v-2c0-2-4-4-8-4z"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Edit Avatar</span>
+                      </button>
+
+                      <button className="dropdown-item">
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M4 4h12v2H4V4zm0 4h12v8H4V8zm2 2v4h8v-4H6z"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Drafts</span>
+                      </button>
+
+                      <button className="dropdown-item" onClick={() => handleNavClick('achievements', '/achievements')}>
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M10 2l2.5 5 5.5.8-4 3.9 1 5.3-5-2.6-5 2.6 1-5.3-4-3.9 5.5-.8z"/>
+                        </svg>
+                        <div className="dropdown-text-group">
+                          <span className="dropdown-text-primary">Achievements</span>
+                          <span className="dropdown-text-secondary">7 unlocked</span>
+                        </div>
+                      </button>
+
+                      <button className="dropdown-item">
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                          <text x="10" y="13" textAnchor="middle" fontSize="9" fill="currentColor">$</text>
+                        </svg>
+                        <div className="dropdown-text-group">
+                          <span className="dropdown-text-primary">Earn</span>
+                          <span className="dropdown-text-secondary">Earn cash on Reddit</span>
+                        </div>
+                      </button>
+
+                      <button className="dropdown-item">
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                          <path d="M7 10h6M10 7v6" stroke="currentColor" strokeWidth="1.5"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Premium</span>
+                      </button>
+
+                      <div className="dropdown-divider" />
+
+                      {/* Dark Mode Toggle */}
+                      <button className="dropdown-item" onClick={handleThemeToggle}>
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Dark Mode</span>
+                        <div className={`toggle-switch ${theme === 'dark' ? 'active' : ''}`}>
+                          <div className="toggle-knob"></div>
+                        </div>
+                      </button>
+
+                      <div className="dropdown-divider" />
+
+                      {/* Logout */}
+                      <button className="dropdown-item" onClick={handleLogout}>
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M3 3h8v2H5v10h6v2H3V3zm10 4l4 3-4 3V7zm-2 2H8v2h3v-2z"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Log Out</span>
+                      </button>
+
+                      <div className="dropdown-divider" />
+
+                      {/* Additional Links */}
+                      <button className="dropdown-item" onClick={() => handleNavClick('advertise', '/advertise')}>
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Advertise on Reddit</span>
+                      </button>
+
+                      <button className="dropdown-item">
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                          <path d="M10 6v4l2.5 2.5" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Try Reddit Pro</span>
+                        <span className="dropdown-badge-beta">BETA</span>
+                      </button>
+
+                      <div className="dropdown-divider" />
+
+                      {/* Settings */}
+                      <button className="dropdown-item" onClick={() => handleNavClick('settings', '/settings')}>
+                        <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"/>
+                        </svg>
+                        <span className="dropdown-text-primary">Settings</span>
+                      </button>
                     </>
                   )}
                   {!currentUser && (
                     <>
                       <div className="dropdown-section">
                         <button className="dropdown-item" onClick={() => handleNavClick('login', '/login')}>
-                          <span className="dropdown-icon">🔓</span>
-                          <span>Log In</span>
-                        </button>
-                        <button className="dropdown-item" onClick={() => handleNavClick('signup', '/signup')}>
-                          <span className="dropdown-icon">✍️</span>
-                          <span>Sign Up</span>
+                          <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M3 3h8v2H5v10h6v2H3V3zm10 4l4 3-4 3V7zm-2 2H8v2h3v-2z"/>
+                          </svg>
+                          <span>Log In / Sign Up</span>
                         </button>
                       </div>
-                    </>
-                  )}
-                  <div className="dropdown-divider" />
-                  <div className="dropdown-section">
-                    <button className="dropdown-item" onClick={() => handleNavClick('profile', '/profile')}>
-                      <span className="dropdown-icon">👤</span>
-                      <span>Profile</span>
-                    </button>
-                    <button className="dropdown-item" onClick={() => handleNavClick('create-post', '/submit')}>
-                      <span className="dropdown-icon">➕</span>
-                      <span>Create Post</span>
-                    </button>
-                    <button className="dropdown-item" onClick={() => handleNavClick('favorites', '/favorites')}>
-                      <span className="dropdown-icon">💾</span>
-                      <span>Favorites</span>
-                    </button>
-                    <button className="dropdown-item">
-                      <span className="dropdown-icon">📊</span>
-                      <span>Reddit Recap</span>
-                    </button>
-                  </div>
-                  <div className="dropdown-divider" />
-                  
-                  <div className="dropdown-section">
-                    <button className="dropdown-item" onClick={() => handleNavClick('settings', '/settings')}>
-                      <span className="dropdown-icon">⚙️</span>
-                      <span>Settings</span>
-                    </button>
-                    <button className="dropdown-item">
-                      <span className="dropdown-icon">❓</span>
-                      <span>Help Center</span>
-                    </button>
-                  </div>
-                  
-                  <div className="dropdown-divider" />
-                  
-                  <div className="dropdown-section">
-                    <button className="dropdown-item" onClick={handleThemeToggle}>
-                      <span className="dropdown-icon">{theme === 'dark' ? '☀️' : '🌙'}</span>
-                      <span>Dark Mode</span>
-                      <span className="dropdown-toggle">{theme === 'dark' ? 'On' : 'Off'}</span>
-                    </button>
-                  </div>
-                  
-                  {currentUser && (
-                    <>
                       <div className="dropdown-divider" />
                       <div className="dropdown-section">
-                        <button className="dropdown-item logout-item" onClick={handleLogout}>
-                          <span className="dropdown-icon">🚪</span>
-                          <span>Log Out</span>
+                        <button className="dropdown-item dark-mode-item" onClick={handleThemeToggle}>
+                          <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                          </svg>
+                          <span>Dark Mode</span>
+                          <div className={`toggle-switch ${theme === 'dark' ? 'active' : ''}`}>
+                            <div className="toggle-knob"></div>
+                          </div>
+                        </button>
+                      </div>
+                      <div className="dropdown-divider" />
+                      <div className="dropdown-section">
+                        <button className="dropdown-item" onClick={() => handleNavClick('settings', '/settings')}>
+                          <svg className="dropdown-icon-svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"/>
+                          </svg>
+                          <span>Settings</span>
                         </button>
                       </div>
                     </>

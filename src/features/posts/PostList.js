@@ -7,6 +7,8 @@ import { usePosts } from '../../hooks/usePosts';
 const PostList = ({ sortBy = 'BEST' }) => {
   const { posts, loading, error, refetch } = usePosts();
 
+  console.log('📊 PostList sortBy:', sortBy, 'posts count:', posts?.length);
+
   const getTimestampMs = (post) => {
     const raw = post?.createdAt || post?.timestamp || post?.created || 0;
     const ms = new Date(raw).getTime();
@@ -14,6 +16,8 @@ const PostList = ({ sortBy = 'BEST' }) => {
   };
 
   const sortedPosts = useMemo(() => {
+    console.log('🔄 Sorting posts by:', sortBy, 'count:', posts?.length);
+    
     const hotRank = (post, exponent = 1.5) => {
       const score = Number(post?.score) || 0;
       const ts = getTimestampMs(post);
@@ -22,21 +26,29 @@ const PostList = ({ sortBy = 'BEST' }) => {
     };
 
     const list = Array.isArray(posts) ? posts : [];
+    let sorted;
     switch (sortBy) {
       case 'NEW':
-        return [...list].sort((a, b) => getTimestampMs(b) - getTimestampMs(a));
+        sorted = [...list].sort((a, b) => getTimestampMs(b) - getTimestampMs(a));
+        break;
       case 'TOP':
-        return [...list].sort(
+        sorted = [...list].sort(
           (a, b) => (Number(b.score) || 0) - (Number(a.score) || 0) || getTimestampMs(b) - getTimestampMs(a)
         );
+        break;
       case 'RISING':
-        return [...list].sort((a, b) => hotRank(b, 1.15) - hotRank(a, 1.15) || getTimestampMs(b) - getTimestampMs(a));
+        sorted = [...list].sort((a, b) => hotRank(b, 1.15) - hotRank(a, 1.15) || getTimestampMs(b) - getTimestampMs(a));
+        break;
       case 'HOT':
-        return [...list].sort((a, b) => hotRank(b, 1.5) - hotRank(a, 1.5) || getTimestampMs(b) - getTimestampMs(a));
+        sorted = [...list].sort((a, b) => hotRank(b, 1.5) - hotRank(a, 1.5) || getTimestampMs(b) - getTimestampMs(a));
+        break;
       case 'BEST':
       default:
-        return [...list].sort((a, b) => hotRank(b, 1.35) - hotRank(a, 1.35) || getTimestampMs(b) - getTimestampMs(a));
+        sorted = [...list].sort((a, b) => hotRank(b, 1.35) - hotRank(a, 1.35) || getTimestampMs(b) - getTimestampMs(a));
+        break;
     }
+    console.log('📋 First 3 sorted:', sorted.slice(0, 3).map(p => ({ title: p.title?.substring(0, 20), score: p.score, time: p.createdAt })));
+    return sorted;
   }, [posts, sortBy]);
 
   const handleCommentClick = (post) => {
