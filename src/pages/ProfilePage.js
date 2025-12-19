@@ -77,6 +77,7 @@ function ProfilePage({ onNavigate }) {
   }, []);
 
   // Profile data hook
+
   const {
     posts: userPosts,
     comments: userComments,
@@ -85,8 +86,21 @@ function ProfilePage({ onNavigate }) {
     upvotedPosts,
     downvotedPosts,
     loading: profileLoading,
-    error: profileError
+    error: profileError,
+    refreshProfileData
   } = useMyProfileData();
+
+  // Upvote/Downvote handlers for profile tab posts
+  const { upvotePost, downvotePost } = require('../hooks/usePosts');
+
+  const handleProfileUpvote = async (postId) => {
+    await upvotePost(postId);
+    refreshProfileData();
+  };
+  const handleProfileDownvote = async (postId) => {
+    await downvotePost(postId);
+    refreshProfileData();
+  };
 
 
   if (loading || profileLoading) {
@@ -258,7 +272,11 @@ function ProfilePage({ onNavigate }) {
               userPosts.length === 0 ? renderEmptyState('posts') : (
                 <div className="posts-list">
                   {userPosts.map((post) => (
-                    <div key={post._id} className="profile-post-item">{post.title}</div>
+                    <div key={post._id} className="profile-post-item">
+                      {post.title}
+                      <button onClick={() => handleProfileUpvote(post._id)}>Upvote</button>
+                      <button onClick={() => handleProfileDownvote(post._id)}>Downvote</button>
+                    </div>
                   ))}
                 </div>
               )
@@ -295,7 +313,11 @@ function ProfilePage({ onNavigate }) {
               upvotedPosts.length === 0 ? renderEmptyState('upvoted') : (
                 <div className="posts-list">
                   {upvotedPosts.map((post) => (
-                    <div key={post._id} className="profile-post-item">{post.title}</div>
+                    <div key={post._id} className="profile-post-item">
+                      {post.title}
+                      <button onClick={() => handleProfileUpvote(post._id)}>Upvote</button>
+                      <button onClick={() => handleProfileDownvote(post._id)}>Downvote</button>
+                    </div>
                   ))}
                 </div>
               )
@@ -304,7 +326,11 @@ function ProfilePage({ onNavigate }) {
               downvotedPosts.length === 0 ? renderEmptyState('downvoted') : (
                 <div className="posts-list">
                   {downvotedPosts.map((post) => (
-                    <div key={post._id} className="profile-post-item">{post.title}</div>
+                    <div key={post._id} className="profile-post-item">
+                      {post.title}
+                      <button onClick={() => handleProfileUpvote(post._id)}>Upvote</button>
+                      <button onClick={() => handleProfileDownvote(post._id)}>Downvote</button>
+                    </div>
                   ))}
                 </div>
               )
