@@ -1,14 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './Post.css';
 import postsAPI from '../../api/postsAPI';
-import { getJoinedCommunities, navigate } from '../../utils/helpers';
-import { getCurrentUser, getCurrentUserId, getUserToken, isLoggedIn } from '../../utils/auth';
+import { getJoinedCommunities, navigate, joinCommunity, leaveCommunity } from '../../utils/helpers';
+import { getCurrentUserId, getUserToken, isLoggedIn } from '../../utils/auth';
 import { AWARD_CATALOG, addPostAward, getPostAwards } from '../../utils/awards';
-import { DEFAULT_COMMUNITY_ICON, DEFAULT_USER_ICON } from '../../utils/placeholders';
+import { DEFAULT_COMMUNITY_ICON } from '../../utils/placeholders';
 import { getUser } from '../../api/usersApi';
-
-let voteEndpointsSupported = null; // null | true | false
-let scoreUpdateSupported = null; // null | true | false
 
 const CROSSPOSTED_ORIGINS_KEY = 'crosspostedOriginPostIds';
 
@@ -59,10 +56,17 @@ const Post = ({
   onCommentClick,
   onSubredditClick,
   onUpvote,
-  onDownvote
+  onDownvote,
+  onSave,
+  onHide,
+  onRefresh
 }) => {
   const [shareOpen, setShareOpen] = useState(false);
   const [awardOpen, setAwardOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
   const [crosspostTarget, setCrosspostTarget] = useState('');
   const [crosspostError, setCrosspostError] = useState('');
   const [crossposting, setCrossposting] = useState(false);
@@ -218,15 +222,12 @@ const Post = ({
     setLocalScore(optimisticScore);
     setUserVote(postId, nextVote); // Persist vote to localStorage
 
-    // Try to update the backend score (fire and forget, don't revert on failure)
-    // The backend doesn't track per-user votes, so we just update the score
+    // Call the backend upvote endpoint to track the vote
     try {
-      if (voteEndpointsSupported !== false) {
-        await postsAPI.update(postId, { score: optimisticScore });
+      if (nextVote === 'up') {
+        await postsAPI.upvote(postId);
       }
     } catch (err) {
-      // Silently fail - localStorage already has the correct state
-      console.warn('Failed to sync vote to backend:', err);
     }
   };
 
@@ -263,14 +264,12 @@ const Post = ({
     setLocalScore(optimisticScore);
     setUserVote(postId, nextVote); // Persist vote to localStorage
 
-    // Try to update the backend score (fire and forget, don't revert on failure)
+    // Call the backend downvote endpoint to track the vote
     try {
-      if (voteEndpointsSupported !== false) {
-        await postsAPI.update(postId, { score: optimisticScore });
+      if (nextVote === 'down') {
+        await postsAPI.downvote(postId);
       }
     } catch (err) {
-      // Silently fail - localStorage already has the correct state
-      console.warn('Failed to sync vote to backend:', err);
     }
   };
 
@@ -346,6 +345,110 @@ const Post = ({
     return entries.filter(([, count]) => Number(count) > 0);
   }, [awards]);
 
+  // Check if user has joined this community
+  const [isJoined, setIsJoined] = useState(false);
+
+  useEffect(() => {
+    const joined = getJoinedCommunities();
+    const communitySlug = derivedCommunityKey;
+    setIsJoined(joined.includes(communitySlug));
+  }, [derivedCommunityKey]);
+
+  // Join/Leave community handler
+  const handleJoinToggle = () => {
+    if (!isLoggedIn()) {
+      navigate('/login');
+      return;
+    }
+    
+    const communitySlug = derivedCommunityKey;
+    if (isJoined) {
+      leaveCommunity(communitySlug);
+      setIsJoined(false);
+    } else {
+      joinCommunity(communitySlug);
+      setIsJoined(true);
+    }
+  };
+
+  // More menu handlers
+  const handleFollowPost = () => {
+    setIsFollowing(!isFollowing);
+    setMoreMenuOpen(false);
+  };
+
+  const handleSavePost = async () => {
+    if (!isLoggedIn()) {
+      navigate('/login');
+      return;
+    }
+    
+    try {
+      await postsAPI.save(postId);
+      setIsSaved(!isSaved);
+      
+      // Notify parent component if callback provided
+      if (onSave) {
+        onSave(postId);
+      }
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (err) {
+    }
+    
+    setMoreMenuOpen(false);
+  };
+
+  const handleHidePost = async () => {
+    if (!isLoggedIn()) {
+      navigate('/login');
+      return;
+    }
+    
+    try {
+      await postsAPI.hide(postId);
+      setIsHidden(true);
+      
+      // Notify parent component if callback provided
+      if (onHide) {
+        onHide(postId);
+      }
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (err) {
+    }
+    
+    setMoreMenuOpen(false);
+  };
+
+  const handleReport = () => {
+    setMoreMenuOpen(false);
+    alert('Report submitted. Thank you for helping keep Reddit safe.');
+  };
+
+  const handleReadRules = () => {
+    setMoreMenuOpen(false);
+    navigate('/rules');
+  };
+
+  // Close menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (moreMenuOpen && !e.target.closest('.post-more-menu-container')) {
+        setMoreMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [moreMenuOpen]);
+
+  // If post is hidden, don't render it
+  if (isHidden) {
+    return null;
+  }
+
   return (
     <article className="post-card" data-post-id={postId}>
       <div className="post-body">
@@ -394,8 +497,64 @@ const Post = ({
             {/* If author is unknown or empty, do not render anything for publisher */}
           </div>
           <div className="post-menu">
-            <button aria-label="Save" className="menu-button">🔖</button>
-            <button aria-label="More options" className="menu-button">⋯</button>
+            {!isJoined && (
+              <button 
+                className="join-button"
+                onClick={handleJoinToggle}
+              >
+                Join
+              </button>
+            )}
+            <div className="post-more-menu-container">
+              <button 
+                aria-label="More options" 
+                className="menu-button more-button"
+                onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+              >
+                <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+                  <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM18 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+              </button>
+              {moreMenuOpen && (
+                <div className="post-more-menu">
+                  <button className="post-more-menu-item" onClick={handleFollowPost}>
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M15 8.5C15 12.09 10 16 10 16C10 16 5 12.09 5 8.5C5 5.46 7.46 3 10 3C12.54 3 15 5.46 15 8.5Z"/>
+                      <circle cx="10" cy="8.5" r="2"/>
+                    </svg>
+                    <span>{isFollowing ? 'Unfollow post' : 'Follow post'}</span>
+                  </button>
+                  <button className="post-more-menu-item" onClick={handleSavePost}>
+                    <svg viewBox="0 0 20 20" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
+                      <path d="M5 3h10v14l-5-3-5 3V3z"/>
+                    </svg>
+                    <span>{isSaved ? 'Unsave' : 'Save'}</span>
+                  </button>
+                  <button className="post-more-menu-item" onClick={handleHidePost}>
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M2 10s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6z"/>
+                      <circle cx="10" cy="10" r="3"/>
+                      <path d="M3 17L17 3"/>
+                    </svg>
+                    <span>Hide</span>
+                  </button>
+                  <button className="post-more-menu-item" onClick={handleReport}>
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M4 3v14M4 3h10l-2 4 2 4H4"/>
+                    </svg>
+                    <span>Report</span>
+                  </button>
+                  <div className="post-more-menu-divider" />
+                  <button className="post-more-menu-item" onClick={handleReadRules}>
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <rect x="4" y="2" width="12" height="16" rx="1"/>
+                      <path d="M7 6h6M7 10h6M7 14h4"/>
+                    </svg>
+                    <span>Read the Rules</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -452,7 +611,9 @@ const Post = ({
             onClick={onCommentClick}
             aria-label="Comments"
           >
-            <span className="icon">💬</span>
+            <svg className="icon" viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M2 5.5C2 4.11929 3.11929 3 4.5 3H15.5C16.8807 3 18 4.11929 18 5.5V12.5C18 13.8807 16.8807 15 15.5 15H11L7 18V15H4.5C3.11929 15 2 13.8807 2 12.5V5.5Z"/>
+            </svg>
             <span className="count">{commentCount}</span>
           </button>
           
@@ -461,7 +622,9 @@ const Post = ({
             aria-label="Share"
             onClick={handleOpenShare}
           >
-            <span className="icon">↗</span>
+            <svg className="icon" viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M4 12v4a2 2 0 002 2h8a2 2 0 002-2v-4M12 3l-2-2m0 0L8 3m2-2v11"/>
+            </svg>
             <span className="count">Share</span>
           </button>
           

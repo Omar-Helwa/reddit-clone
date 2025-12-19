@@ -84,14 +84,12 @@ function SignupPage() {
           image: '', // Optional: add avatar upload later
         });
 
-        console.log('User created successfully:', createdUser);
 
         // Immediately log in to obtain JWT token (required for protected endpoints like POST /posts)
         let authResult = null;
         try {
           authResult = await loginUser(formData.username, formData.password);
         } catch (loginErr) {
-          console.warn('Auto-login after signup failed:', loginErr);
         }
 
         const userToStore = authResult?.user
@@ -105,7 +103,6 @@ function SignupPage() {
         // Redirect to home page after successful signup (user is now logged in)
         window.location.href = '/';
       } catch (error) {
-        console.error('Signup failed:', error);
         setErrors(prev => ({
           ...prev,
           submit: error.message || 'Failed to create account. Please try again.'
@@ -143,7 +140,6 @@ function SignupPage() {
 
         window.location.href = '/';
       } catch (error) {
-        console.error('Google signup failed:', error);
         setErrors((prev) => ({
           ...prev,
           submit: error.message || 'Google signup failed. Please try again.',
@@ -153,7 +149,6 @@ function SignupPage() {
   };
 
   const handleAppleSignup = () => {
-    console.log('Apple signup clicked');
     // TODO: Implement Apple OAuth
     alert('Apple signup will be implemented');
   };

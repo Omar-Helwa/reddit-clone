@@ -59,7 +59,6 @@ function StartCommunityPage({ onNavigate }) {
       }
     } catch (err) {
       setError(err.message || 'Failed to create community');
-      console.error('Error creating community:', err);
     } finally {
       setLoading(false);
     }

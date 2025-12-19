@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import './CommunityList.css';
 import useCommunities from '../../hooks/useCommunities';
+import { getCurrentUser } from '../../utils/auth';
+import CreateCommunityModal from '../../components/CreateCommunityModal';
 
 import { DEFAULT_COMMUNITY_ICON } from '../../utils/placeholders';
 
@@ -42,6 +44,17 @@ const CommunityList = () => {
     communities: true,
     resources: true,
   });
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const handleOpenCreateCommunity = (e) => {
+    e.preventDefault();
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      window.location.href = '/login';
+      return;
+    }
+    setShowCreateModal(true);
+  };
 
   const toggleSection = (section) => {
     setSectionsExpanded(prev => ({
@@ -54,7 +67,7 @@ const CommunityList = () => {
     { label: 'Home', href: '/', icon: 'home' },
     { label: 'Popular', href: '/popular', icon: 'popular' },
     { label: 'Explore', href: '/explore', icon: 'explore' },
-    { label: 'All', href: '/communities', icon: 'all' },
+    { label: 'All', href: '/all', icon: 'all' },
   ];
 
   const { communities, loading, error } = useCommunities();
@@ -100,11 +113,18 @@ const CommunityList = () => {
             <span className="pill-label">{item.label}</span>
           </a>
         ))}
-        <a href="/create-community" className="nav-pill nav-pill-special">
+        <a href="/create-community" className="nav-pill nav-pill-special" onClick={handleOpenCreateCommunity}>
           <svg className="nav-icon" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 3v14M3 10h14"/></svg>
           <span className="pill-label">Start a community</span>
         </a>
       </div>
+
+      {/* Create Community Modal */}
+      <CreateCommunityModal 
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onNavigate={(page, path) => { window.location.href = path; }}
+      />
 
       <div className="sidebar-separator"></div>
 

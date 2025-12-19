@@ -55,6 +55,14 @@ function SettingsPage({ onNavigate }) {
     emailWeeklyRecap: false,
     emailWeeklyTopic: false,
     unsubscribeAllEmails: true,
+    socialLinks: {
+      twitter: '',
+      instagram: '',
+      facebook: '',
+      github: '',
+      youtube: '',
+      website: ''
+    }
   });
   
   const [passwordData, setPasswordData] = useState({
@@ -66,6 +74,23 @@ function SettingsPage({ onNavigate }) {
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+  
+  // Email editing state
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [emailSuccess, setEmailSuccess] = useState('');
+  
+  // Social links editing state
+  const [editingSocialLinks, setEditingSocialLinks] = useState(false);
+  const [socialLinksError, setSocialLinksError] = useState('');
+  const [socialLinksSuccess, setSocialLinksSuccess] = useState('');
+  
+  // Profile fields editing state
+  const [editingDisplayName, setEditingDisplayName] = useState(false);
+  const [editingAbout, setEditingAbout] = useState(false);
+  const [editingGender, setEditingGender] = useState(false);
+  const [profileFieldError, setProfileFieldError] = useState('');
+  const [profileFieldSuccess, setProfileFieldSuccess] = useState('');
   
   // Notification modal state
   const [notificationModal, setNotificationModal] = useState({ open: false, setting: '', title: '' });
@@ -81,15 +106,23 @@ function SettingsPage({ onNavigate }) {
           setFormData((prev) => ({
             ...prev,
             email: userData.email || '',
-            displayName: userData.username || '',
+            displayName: userData.displayName || userData.username || '',
             image: userData.image || '',
-            about: userData.bio || '',
+            about: userData.about || userData.bio || '',
+            gender: userData.gender === true ? 'Woman' : userData.gender === false ? 'Man' : (userData.gender || 'Prefer not to say'),
             nsfw: userData.nsfw || false,
             allowFollow: userData.allowFollowing !== false, // default to true if not set
+            socialLinks: {
+              twitter: userData.socialLinks?.twitter || '',
+              instagram: userData.socialLinks?.instagram || '',
+              facebook: userData.socialLinks?.facebook || '',
+              github: userData.socialLinks?.github || '',
+              youtube: userData.socialLinks?.youtube || '',
+              website: userData.socialLinks?.website || ''
+            }
           }));
         }
       } catch (error) {
-        console.error('Failed to load user data:', error);
       }
     };
     loadUserData();
@@ -102,15 +135,21 @@ function SettingsPage({ onNavigate }) {
     try {
       if (field === 'nsfw') {
         await toggleNsfw(value);
-        console.log('✅ NSFW setting updated:', value);
       } else if (field === 'allowFollow') {
         await toggleAllowFollow(value);
-        console.log('✅ Allow follow setting updated:', value);
+        // Show temporary success message
+        const message = value 
+          ? 'People can now follow you!' 
+          : 'You have disabled followers. People cannot follow you anymore.';
+        setSaveMessage(`✅ ${message}`);
+        setTimeout(() => setSaveMessage(''), 3000);
       }
     } catch (error) {
-      console.error(`Failed to update ${field}:`, error);
       // Revert the state change on error
       setFormData((prev) => ({ ...prev, [field]: !value }));
+      // Show error message
+      setSaveMessage(`❌ Failed to update setting: ${error.message}`);
+      setTimeout(() => setSaveMessage(''), 4000);
     }
   };
 
@@ -118,6 +157,50 @@ function SettingsPage({ onNavigate }) {
     setPasswordData((prev) => ({ ...prev, [field]: value }));
     setPasswordError('');
     setPasswordSuccess('');
+  };
+
+  const handleUpdateEmail = async () => {
+    try {
+      setEmailError('');
+      setEmailSuccess('');
+
+      // Validation
+      if (!formData.email) {
+        setEmailError('Email cannot be empty');
+        return;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setEmailError('Please enter a valid email address');
+        return;
+      }
+
+      const { updateEmail } = await import('../api/usersApi');
+      await updateEmail(formData.email);
+      
+      setEmailSuccess('✅ Email updated successfully!');
+      setEditingEmail(false);
+      setTimeout(() => setEmailSuccess(''), 3000);
+    } catch (error) {
+      setEmailError('❌ Failed to update email: ' + error.message);
+    }
+  };
+
+  const handleUpdateSocialLinks = async () => {
+    try {
+      setSocialLinksError('');
+      setSocialLinksSuccess('');
+
+      const { updateSocialLinks } = await import('../api/usersApi');
+      await updateSocialLinks(formData.socialLinks);
+      
+      setSocialLinksSuccess('✅ Social links updated successfully!');
+      setEditingSocialLinks(false);
+      setTimeout(() => setSocialLinksSuccess(''), 3000);
+    } catch (error) {
+      setSocialLinksError('❌ Failed to update social links: ' + error.message);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -159,8 +242,60 @@ function SettingsPage({ onNavigate }) {
       localStorage.clear();
       window.location.href = '/login';
     } catch (error) {
-      console.error('Failed to change password:', error);
       setPasswordError('❌ Failed to change password: ' + error.message);
+    }
+  };
+
+  // Handle saving individual profile fields
+  const handleSaveProfileField = async (field) => {
+    try {
+      setProfileFieldError('');
+      setProfileFieldSuccess('');
+      
+      const userId = getCurrentUserId();
+      if (!userId) {
+        setProfileFieldError('No user logged in');
+        return;
+      }
+
+      let updatePayload = {};
+      
+      if (field === 'displayName') {
+        if (!formData.displayName.trim()) {
+          setProfileFieldError('Display name cannot be empty');
+          return;
+        }
+        updatePayload = { displayName: formData.displayName.trim() };
+      } else if (field === 'about') {
+        updatePayload = { about: formData.about.trim() };
+      } else if (field === 'gender') {
+        // Save gender value - API accepts boolean (Man = false, Woman = true)
+        // For other values, we'll save them as-is and let API handle
+        let genderValue = undefined;
+        if (formData.gender === 'Man') genderValue = false;
+        else if (formData.gender === 'Woman') genderValue = true;
+        else if (formData.gender === 'Non-binary') genderValue = formData.gender;
+        else if (formData.gender === 'I prefer not to say' || formData.gender === '') genderValue = null;
+        
+        updatePayload = { gender: genderValue };
+      }
+
+      await updateUser(userId, updatePayload);
+      
+      // Close the edit mode
+      if (field === 'displayName') {
+        setEditingDisplayName(false);
+        localStorage.setItem('username', formData.displayName);
+      } else if (field === 'about') {
+        setEditingAbout(false);
+      } else if (field === 'gender') {
+        setEditingGender(false);
+      }
+      
+      setProfileFieldSuccess(`✅ ${field === 'displayName' ? 'Display name' : field === 'about' ? 'About' : 'Gender'} updated successfully!`);
+      setTimeout(() => setProfileFieldSuccess(''), 3000);
+    } catch (error) {
+      setProfileFieldError(`❌ Failed to update: ${error.message}`);
     }
   };
 
@@ -176,10 +311,18 @@ function SettingsPage({ onNavigate }) {
       }
 
       // Prepare update payload (only send fields the schema accepts)
+      // Convert gender string to boolean for API (Man = false, Woman = true)
+      let genderValue = undefined;
+      if (formData.gender === 'Man') genderValue = false;
+      else if (formData.gender === 'Woman') genderValue = true;
+      
       const updatePayload = {
         username: formData.displayName,
+        displayName: formData.displayName,
         email: formData.email,
         image: formData.image,
+        about: formData.about,
+        gender: genderValue,
       };
 
       // Update to API
@@ -195,7 +338,6 @@ function SettingsPage({ onNavigate }) {
       setSaveMessage('✅ Settings saved to database!');
       setTimeout(() => setSaveMessage(''), 4000);
     } catch (error) {
-      console.error('Failed to save settings:', error);
       setSaveMessage('❌ Failed to save: ' + error.message);
     } finally {
       setSaving(false);
@@ -291,7 +433,6 @@ function SettingsPage({ onNavigate }) {
         return;
       }
 
-      console.log(`Deleting account for user: ${username} (${userId})`);
 
       // Step 1: Delete all user's posts
       try {
@@ -304,15 +445,12 @@ function SettingsPage({ onNavigate }) {
           String(post.authorId) === String(userId) ||
           String(post.userId) === String(userId)
         );
-        console.log(`Found ${userPosts.length} posts to delete`);
         
         for (const post of userPosts) {
           const postId = post._id || post.id;
           await postsAPI.delete(postId);
-          console.log(`Deleted post: ${postId}`);
         }
       } catch (error) {
-        console.error('Error deleting posts:', error);
       }
 
       // Step 2: Delete all user's comments
@@ -323,15 +461,12 @@ function SettingsPage({ onNavigate }) {
         const userComments = allComments.filter(comment => 
           comment.userId === userId || String(comment.userId) === String(userId)
         );
-        console.log(`Found ${userComments.length} comments to delete`);
         
         for (const comment of userComments) {
           const commentId = comment._id || comment.id;
           await commentsAPI.default.delete(commentId);
-          console.log(`Deleted comment: ${commentId}`);
         }
       } catch (error) {
-        console.error('Error deleting comments:', error);
       }
 
       // Step 3: Delete all user's chats
@@ -340,20 +475,16 @@ function SettingsPage({ onNavigate }) {
         const userChats = allChats.filter(chat => 
           chat.participants?.some(p => p.username === username || p === username)
         );
-        console.log(`Found ${userChats.length} chats to delete`);
         
         for (const chat of userChats) {
           await deleteChat(chat._id);
-          console.log(`Deleted chat: ${chat._id}`);
         }
       } catch (error) {
-        console.error('Error deleting chats:', error);
       }
 
       // Step 4: Delete user account from MongoDB
       await deleteUser(userId);
       
-      console.log('Account and all associated data deleted successfully');
       
       // Clear user data from localStorage
       clearCurrentUser();
@@ -363,7 +494,6 @@ function SettingsPage({ onNavigate }) {
       // Redirect to home page
       window.location.href = '/';
     } catch (error) {
-      console.error('Failed to delete account:', error);
       alert('Failed to delete account: ' + error.message);
     }
   };
@@ -436,22 +566,52 @@ function SettingsPage({ onNavigate }) {
           <div className="settings-section">
             <h3 className="settings-section-title">General</h3>
 
-            <div className="settings-row">
+            {/* Email Address - Editable */}
+            <div className="settings-row-editable">
               <div className="settings-row-left">
                 <span className="settings-row-label">Email address</span>
               </div>
-              <div className="settings-row-right">
-                <span className="settings-row-value">{formData.email || 'Not set'}</span>
-                <span className="settings-row-arrow">›</span>
-              </div>
+              {editingEmail ? (
+                <div className="settings-edit-container">
+                  <input
+                    type="email"
+                    className="settings-input"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="your.email@example.com"
+                  />
+                  {emailError && <p className="error-message">{emailError}</p>}
+                  {emailSuccess && <p className="success-message">{emailSuccess}</p>}
+                  <div className="settings-edit-buttons">
+                    <button className="settings-btn settings-btn-filled" onClick={handleUpdateEmail}>
+                      Save
+                    </button>
+                    <button 
+                      className="settings-btn settings-btn-outline"
+                      onClick={() => {
+                        setEditingEmail(false);
+                        setEmailError('');
+                        setEmailSuccess('');
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="settings-row-right" onClick={() => setEditingEmail(true)} style={{ cursor: 'pointer' }}>
+                  <span className="settings-row-value">{formData.email || 'Not set'}</span>
+                  <span className="settings-row-arrow">›</span>
+                </div>
+              )}
             </div>
 
-            <div className="settings-row">
+            <div className="settings-row" onClick={() => setEditingGender(true)}>
               <div className="settings-row-left">
                 <span className="settings-row-label">Gender</span>
               </div>
               <div className="settings-row-right">
-                <span className="settings-row-value">{formData.gender}</span>
+                <span className="settings-row-value">{formData.gender || 'I prefer not to say'}</span>
                 <span className="settings-row-arrow">›</span>
               </div>
             </div>
@@ -589,7 +749,12 @@ function SettingsPage({ onNavigate }) {
           <div className="settings-section">
             <h3 className="settings-section-title">General</h3>
 
-            <div className="settings-row">
+            {/* Profile field success/error messages */}
+            {profileFieldSuccess && <div className="settings-success">{profileFieldSuccess}</div>}
+            {profileFieldError && <div className="settings-error">{profileFieldError}</div>}
+
+            {/* Display name row */}
+            <div className="settings-row" onClick={() => setEditingDisplayName(true)}>
               <div className="settings-row-left">
                 <span className="settings-row-label">Display name</span>
                 <span className="settings-row-description">Changing your display name won't change your username</span>
@@ -600,11 +765,25 @@ function SettingsPage({ onNavigate }) {
               </div>
             </div>
 
-            <div className="settings-row">
+            {/* About description row */}
+            <div className="settings-row" onClick={() => setEditingAbout(true)}>
               <div className="settings-row-left">
                 <span className="settings-row-label">About description</span>
+                <span className="settings-row-description">{formData.about ? formData.about.substring(0, 50) + (formData.about.length > 50 ? '...' : '') : 'Add a bio'}</span>
               </div>
               <div className="settings-row-right">
+                <span className="settings-row-arrow">›</span>
+              </div>
+            </div>
+
+            {/* Gender row */}
+            <div className="settings-row" onClick={() => setEditingGender(true)}>
+              <div className="settings-row-left">
+                <span className="settings-row-label">Gender</span>
+                <span className="settings-row-description">This information may be used to improve your recommendations</span>
+              </div>
+              <div className="settings-row-right">
+                <span className="settings-row-value">{formData.gender || 'I prefer not to say'}</span>
                 <span className="settings-row-arrow">›</span>
               </div>
             </div>
@@ -629,13 +808,99 @@ function SettingsPage({ onNavigate }) {
               </div>
             </div>
 
-            <div className="settings-row">
+            {/* Social Links - Editable */}
+            <div className="settings-row-editable">
               <div className="settings-row-left">
                 <span className="settings-row-label">Social links</span>
               </div>
-              <div className="settings-row-right">
-                <span className="settings-row-arrow">›</span>
-              </div>
+              {editingSocialLinks ? (
+                <div className="settings-edit-container social-links-edit">
+                  <div className="social-link-input-group">
+                    <label>Twitter</label>
+                    <input
+                      type="url"
+                      className="settings-input"
+                      value={formData.socialLinks.twitter}
+                      onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, twitter: e.target.value } })}
+                      placeholder="https://twitter.com/yourhandle"
+                    />
+                  </div>
+                  <div className="social-link-input-group">
+                    <label>Instagram</label>
+                    <input
+                      type="url"
+                      className="settings-input"
+                      value={formData.socialLinks.instagram}
+                      onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, instagram: e.target.value } })}
+                      placeholder="https://instagram.com/yourhandle"
+                    />
+                  </div>
+                  <div className="social-link-input-group">
+                    <label>Facebook</label>
+                    <input
+                      type="url"
+                      className="settings-input"
+                      value={formData.socialLinks.facebook}
+                      onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, facebook: e.target.value } })}
+                      placeholder="https://facebook.com/yourprofile"
+                    />
+                  </div>
+                  <div className="social-link-input-group">
+                    <label>GitHub</label>
+                    <input
+                      type="url"
+                      className="settings-input"
+                      value={formData.socialLinks.github}
+                      onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, github: e.target.value } })}
+                      placeholder="https://github.com/yourusername"
+                    />
+                  </div>
+                  <div className="social-link-input-group">
+                    <label>YouTube</label>
+                    <input
+                      type="url"
+                      className="settings-input"
+                      value={formData.socialLinks.youtube}
+                      onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, youtube: e.target.value } })}
+                      placeholder="https://youtube.com/@yourchannel"
+                    />
+                  </div>
+                  <div className="social-link-input-group">
+                    <label>Website</label>
+                    <input
+                      type="url"
+                      className="settings-input"
+                      value={formData.socialLinks.website}
+                      onChange={(e) => setFormData({ ...formData, socialLinks: { ...formData.socialLinks, website: e.target.value } })}
+                      placeholder="https://yourwebsite.com"
+                    />
+                  </div>
+                  {socialLinksError && <p className="error-message">{socialLinksError}</p>}
+                  {socialLinksSuccess && <p className="success-message">{socialLinksSuccess}</p>}
+                  <div className="settings-edit-buttons">
+                    <button className="settings-btn settings-btn-filled" onClick={handleUpdateSocialLinks}>
+                      Save
+                    </button>
+                    <button 
+                      className="settings-btn settings-btn-outline"
+                      onClick={() => {
+                        setEditingSocialLinks(false);
+                        setSocialLinksError('');
+                        setSocialLinksSuccess('');
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="settings-row-right" onClick={() => setEditingSocialLinks(true)} style={{ cursor: 'pointer' }}>
+                  <span className="settings-row-value">
+                    {Object.values(formData.socialLinks).some(link => link) ? 'Configured' : 'Not set'}
+                  </span>
+                  <span className="settings-row-arrow">›</span>
+                </div>
+              )}
             </div>
 
             <div className="account-auth-row">
@@ -1613,6 +1878,147 @@ function SettingsPage({ onNavigate }) {
           {saveMessage && <span className="save-message">{saveMessage}</span>}
         </div>
       </main>
+
+      {/* Display Name Modal */}
+      {editingDisplayName && (
+        <div className="settings-modal-overlay" onClick={() => setEditingDisplayName(false)}>
+          <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="settings-modal-header">
+              <h2 className="settings-modal-title">Display name</h2>
+              <button className="settings-modal-close" onClick={() => setEditingDisplayName(false)}>
+                <svg viewBox="0 0 20 20" width="20" height="20">
+                  <path fill="currentColor" d="M10 8.586L15.293 3.293a1 1 0 111.414 1.414L11.414 10l5.293 5.293a1 1 0 01-1.414 1.414L10 11.414l-5.293 5.293a1 1 0 01-1.414-1.414L8.586 10 3.293 4.707a1 1 0 011.414-1.414L10 8.586z"/>
+                </svg>
+              </button>
+            </div>
+            <p className="settings-modal-description">Changing your display name won't change your username</p>
+            <div className="settings-modal-body">
+              <div className="settings-floating-input">
+                <input
+                  type="text"
+                  id="displayNameInput"
+                  className="settings-floating-input-field"
+                  value={formData.displayName}
+                  onChange={(e) => setFormData({ ...formData, displayName: e.target.value.slice(0, 30) })}
+                  placeholder=" "
+                  maxLength={30}
+                />
+                <label htmlFor="displayNameInput" className="settings-floating-label">Display name</label>
+                <span className="settings-input-char-count">{formData.displayName?.length || 0}/30</span>
+              </div>
+            </div>
+            <div className="settings-modal-footer">
+              <button className="settings-modal-cancel-btn" onClick={() => setEditingDisplayName(false)}>Cancel</button>
+              <button className="settings-modal-save-btn" onClick={() => handleSaveProfileField('displayName')}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* About Description Modal */}
+      {editingAbout && (
+        <div className="settings-modal-overlay" onClick={() => setEditingAbout(false)}>
+          <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="settings-modal-header">
+              <h2 className="settings-modal-title">About</h2>
+              <button className="settings-modal-close" onClick={() => setEditingAbout(false)}>
+                <svg viewBox="0 0 20 20" width="20" height="20">
+                  <path fill="currentColor" d="M10 8.586L15.293 3.293a1 1 0 111.414 1.414L11.414 10l5.293 5.293a1 1 0 01-1.414 1.414L10 11.414l-5.293 5.293a1 1 0 01-1.414-1.414L8.586 10 3.293 4.707a1 1 0 011.414-1.414L10 8.586z"/>
+                </svg>
+              </button>
+            </div>
+            <p className="settings-modal-description">A brief description of yourself shown on your profile</p>
+            <div className="settings-modal-body">
+              <div className="settings-floating-input">
+                <textarea
+                  id="aboutInput"
+                  className="settings-floating-textarea-field"
+                  value={formData.about}
+                  onChange={(e) => setFormData({ ...formData, about: e.target.value.slice(0, 200) })}
+                  placeholder=" "
+                  maxLength={200}
+                  rows={4}
+                />
+                <label htmlFor="aboutInput" className="settings-floating-label">About (optional)</label>
+                <span className="settings-input-char-count">{formData.about?.length || 0}/200</span>
+              </div>
+            </div>
+            <div className="settings-modal-footer">
+              <button className="settings-modal-cancel-btn" onClick={() => setEditingAbout(false)}>Cancel</button>
+              <button className="settings-modal-save-btn" onClick={() => handleSaveProfileField('about')}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Gender Modal */}
+      {editingGender && (
+        <div className="settings-modal-overlay" onClick={() => setEditingGender(false)}>
+          <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="settings-modal-header">
+              <h2 className="settings-modal-title">Gender</h2>
+              <button className="settings-modal-close" onClick={() => setEditingGender(false)}>
+                <svg viewBox="0 0 20 20" width="20" height="20">
+                  <path fill="currentColor" d="M10 8.586L15.293 3.293a1 1 0 111.414 1.414L11.414 10l5.293 5.293a1 1 0 01-1.414 1.414L10 11.414l-5.293 5.293a1 1 0 01-1.414-1.414L8.586 10 3.293 4.707a1 1 0 011.414-1.414L10 8.586z"/>
+                </svg>
+              </button>
+            </div>
+            <p className="settings-modal-description">This information may be used to improve your recommendations and ads.</p>
+            <div className="settings-modal-body">
+              <div className="settings-radio-group">
+                <label className="settings-radio-option">
+                  <input
+                    type="radio"
+                    name="gender"
+                    value="Woman"
+                    checked={formData.gender === 'Woman'}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  />
+                  <span className="settings-radio-checkmark"></span>
+                  <span className="settings-radio-label">Woman</span>
+                </label>
+                <label className="settings-radio-option">
+                  <input
+                    type="radio"
+                    name="gender"
+                    value="Man"
+                    checked={formData.gender === 'Man'}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  />
+                  <span className="settings-radio-checkmark"></span>
+                  <span className="settings-radio-label">Man</span>
+                </label>
+                <label className="settings-radio-option">
+                  <input
+                    type="radio"
+                    name="gender"
+                    value="Non-binary"
+                    checked={formData.gender === 'Non-binary'}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  />
+                  <span className="settings-radio-checkmark"></span>
+                  <span className="settings-radio-label">Non-binary</span>
+                </label>
+                <label className="settings-radio-option">
+                  <input
+                    type="radio"
+                    name="gender"
+                    value=""
+                    checked={formData.gender === '' || formData.gender === 'I prefer not to say'}
+                    onChange={(e) => setFormData({ ...formData, gender: 'I prefer not to say' })}
+                  />
+                  <span className="settings-radio-checkmark"></span>
+                  <span className="settings-radio-label">I prefer not to say</span>
+                </label>
+              </div>
+            </div>
+            <div className="settings-modal-footer">
+              <button className="settings-modal-cancel-btn" onClick={() => setEditingGender(false)}>Cancel</button>
+              <button className="settings-modal-save-btn" onClick={() => handleSaveProfileField('gender')}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

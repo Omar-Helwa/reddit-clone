@@ -66,7 +66,6 @@ export function usePosts() {
       setPosts(transformedPosts);
     } catch (err) {
       setError(err.message || 'Failed to fetch posts');
-      console.error('Posts fetch error:', err);
       setPosts([]);
     } finally {
       setLoading(false);
@@ -112,7 +111,6 @@ export function usePostsBySubreddit(subreddit) {
       setPosts(filteredPosts);
     } catch (err) {
       setError(err.message || 'Failed to fetch posts');
-      console.error('Posts by subreddit fetch error:', err);
       setPosts([]);
     } finally {
       setLoading(false);
@@ -156,7 +154,6 @@ export function usePost(postId) {
       setPost(transformedPost);
     } catch (err) {
       setError(err.message || 'Failed to fetch post');
-      console.error('Post fetch error:', err);
       setPost(null);
     } finally {
       setLoading(false);
@@ -193,7 +190,6 @@ export function useCreatePost() {
       return transformedPost;
     } catch (err) {
       setError(err.message || 'Failed to create post');
-      console.error('Create post error:', err);
       throw err;
     } finally {
       setLoading(false);
@@ -224,7 +220,6 @@ export function usePostVote() {
       return transformPost(result);
     } catch (err) {
       setError(err.message || 'Failed to upvote post');
-      console.error('Upvote error:', err);
       throw err;
     } finally {
       setLoading(false);
@@ -240,7 +235,6 @@ export function usePostVote() {
       return transformPost(result);
     } catch (err) {
       setError(err.message || 'Failed to downvote post');
-      console.error('Downvote error:', err);
       throw err;
     } finally {
       setLoading(false);

@@ -15,14 +15,11 @@ import { apiFetch } from './shared';
  */
 export const fetchChats = async () => {
   try {
-    console.log('🔄 Calling GET /chats');
     const response = await apiFetch('/chats');
-    console.log('✅ GET /chats response:', response);
     // Backend returns paginated response: { items: [...], count, limit, skip }
     const items = response?.items || response;
     return Array.isArray(items) ? items : [];
   } catch (error) {
-    console.error('❌ Error fetching chats:', error);
     throw error;
   }
 };
@@ -30,9 +27,7 @@ export const fetchChats = async () => {
 export const fetchChatsForUser = async (userId) => {
   const id = String(userId || '').trim();
   const qs = id ? `?userId=${encodeURIComponent(id)}` : '';
-  console.log('🔄 Calling GET /chats with userId:', id);
   const response = await apiFetch(`/chats${qs}`);
-  console.log('✅ GET /chats response for user:', response);
   // Backend returns paginated response: { items: [...], count, limit, skip }
   const items = response?.items || response;
   return Array.isArray(items) ? items : [];
@@ -48,7 +43,6 @@ export const fetchChatById = async (chatId) => {
     const response = await apiFetch(`/chats/${chatId}`);
     return response;
   } catch (error) {
-    console.error(`Error fetching chat ${chatId}:`, error);
     throw error;
   }
 };
@@ -66,7 +60,6 @@ export const createChat = async (chatData) => {
     });
     return response;
   } catch (error) {
-    console.error('Error creating chat:', error);
     throw error;
   }
 };
@@ -96,7 +89,6 @@ export const sendMessage = async (chatId, messageData) => {
     });
     return response;
   } catch (error) {
-    console.error(`Error sending message to chat ${chatId}:`, error);
     throw error;
   }
 };
@@ -108,15 +100,11 @@ export const sendMessage = async (chatId, messageData) => {
  */
 export const fetchChatMessages = async (chatId) => {
   try {
-    console.log('🔄 Calling GET /chats/:id/messages for chatId:', chatId);
     const response = await apiFetch(`/chats/${chatId}/messages`);
-    console.log('✅ GET messages response:', response);
     // Backend returns paginated response: { items: [...], count, limit, skip }
     const items = response?.items || response;
-    console.log('📨 Extracted messages:', items, 'count:', Array.isArray(items) ? items.length : 0);
     return Array.isArray(items) ? items : [];
   } catch (error) {
-    console.error(`Error fetching messages for chat ${chatId}:`, error);
     throw error;
   }
 };
@@ -131,7 +119,6 @@ export const deleteChat = async (chatId) => {
     const response = await apiFetch(`/chats/${chatId}`, { method: 'DELETE' });
     return response;
   } catch (error) {
-    console.error(`Error deleting chat ${chatId}:`, error);
     throw error;
   }
 };
@@ -147,7 +134,6 @@ export const deleteMessage = async (chatId, messageId) => {
     const response = await apiFetch(`/chats/${chatId}/messages/${messageId}`, { method: 'DELETE' });
     return response;
   } catch (error) {
-    console.error(`Error deleting message ${messageId} in chat ${chatId}:`, error);
     throw error;
   }
 };
@@ -159,14 +145,11 @@ export const deleteMessage = async (chatId, messageId) => {
  */
 export const searchChats = async (query) => {
   try {
-    console.log('🔄 Calling GET /chats/search with query:', query);
     const response = await apiFetch(`/chats/search?q=${encodeURIComponent(query)}`);
-    console.log('✅ GET /chats/search response:', response);
     // Backend returns paginated response: { items: [...], count, limit, skip }
     const items = response?.items || response;
     return Array.isArray(items) ? items : [];
   } catch (error) {
-    console.error('Error searching chats:', error);
     throw error;
   }
 };
@@ -181,7 +164,6 @@ export const markChatAsRead = async (chatId) => {
     const response = await apiFetch(`/chats/${chatId}/read`, { method: 'PATCH' });
     return response;
   } catch (error) {
-    console.error(`Error marking chat ${chatId} as read:`, error);
     throw error;
   }
 };

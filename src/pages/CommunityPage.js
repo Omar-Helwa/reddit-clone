@@ -13,7 +13,6 @@ function formatCommunityCreated(value) {
   if (typeof value === 'string') {
     const trimmed = value.trim();
     if (!trimmed) return '';
-    // If it's already human-friendly (e.g. "Mon Dec 16 2025"), keep it.
     if (!/^\d{4}-\d{2}-\d{2}T/.test(trimmed) && !/\d{2}:\d{2}:\d{2}/.test(trimmed)) return trimmed;
   }
   const ms = new Date(value).getTime();
@@ -24,8 +23,9 @@ function formatCommunityCreated(value) {
 function CommunityPage() {
   const [isJoined, setIsJoined] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [activeTab, setActiveTab] = useState('posts');
-  const [sortBy, setSortBy] = useState('hot');
+  const [sortBy, setSortBy] = useState('best');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [communityName, setCommunityName] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const { communities: communityList } = useCommunities(200);
@@ -46,23 +46,24 @@ function CommunityPage() {
     const found = communityList.find((c) => c.name === slug || c.displayName === slug || c.name === `r/${slug}` || c.displayName === `r/${slug}`);
     return found || {
       name: `r/${slug || 'community'}`,
-      displayName: `r/${slug || 'community'}`,
+      displayName: slug || 'Community',
       description: 'Community details coming soon.',
       icon: DEFAULT_COMMUNITY_ICON,
-      banner: 'https://via.placeholder.com/1200x200',
       members: 0,
       online: 0,
+      weeklyVisitors: 0,
+      weeklyContributions: 0,
       createdAt: new Date().toISOString(),
       type: 'Public',
       rules: [],
-      moderators: []
+      moderators: ['u/moderator1', 'u/moderator2']
     };
   }, [communityList, communityName]);
 
   const createdLabel = useMemo(() => {
     return formatCommunityCreated(community?.createdAt || community?.createdDate || community?.created);
   }, [community]);
-  // Backend posts use subreddit slug (without r/)
+
   const subredditKey = communityName ? `${communityName}` : '';
   const { posts, loading: postsLoading, error: postsError, refetch } = usePostsBySubreddit(subredditKey);
 
@@ -86,11 +87,11 @@ function CommunityPage() {
         return [...list].sort((a, b) => getTimestampMs(b) - getTimestampMs(a));
       case 'top':
         return [...list].sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0) || getTimestampMs(b) - getTimestampMs(a));
-      case 'rising':
-        return [...list].sort((a, b) => hotRank(b, 1.15) - hotRank(a, 1.15) || getTimestampMs(b) - getTimestampMs(a));
       case 'hot':
-      default:
         return [...list].sort((a, b) => hotRank(b, 1.5) - hotRank(a, 1.5) || getTimestampMs(b) - getTimestampMs(a));
+      case 'best':
+      default:
+        return [...list].sort((a, b) => hotRank(b, 1.3) - hotRank(a, 1.3) || getTimestampMs(b) - getTimestampMs(a));
     }
   }, [posts, sortBy]);
 
@@ -122,223 +123,250 @@ function CommunityPage() {
       navigate('/');
     } catch (err) {
       alert('Failed to delete community: ' + err.message);
-      console.error('Error deleting community:', err);
     } finally {
       setIsDeleting(false);
+      setShowMoreMenu(false);
     }
   };
 
   const handleToggleFavorite = () => {
     const next = toggleFavoriteCommunity(communityName);
     setIsFavorite(next);
+    setShowMoreMenu(false);
   };
+
+  const sortOptions = [
+    { value: 'best', label: 'Best', icon: '🏆' },
+    { value: 'hot', label: 'Hot', icon: '🔥' },
+    { value: 'new', label: 'New', icon: '✨' },
+    { value: 'top', label: 'Top', icon: '⬆️' },
+  ];
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowSortDropdown(false);
+      setShowMoreMenu(false);
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   return (
     <div className="community-page">
-      {/* Banner */}
-      <div className="community-banner" style={{ backgroundImage: `url(${community.banner})` }}>
-        <div className="banner-overlay"></div>
-      </div>
-
-      {/* Header */}
-      <div className="community-header">
-        <div className="community-header-content">
-          <div className="community-info">
-            <img
-              src={community.icon || DEFAULT_COMMUNITY_ICON}
-              alt={community.name}
-              className="community-icon-large"
-              onError={(e) => { e.currentTarget.src = DEFAULT_COMMUNITY_ICON; }}
-            />
-            <div className="community-title-section">
-              <h1>{community.displayName}</h1>
-              <p className="community-name">{community.name}</p>
-            </div>
-          </div>
-          <div className="community-actions">
-            <button className={`join-btn ${isJoined ? 'joined' : ''}`} onClick={handleJoin}>
-              {isJoined ? '✓ Joined' : '+ Join'}
-            </button>
-            <button
-              className={`favorite-btn ${isFavorite ? 'favorited' : ''}`}
-              title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-              onClick={handleToggleFavorite}
-              aria-label={isFavorite ? 'Unfavorite community' : 'Favorite community'}
-            >
-              {isFavorite ? '★' : '☆'}
-            </button>
-            <button className="notify-btn" title="Turn on notifications">🔔</button>
-            <button 
-              className="community-delete-btn" 
-              title="Delete community" 
-              onClick={handleDeleteCommunity}
-              disabled={isDeleting}
-            >
-              {isDeleting ? '⏳ Deleting...' : '🗑️ Delete'}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="community-nav">
-        <div className="nav-tabs">
-          <button 
-            className={`nav-tab ${activeTab === 'posts' ? 'active' : ''}`}
-            onClick={() => setActiveTab('posts')}
-          >
-            Posts
-          </button>
-          <button 
-            className={`nav-tab ${activeTab === 'about' ? 'active' : ''}`}
-            onClick={() => setActiveTab('about')}
-          >
-            About
-          </button>
-          <button 
-            className={`nav-tab ${activeTab === 'rules' ? 'active' : ''}`}
-            onClick={() => setActiveTab('rules')}
-          >
-            Rules
-          </button>
-        </div>
-      </div>
-
-      {/* Content Area */}
-      <div className="community-content">
-        <div className="community-main">
-          {activeTab === 'posts' && (
-            <>
-              <div className="feed-controls">
-                <div className="sort-buttons">
-                  <button className={`sort-btn ${sortBy === 'hot' ? 'active' : ''}`} onClick={() => setSortBy('hot')}>
-                    🔥 Hot
-                  </button>
-                  <button className={`sort-btn ${sortBy === 'new' ? 'active' : ''}`} onClick={() => setSortBy('new')}>
-                    ✨ New
-                  </button>
-                  <button className={`sort-btn ${sortBy === 'top' ? 'active' : ''}`} onClick={() => setSortBy('top')}>
-                    ⬆️ Top
-                  </button>
-                  <button className={`sort-btn ${sortBy === 'rising' ? 'active' : ''}`} onClick={() => setSortBy('rising')}>
-                    📈 Rising
-                  </button>
-                </div>
-                <button className="create-post-btn" onClick={() => navigate(`/r/${communityName}/submit`)}>+ Create Post</button>
+      <div className="community-layout">
+        {/* Main Content */}
+        <main className="community-main">
+          {/* Community Header */}
+          <div className="community-header-card">
+            <div className="community-header-left">
+              <div className="community-icon-wrapper">
+                <img
+                  src={community.icon || DEFAULT_COMMUNITY_ICON}
+                  alt={community.name}
+                  className="community-icon"
+                  onError={(e) => { e.currentTarget.src = DEFAULT_COMMUNITY_ICON; }}
+                />
               </div>
-
-              <div className="posts-feed">
-                {postsLoading && <div className="loading">Loading posts...</div>}
-                {postsError && (
-                  <div className="error">
-                    Failed to load posts: {postsError}
-                    <button onClick={refetch} className="retry-btn">Retry</button>
+              <h1 className="community-title">r/{communityName}</h1>
+            </div>
+            <div className="community-header-actions">
+              <button 
+                className="header-action-btn create-post-btn"
+                onClick={() => navigate(`/r/${communityName}/submit`)}
+              >
+                <svg viewBox="0 0 20 20" width="16" height="16">
+                  <path fill="currentColor" d="M10 3v14M3 10h14" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                Create Post
+              </button>
+              <button className="header-action-btn icon-btn" title="Notifications">
+                <svg viewBox="0 0 20 20" width="20" height="20">
+                  <path fill="currentColor" d="M10 18a2 2 0 0 0 2-2H8a2 2 0 0 0 2 2zm6-5V9c0-3.07-1.64-5.64-4.5-6.32V2a1.5 1.5 0 0 0-3 0v.68C5.63 3.36 4 5.92 4 9v4l-2 2v1h16v-1l-2-2z"/>
+                </svg>
+              </button>
+              <button 
+                className={`header-action-btn join-btn ${isJoined ? 'joined' : ''}`}
+                onClick={handleJoin}
+              >
+                {isJoined ? 'Joined' : 'Join'}
+              </button>
+              <div className="more-menu-wrapper" onClick={(e) => e.stopPropagation()}>
+                <button 
+                  className="header-action-btn icon-btn more-btn"
+                  onClick={() => setShowMoreMenu(!showMoreMenu)}
+                >
+                  <svg viewBox="0 0 20 20" width="20" height="20">
+                    <circle cx="4" cy="10" r="2" fill="currentColor"/>
+                    <circle cx="10" cy="10" r="2" fill="currentColor"/>
+                    <circle cx="16" cy="10" r="2" fill="currentColor"/>
+                  </svg>
+                </button>
+                {showMoreMenu && (
+                  <div className="more-menu-dropdown">
+                    <button onClick={handleToggleFavorite}>
+                      {isFavorite ? '★ Remove from favorites' : '☆ Add to favorites'}
+                    </button>
+                    <button onClick={handleDeleteCommunity} disabled={isDeleting} className="delete-option">
+                      {isDeleting ? '⏳ Deleting...' : '🗑️ Delete community'}
+                    </button>
                   </div>
                 )}
-                {!postsLoading && !postsError && posts.length === 0 && (
-                  <div className="no-posts">No posts yet.</div>
-                )}
-                {!postsLoading && !postsError && sortedPosts.length > 0 && sortedPosts.map(post => (
-                  <div key={post.postId} className="post-wrapper">
-                    {post.isPinned && <span className="pinned-badge">📌 Pinned by moderators</span>}
-                    <Post 
-                      postId={post.postId}
-                      communityKey={communityName}
-                      title={post.title}
-                      author={post.author}
-                      authorId={post.authorId}
-                      subreddit={`r/${communityName}`}
-                      timestamp={post.createdAt || post.timestamp}
-                      score={post.score}
-                      commentCount={post.commentCount}
-                      textBody={post.textBody}
-                      onCommentClick={() => navigate(`/r/${communityName}/comments/${post.postId}?comment=1`)}
-                    />
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {activeTab === 'about' && (
-            <div className="about-content">
-              <h2>About Community</h2>
-              <p>{community.description}</p>
-              <div className="community-details">
-                <div className="detail-row">
-                  <strong>Type:</strong> <span>{community.type}</span>
-                </div>
-                <div className="detail-row">
-                  <strong>Created:</strong> <span>{createdLabel}</span>
-                </div>
               </div>
             </div>
-          )}
+          </div>
 
-          {activeTab === 'rules' && (
-            <div className="rules-content">
-              <h2>Community Rules</h2>
-              <div className="rules-list">
-                {community.rules.map((rule, index) => (
-                  <div key={index} className="rule-item">
-                    <span className="rule-number">{index + 1}</span>
-                    <span className="rule-text">{rule}</span>
-                  </div>
-                ))}
-              </div>
+          {/* Sort Controls */}
+          <div className="feed-sort-bar">
+            <div className="sort-dropdown-wrapper" onClick={(e) => e.stopPropagation()}>
+              <button 
+                className="sort-dropdown-btn"
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+              >
+                <span>{sortOptions.find(o => o.value === sortBy)?.label || 'Best'}</span>
+                <svg viewBox="0 0 20 20" width="12" height="12">
+                  <path fill="currentColor" d="M5 8l5 5 5-5z"/>
+                </svg>
+              </button>
+              {showSortDropdown && (
+                <div className="sort-dropdown-menu">
+                  {sortOptions.map(option => (
+                    <button
+                      key={option.value}
+                      className={sortBy === option.value ? 'active' : ''}
+                      onClick={() => {
+                        setSortBy(option.value);
+                        setShowSortDropdown(false);
+                      }}
+                    >
+                      <span className="sort-icon">{option.icon}</span>
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+            <button className="view-toggle-btn" title="Card view">
+              <svg viewBox="0 0 20 20" width="18" height="18">
+                <rect x="2" y="2" width="7" height="7" rx="1" fill="currentColor"/>
+                <rect x="11" y="2" width="7" height="7" rx="1" fill="currentColor"/>
+                <rect x="2" y="11" width="7" height="7" rx="1" fill="currentColor"/>
+                <rect x="11" y="11" width="7" height="7" rx="1" fill="currentColor"/>
+              </svg>
+              <svg viewBox="0 0 20 20" width="12" height="12" className="chevron">
+                <path fill="currentColor" d="M5 8l5 5 5-5z"/>
+              </svg>
+            </button>
+          </div>
+
+          {/* Posts Feed */}
+          <div className="posts-feed">
+            {postsLoading && <div className="loading-state">Loading posts...</div>}
+            {postsError && (
+              <div className="error-state">
+                Failed to load posts: {postsError}
+                <button onClick={refetch} className="retry-btn">Retry</button>
+              </div>
+            )}
+            {!postsLoading && !postsError && posts.length === 0 && (
+              <div className="empty-state">
+                <div className="empty-icon">📭</div>
+                <h3>No posts yet</h3>
+                <p>Be the first to share something with this community!</p>
+                <button 
+                  className="empty-cta-btn"
+                  onClick={() => navigate(`/r/${communityName}/submit`)}
+                >
+                  Create Post
+                </button>
+              </div>
+            )}
+            {!postsLoading && !postsError && sortedPosts.length > 0 && sortedPosts.map(post => (
+              <div key={post.postId} className="post-item">
+                {post.isPinned && <span className="pinned-indicator">📌 Pinned by moderators</span>}
+                <Post 
+                  postId={post.postId}
+                  communityKey={communityName}
+                  title={post.title}
+                  author={post.author}
+                  authorId={post.authorId}
+                  subreddit={`r/${communityName}`}
+                  timestamp={post.createdAt || post.timestamp}
+                  score={post.score}
+                  commentCount={post.commentCount}
+                  textBody={post.textBody}
+                  onCommentClick={() => navigate(`/r/${communityName}/comments/${post.postId}?comment=1`)}
+                />
+              </div>
+            ))}
+          </div>
+        </main>
 
         {/* Sidebar */}
         <aside className="community-sidebar">
-          <div className="sidebar-card">
-            <h3>About Community</h3>
-            <p className="sidebar-description">{community.description}</p>
-            <div className="community-stats">
-              <div className="stat">
-                <strong>{community.members}</strong>
-                <span>Members</span>
+          {/* Community Info Card */}
+          <div className="sidebar-card info-card">
+            <h3 className="info-title">{community.displayName || communityName}</h3>
+            <div className="info-meta">
+              <div className="meta-item">
+                <svg viewBox="0 0 20 20" width="16" height="16">
+                  <path fill="currentColor" d="M6 2a2 2 0 0 0-2 2v1H3a1 1 0 0 0 0 2h1v9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7h1a1 1 0 1 0 0-2h-1V4a2 2 0 0 0-2-2H6zm0 2h8v1H6V4zm0 3h8v9H6V7z"/>
+                </svg>
+                <span>Created {createdLabel}</span>
               </div>
-              <div className="stat">
-                <strong>{community.online}</strong>
-                <span>Online</span>
+              <div className="meta-item">
+                <svg viewBox="0 0 20 20" width="16" height="16">
+                  <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2"/>
+                  <circle cx="10" cy="10" r="3" fill="currentColor"/>
+                </svg>
+                <span>{community.type || 'Public'}</span>
               </div>
             </div>
-            <p className="created-date">{createdLabel}</p>
-            <button 
-              className="create-post-btn-full"
-              onClick={() => navigate(`/r/${communityName}/submit`)}
-            >
-              Create Post
-            </button>
-          </div>
-
-          <div className="sidebar-card">
-            <h3>Community Rules</h3>
-            <div className="rules-preview">
-              {community.rules.slice(0, 3).map((rule, index) => (
-                <div key={index} className="rule-preview-item">
-                  {index + 1}. {rule}
-                </div>
-              ))}
+            <div className="community-stats-row">
+              <div className="stat-item">
+                <strong>{community.members?.toLocaleString() || community.weeklyVisitors?.toLocaleString() || '0'}</strong>
+                <span>Weekly visitors</span>
+              </div>
+              <div className="stat-item">
+                <strong>{community.online?.toLocaleString() || community.weeklyContributions?.toLocaleString() || '0'}</strong>
+                <span>Weekly contributions</span>
+              </div>
             </div>
-            <button className="see-all-btn" onClick={() => setActiveTab('rules')}>
-              See all rules →
-            </button>
           </div>
 
-          <div className="sidebar-card">
-            <h3>Moderators</h3>
+          {/* Moderators Card */}
+          <div className="sidebar-card moderators-card">
+            <h4 className="card-section-title">MODERATORS</h4>
+            <button className="message-mods-btn">
+              <svg viewBox="0 0 20 20" width="16" height="16">
+                <path fill="currentColor" d="M2 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6l-4 4V4z"/>
+              </svg>
+              Message Mods
+            </button>
             <div className="moderators-list">
-              {community.moderators.map((mod, index) => (
-                <div key={index} className="moderator-item">
-                  <span className="mod-icon">👤</span>
+              {(community.moderators || ['u/moderator']).map((mod, index) => (
+                <a key={index} href={`/user/${mod.replace('u/', '')}`} className="moderator-item">
+                  <div className="mod-avatar">
+                    <svg viewBox="0 0 20 20" width="20" height="20">
+                      <circle cx="10" cy="10" r="10" fill="#46d160"/>
+                      <circle cx="10" cy="8" r="3" fill="white"/>
+                      <ellipse cx="10" cy="15" rx="5" ry="3" fill="white"/>
+                    </svg>
+                  </div>
                   <span className="mod-name">{mod}</span>
-                </div>
+                </a>
               ))}
             </div>
-            <button className="message-mods-btn">Message the mods</button>
+            <button className="view-all-mods-btn">View all moderators</button>
+          </div>
+
+          {/* Footer Links */}
+          <div className="sidebar-footer">
+            <a href="/content-policy">Reddit Rules</a>
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/user-agreement">User Agreement</a>
+            <a href="/accessibility">Accessibility</a>
+            <p className="copyright">Reddit, Inc. © 2025. All rights reserved.</p>
           </div>
         </aside>
       </div>

@@ -23,7 +23,6 @@ export function useAPI(apiFn, dependencies = []) {
       setData(result);
     } catch (err) {
       setError(err.message || 'An error occurred');
-      console.error('API fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -74,7 +73,6 @@ export function usePosts() {
       setPosts(transformedPosts);
     } catch (err) {
       setError(err.message || 'Failed to fetch posts');
-      console.error('Posts fetch error:', err);
       setPosts([]);
     } finally {
       setLoading(false);
@@ -113,7 +111,6 @@ export function usePost(postId) {
       setPost(result);
     } catch (err) {
       setError(err.message || 'Failed to fetch post');
-      console.error('Post fetch error:', err);
     } finally {
       setLoading(false);
     }

@@ -88,7 +88,6 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
     if (typeof onSubmitReply === 'function') {
       onSubmitReply(commentId, text);
     } else {
-      console.log('Submit reply:', { postId, parentCommentId: commentId, text });
     }
     setReplyDrafts((prev) => ({ ...prev, [commentId]: '' }));
     setExpandedComments((prev) => ({ ...prev, [commentId]: false }));
@@ -196,7 +195,6 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
       try {
         await commentsAPI.update(commentId, { score: optimisticScore });
       } catch (err) {
-        console.warn('Failed to sync comment vote to backend:', err);
       }
     };
     

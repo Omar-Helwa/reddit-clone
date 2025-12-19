@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   getMyPosts,
   getMyComments,
@@ -18,7 +18,7 @@ export function useMyProfileData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchProfileData = async () => {
+  const fetchProfileData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -41,12 +41,11 @@ export function useMyProfileData() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchProfileData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchProfileData]);
 
   return {
     posts,
