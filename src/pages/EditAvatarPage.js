@@ -1,9 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './EditAvatarPage.css';
+import { updateCurrentUser, getAvatarSettings, isLoggedIn } from '../utils/auth';
 
 function EditAvatarPage({ onNavigate }) {
   const [selectedAvatar, setSelectedAvatar] = useState('👽');
   const [selectedTab, setSelectedTab] = useState('faces');
+  const [backgroundColor, setBackgroundColor] = useState(null);
+
+  // Load saved avatar settings on mount
+  useEffect(() => {
+    const settings = getAvatarSettings();
+    if (settings.emoji) {
+      setSelectedAvatar(settings.emoji);
+    }
+    if (settings.bgColor) {
+      setBackgroundColor(settings.bgColor);
+    }
+  }, []);
 
   const avatars = {
     faces: ['👽', '😀', '😎', '🤓', '😇', '🥳', '🤩', '😺', '🐶', '🐻', '🐼', '🦊', '🐱', '🐵', '🦁'],
@@ -25,11 +38,17 @@ function EditAvatarPage({ onNavigate }) {
     { name: 'Pink', value: '#ff66ac' },
   ];
 
-  const [backgroundColor, setBackgroundColor] = useState(null);
-
   const handleSave = () => {
-    alert('Avatar saved! Your new avatar: ' + selectedAvatar);
-    onNavigate('/profile');
+    // Save to localStorage via auth utility
+    updateCurrentUser({
+      avatarEmoji: selectedAvatar,
+      avatarBgColor: backgroundColor
+    });
+    
+    // Navigate back to profile
+    if (onNavigate) {
+      onNavigate('profile', '/profile');
+    }
   };
 
   return (

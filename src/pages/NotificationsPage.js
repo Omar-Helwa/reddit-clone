@@ -49,6 +49,36 @@ function NotificationsPage({ onNavigate }) {
     }
   };
 
+  // Handle notification click with proper navigation
+  const handleNotificationClick = (notif) => {
+    // Mark as read
+    if (!notif.read) {
+      markAsRead(notif.id);
+      loadNotifications();
+    }
+    
+    // Navigate based on notification type and link
+    if (notif.link && onNavigate) {
+      // Determine the page type based on link pattern
+      let page = 'home';
+      const link = notif.link;
+      
+      if (link.startsWith('/r/') && link.includes('/comments/')) {
+        page = 'post';
+      } else if (link.startsWith('/r/')) {
+        page = 'community';
+      } else if (link.startsWith('/user/') || link.startsWith('/u/')) {
+        page = 'profile';
+      } else if (link === '/chats' || link.startsWith('/chat')) {
+        page = 'chat';
+      } else if (link === '/notifications') {
+        page = 'notifications';
+      }
+      
+      onNavigate(page, link);
+    }
+  };
+
   return (
     <div className="notifications-page">
       <div className="notifications-container">
@@ -129,6 +159,8 @@ function NotificationsPage({ onNavigate }) {
               <div 
                 key={notif.id} 
                 className={`notification-card ${!notif.read ? 'unread' : ''}`}
+                onClick={() => handleNotificationClick(notif)}
+                style={{ cursor: notif.link ? 'pointer' : 'default' }}
               >
                 <div className="notif-left">
                   {notif.avatar && (
@@ -139,12 +171,7 @@ function NotificationsPage({ onNavigate }) {
                   )}
                 </div>
 
-                <div
-                  className="notif-center"
-                  onClick={() => {
-                    if (notif.link) window.location.href = notif.link;
-                  }}
-                >
+                <div className="notif-center">
                   <div className="notif-title">{notif.title}</div>
                   <div className="notif-message">{notif.message}</div>
                   <div className="notif-time">{formatRelativeTime(notif.timestamp)}</div>

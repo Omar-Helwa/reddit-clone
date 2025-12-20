@@ -332,9 +332,7 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.toggle-switch.active .toggle-knob {
-  left: 22px;
-}
+
 
 .terms-text {
   font-size: 12px;

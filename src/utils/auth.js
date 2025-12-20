@@ -103,4 +103,29 @@ export function updateCurrentUser(updates) {
       localStorage.removeItem('userImage');
     }
   }
+  if (updates.avatarEmoji !== undefined) {
+    if (updates.avatarEmoji) {
+      localStorage.setItem('avatarEmoji', updates.avatarEmoji);
+    } else {
+      localStorage.removeItem('avatarEmoji');
+    }
+  }
+  if (updates.avatarBgColor !== undefined) {
+    if (updates.avatarBgColor) {
+      localStorage.setItem('avatarBgColor', updates.avatarBgColor);
+    } else {
+      localStorage.removeItem('avatarBgColor');
+    }
+  }
+}
+
+/**
+ * Get avatar settings (emoji and background color)
+ * @returns {Object} { emoji, bgColor }
+ */
+export function getAvatarSettings() {
+  return {
+    emoji: localStorage.getItem('avatarEmoji') || '👽',
+    bgColor: localStorage.getItem('avatarBgColor') || null
+  };
 }

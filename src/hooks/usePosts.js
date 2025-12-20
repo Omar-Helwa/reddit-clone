@@ -41,7 +41,7 @@ function transformPost(post) {
     createdAt: post.createdAt,
     
     // UI defaults
-    subredditIcon: 'https://via.placeholder.com/120/ff4500/ffffff?text=R',
+    subredditIcon: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_1.png',
     authorIcon: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_4.png',
   };
 }

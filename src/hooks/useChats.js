@@ -144,17 +144,17 @@ const useChats = (userId = null) => {
     // Support string or object payload
     const isString = typeof payload === 'string';
     const content = isString ? payload : (payload?.content || '');
-    const attachments = isString ? [] : (payload?.attachments || []);
+    const imageLink = isString ? null : (payload?.imageLink || null);
     const replyTo = isString ? null : (payload?.replyTo || null);
 
-    if (!content.trim() && attachments.length === 0) return;
+    if (!content.trim() && !imageLink) return;
 
     setSending(true);
     setError(null);
     try {
       const messageData = {
-        content: content.trim(),
-        attachments,
+        content: content.trim() || (imageLink ? 'Sent an image' : ''),
+        imageLink,
         replyTo,
         userId: userId,
         timestamp: new Date(),
@@ -179,7 +179,7 @@ const useChats = (userId = null) => {
             chat._id === activeChat._id
               ? {
                   ...chat,
-                  lastMessage: content.trim() || (attachments.length ? '📎 Attachment' : ''),
+                  lastMessage: content.trim() || (imageLink ? '📷 Image' : ''),
                   updatedAt: new Date().toISOString(),
                 }
               : chat
@@ -191,7 +191,7 @@ const useChats = (userId = null) => {
         if (!prev || prev._id !== activeChat._id) return prev;
         return {
           ...prev,
-          lastMessage: content.trim() || (attachments.length ? '📎 Attachment' : ''),
+          lastMessage: content.trim() || (imageLink ? '📷 Image' : ''),
           updatedAt: new Date().toISOString(),
         };
       });

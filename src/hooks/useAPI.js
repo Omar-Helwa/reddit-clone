@@ -66,7 +66,7 @@ export function usePosts() {
         type: post.type || 'text',
         imageUrl: post.imageUrl,
         linkUrl: post.linkUrl,
-        subredditIcon: 'https://via.placeholder.com/120/ff4500/ffffff?text=R',
+        subredditIcon: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_1.png',
         authorIcon: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_4.png'
       }));
       

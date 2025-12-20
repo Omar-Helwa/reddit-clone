@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './ChatWindow.css';
+import { uploadImage } from '../../api/uploadsApi';
 
 /**
  * ChatWindow Component
@@ -17,9 +18,10 @@ const ChatWindow = ({
 }) => {
   const [messageInput, setMessageInput] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
-  const [selectedFiles, setSelectedFiles] = useState([]); // [{file, url, type, name, size}]
+  const [selectedFiles, setSelectedFiles] = useState([]); // [{file, url, type, name, size, uploading, uploadedUrl}]
   const [isDragging, setIsDragging] = useState(false);
   const [contextMenu, setContextMenu] = useState(null); // {x, y, message}
+  const [uploadError, setUploadError] = useState(null);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -35,14 +37,27 @@ const ChatWindow = ({
   // Handle send message
   const handleSend = async () => {
     if ((messageInput.trim().length === 0 && selectedFiles.length === 0) || sending) return;
+    
+    // Check if any files are still uploading
+    const stillUploading = selectedFiles.some(f => f.uploading);
+    if (stillUploading) return;
 
     try {
-      const attachments = selectedFiles.map((f) => ({ id: f.id, url: f.url, type: f.type, name: f.name, size: f.size }));
-      await onSendMessage({ content: messageInput, attachments, replyTo: replyingTo?._id || null });
+      // Use uploaded URLs for images
+      const uploadedFile = selectedFiles.find(f => f.uploadedUrl);
+      const imageLink = uploadedFile?.uploadedUrl || null;
+      
+      await onSendMessage({ 
+        content: messageInput || (imageLink ? 'Sent an image' : ''), 
+        imageLink,
+        replyTo: replyingTo?._id || null 
+      });
       setMessageInput('');
       setSelectedFiles([]);
       setReplyingTo(null);
+      setUploadError(null);
     } catch (error) {
+      setUploadError('Failed to send message');
     }
   };
 
@@ -54,11 +69,56 @@ const ChatWindow = ({
     }
   };
 
-  // Files handling
+  // Files handling - only images allowed
   const handleFilesSelected = async (files) => {
     if (!files || files.length === 0) return;
-    const atts = await Promise.all(files.map(fileToAttachment));
-    setSelectedFiles((prev) => [...prev, ...atts]);
+    setUploadError(null);
+    
+    // Filter to only image files
+    const imageFiles = Array.from(files).filter(file => {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      return allowedTypes.includes(file.type);
+    });
+    
+    if (imageFiles.length === 0) {
+      setUploadError('Only image files (JPEG, PNG, GIF, WebP) are allowed');
+      return;
+    }
+    
+    // Only allow one image at a time
+    const file = imageFiles[0];
+    
+    // Create local preview immediately
+    const localPreview = URL.createObjectURL(file);
+    const newFile = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      url: localPreview,
+      type: file.type,
+      name: file.name,
+      size: file.size,
+      uploading: true,
+      uploadedUrl: null,
+      error: null,
+    };
+    
+    setSelectedFiles([newFile]);
+    
+    // Upload the image
+    try {
+      const result = await uploadImage(file, 'general');
+      setSelectedFiles(prev => prev.map(f => 
+        f.id === newFile.id 
+          ? { ...f, uploading: false, uploadedUrl: result.url }
+          : f
+      ));
+    } catch (err) {
+      setSelectedFiles(prev => prev.map(f => 
+        f.id === newFile.id 
+          ? { ...f, uploading: false, error: err.message || 'Upload failed' }
+          : f
+      ));
+      setUploadError(err.message || 'Failed to upload image');
+    }
   };
 
   const removeSelectedFile = (index) => {
@@ -180,7 +240,27 @@ const ChatWindow = ({
                       <span className="reply-text">{replyMsg.content?.slice(0, 80) || 'Attachment'}</span>
                     </div>
                   )}
-                  <p className="message-text">{message.content}</p>
+                  {message.content && <p className="message-text">{message.content}</p>}
+                  {/* Display imageLink if present */}
+                  {message.imageLink && (
+                    <div className="message-image-container">
+                      <img
+                        src={message.imageLink}
+                        alt="Shared image"
+                        className="message-image"
+                        onClick={() => window.open(message.imageLink, '_blank')}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextSibling && (e.currentTarget.nextSibling.style.display = 'flex');
+                        }}
+                      />
+                      <div className="message-image-error" style={{ display: 'none' }}>
+                        <span>📷</span>
+                        <span>Image unavailable</span>
+                      </div>
+                    </div>
+                  )}
+                  {/* Legacy attachments support */}
                   {Array.isArray(message.attachments) && message.attachments.length > 0 && (
                     <div className="message-attachments">
                       {message.attachments.map((att, idx) => (
@@ -191,6 +271,9 @@ const ChatWindow = ({
                               alt={att.name || 'attachment'}
                               className="attachment-image"
                               onClick={() => window.open(att.url, '_blank')}
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
                             />
                           ) : (
                             <a href={att.url} target="_blank" rel="noopener noreferrer" className="attachment-link">
@@ -214,6 +297,13 @@ const ChatWindow = ({
 
       {/* Input */}
       <div className="chat-window-input-container">
+        {uploadError && (
+          <div className="upload-error-bar">
+            <span>{uploadError}</span>
+            <button onClick={() => setUploadError(null)}>×</button>
+          </div>
+        )}
+
         {replyingTo && (
           <div className="reply-bar">
             <span className="reply-label">Replying to:</span>
@@ -225,11 +315,21 @@ const ChatWindow = ({
         {selectedFiles.length > 0 && (
           <div className="selected-files">
             {selectedFiles.map((f, i) => (
-              <div key={i} className="selected-file-item">
-                {f.type.startsWith('image/') ? (
-                  <img src={f.url} alt={f.name} className="selected-file-thumb" />
-                ) : (
-                  <span className="selected-file-name">{f.name}</span>
+              <div key={f.id || i} className={`selected-file-item ${f.uploading ? 'uploading' : ''} ${f.error ? 'error' : ''}`}>
+                <img src={f.url} alt={f.name} className="selected-file-thumb" />
+                {f.uploading && (
+                  <div className="upload-progress">
+                    <span className="upload-spinner">⏳</span>
+                    <span>Uploading...</span>
+                  </div>
+                )}
+                {f.error && (
+                  <div className="upload-error">
+                    <span>❌ {f.error}</span>
+                  </div>
+                )}
+                {f.uploadedUrl && !f.uploading && !f.error && (
+                  <div className="upload-success">✓</div>
                 )}
                 <button className="remove-file" onClick={() => removeSelectedFile(i)} title="Remove">×</button>
               </div>
@@ -241,12 +341,11 @@ const ChatWindow = ({
           type="file"
           ref={fileInputRef}
           style={{ display: 'none' }}
-          multiple
-          accept="image/*,.pdf,.doc,.docx"
+          accept="image/jpeg,image/png,image/gif,image/webp"
           onChange={(e) => handleFilesSelected(Array.from(e.target.files || []))}
         />
 
-        <button className="attach-btn" title="Attach files" onClick={() => fileInputRef.current?.click()} disabled={sending}>📎</button>
+        <button className="attach-btn" title="Attach image" onClick={() => fileInputRef.current?.click()} disabled={sending || selectedFiles.some(f => f.uploading)}>📷</button>
         <textarea
           className="chat-window-input"
           placeholder="Type a message..."
@@ -254,15 +353,15 @@ const ChatWindow = ({
           onChange={(e) => setMessageInput(e.target.value)}
           onKeyPress={handleKeyPress}
           rows={1}
-          disabled={sending}
+          disabled={sending || selectedFiles.some(f => f.uploading)}
         />
         <button
           className="chat-send-btn"
           onClick={handleSend}
-          disabled={(!!!messageInput.trim() && selectedFiles.length === 0) || sending}
+          disabled={(!!!messageInput.trim() && selectedFiles.length === 0) || sending || selectedFiles.some(f => f.uploading) || selectedFiles.some(f => f.error)}
           title="Send message"
         >
-          {sending ? '...' : '➤'}
+          {sending ? '...' : selectedFiles.some(f => f.uploading) ? '⏳' : '➤'}
         </button>
       </div>
 
@@ -294,21 +393,4 @@ const ChatWindow = ({
 };
 
 export default ChatWindow;
-
-// Helpers
-function fileToAttachment(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      resolve({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        url: reader.result,
-        type: file.type || 'application/octet-stream',
-        name: file.name,
-        size: file.size,
-      });
-    };
-    reader.readAsDataURL(file);
-  });
-}
 

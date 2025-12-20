@@ -50,8 +50,8 @@
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: white;
-  border: 1px solid #d0d7de;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 24px;
   cursor: pointer;
   font-size: 14px;
@@ -71,7 +71,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: white;
+  background: var(--card-bg);
   border: 2px solid var(--blue);
   border-radius: 24px 24px 0 0;
   min-width: 280px;
@@ -79,7 +79,7 @@
 }
 
 .community-selector-search svg {
-  color: #878a8c;
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
@@ -93,7 +93,7 @@
 }
 
 .community-selector-search input::placeholder {
-  color: #878a8c;
+  color: var(--text-secondary);
 }
 
 .selector-icon {
@@ -106,12 +106,12 @@
 .selector-icon-svg {
   width: 20px;
   height: 20px;
-  color: #878a8c;
+  color: var(--text-secondary);
 }
 
 .selector-text {
   flex: 1;
-  color: #878a8c;
+  color: var(--text-secondary);
 }
 
 .community-selector-btn:has(.selector-icon:not(.selector-icon-svg)) .selector-text {
@@ -120,7 +120,7 @@
 
 .selector-chevron {
   margin-left: auto;
-  color: #878a8c;
+  color: var(--text-secondary);
   transition: transform 0.2s;
 }
 
@@ -131,9 +131,9 @@
   left: 0;
   width: 100%;
   max-width: 350px;
-  background: white;
+  background: var(--card-bg);
   border: 2px solid var(--blue);
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--card-border);
   border-radius: 0 0 12px 12px;
   margin-top: -2px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -144,7 +144,7 @@
 .dropdown-list {
   max-height: 350px;
   overflow-y: auto;
-  background: white;
+  background: var(--card-bg);
 }
 
 .dropdown-item {
@@ -153,16 +153,16 @@
   gap: 14px;
   width: 100%;
   padding: 12px 16px;
-  background: white;
+  background: var(--card-bg);
   border: none;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--card-border);
   cursor: pointer;
   text-align: left;
   transition: background 0.15s;
 }
 
 .dropdown-item:hover {
-  background: #f6f7f8;
+  background: var(--hover);
 }
 
 .dropdown-item:last-child {
@@ -170,12 +170,12 @@
 }
 
 .dropdown-item.profile-item {
-  background: #f6f7f8;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--hover);
+  border-bottom: 1px solid var(--card-border);
 }
 
 .dropdown-item.profile-item:hover {
-  background: #edeff1;
+  background: var(--card-border);
 }
 
 .item-avatar {
@@ -210,7 +210,7 @@
 
 .item-meta {
   font-size: 12px;
-  color: #878a8c;
+  color: var(--text-secondary);
 }
 
 .dropdown-empty {
@@ -222,9 +222,9 @@
 
 /* Join Gate */
 .join-gate {
-  background: #fff3cd;
-  border: 1px solid #ffe69c;
-  color: #664d03;
+  background: var(--hover);
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
   border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 16px;

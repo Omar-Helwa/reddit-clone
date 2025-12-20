@@ -1,57 +1,67 @@
 /**
- * AI-powered post summarization using Google Gemini API
- * Note: Requires REACT_APP_GEMINI_API_KEY environment variable
+ * AI-powered post summarization using Hugging Face Inference API
+ * Model: google/pegasus-xsum (very short, concise summaries)
+ * Routes through backend to avoid CORS issues
  */
 
-const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+const HF_API_TOKEN = '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';
+const HF_MODEL = 'google/pegasus-xsum';
 
 /**
- * Summarize post content using Google Gemini
+ * Summarize post content using Hugging Face Pegasus-XSum
  * @param {string} title - Post title
  * @param {string} content - Post content/text
+ * @param {number} retries - Number of retries for cold start
  * @returns {Promise<string>} Summarized text
  */
-export async function summarizePost(title, content) {
-  if (!GEMINI_API_KEY) {
-    return fallbackSummarize(title, content);
-  }
-
+export async function summarizePost(title, content, retries = 3) {
   try {
-    const fullText = `Title: ${title}\n\nContent: ${content}`;
-    const prompt = `Please summarize the following Reddit post in 2-3 sentences. Keep it concise and capture the main idea:\n\n${fullText}`;
+    const fullText = `${title}. ${content || ''}`.trim();
+    
+    // If text is too short, just return it
+    if (fullText.length < 100) {
+      return fullText;
+    }
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    // Route through backend proxy to avoid CORS
+    const response = await fetch('/api/ai/summarize', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
+        text: fullText.substring(0, 1024),
+        token: HF_API_TOKEN,
+        model: HF_MODEL,
+        parameters: {
+          min_length: 30,
+          max_length: 120,
+        },
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(`API error: ${response.statusText}`);
+    const result = await response.json();
+
+    // Handle model loading (cold start)
+    if (result.error && result.error.includes('loading') && retries > 0) {
+      console.log('Model is loading, retrying in 5 seconds...');
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      return summarizePost(title, content, retries - 1);
     }
 
-    const data = await response.json();
-    const summary = data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+    if (result.error) {
+      throw new Error(result.error);
+    }
+
+    const summary = result.summary || result[0]?.summary_text || null;
 
     if (!summary) {
       throw new Error('No summary generated');
     }
 
-    return summary;
+    return summary.trim();
   } catch (error) {
+    console.error('Hugging Face API error:', error);
     // Fall back to simple summary
     return fallbackSummarize(title, content);
   }
@@ -77,10 +87,10 @@ function fallbackSummarize(title, content) {
 }
 
 /**
- * Check if Gemini API is configured
+ * Check if Hugging Face API is configured
  */
 export function isGeminiAvailable() {
-  return !!GEMINI_API_KEY;
+  return !!HF_API_TOKEN;
 }
 
 /**

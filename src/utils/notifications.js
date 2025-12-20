@@ -4,6 +4,15 @@
 
 const NOTIFICATIONS_KEY = 'app-notifications';
 const MAX_NOTIFICATIONS = 50;
+let notificationIdCounter = 0;
+
+/**
+ * Generate a unique notification ID
+ */
+function generateUniqueId() {
+  notificationIdCounter++;
+  return `notif-${Date.now()}-${notificationIdCounter}-${Math.random().toString(36).substr(2, 9)}`;
+}
 
 /**
  * Get all notifications
@@ -27,7 +36,7 @@ export function getNotifications() {
 export function addNotification(notification) {
   const notifications = getNotifications();
   const newNotification = {
-    id: notification.id || `notif-${Date.now()}`,
+    id: notification.id || generateUniqueId(),
     type: notification.type || 'default',
     title: notification.title,
     message: notification.message,
@@ -97,6 +106,7 @@ export function addSampleNotifications() {
   if (notifications.length > 0) return; // Don't add if some exist
   
   addNotification({
+    id: 'sample-upvote-1',
     type: 'upvote',
     title: 'Your post got popular!',
     message: 'Your post "Learning React in 2025" received 500 upvotes',
@@ -105,6 +115,7 @@ export function addSampleNotifications() {
   });
   
   addNotification({
+    id: 'sample-comment-1',
     type: 'comment',
     title: 'New comment on your post',
     message: 'u/johndoe commented: "Great tutorial!"',
@@ -113,15 +124,17 @@ export function addSampleNotifications() {
   });
   
   addNotification({
+    id: 'sample-follow-1',
     type: 'follow',
     title: 'New follower!',
     message: 'u/sarah_tech started following you',
-    avatar: 'https://via.placeholder.com/40',
+    avatar: null,
     link: '/user/sarah_tech',
     timestamp: Date.now() - 1000 * 60 * 60 * 2
   });
   
   addNotification({
+    id: 'sample-join-1',
     type: 'join',
     title: 'Member joined your community',
     message: '5 new members joined r/mynewcommunity',
@@ -130,6 +143,7 @@ export function addSampleNotifications() {
   });
   
   addNotification({
+    id: 'sample-message-1',
     type: 'message',
     title: 'New message from u/alex_dev',
     message: 'Hey! Want to collaborate on a project?',

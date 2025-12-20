@@ -57,14 +57,15 @@
 
 .notifications-filters {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   margin-bottom: 20px;
   overflow-x: auto;
   padding-bottom: 8px;
+  flex-wrap: wrap;
 }
 
 .filter-btn {
-  padding: 8px 14px;
+  padding: 8px 51px;
   border: 1px solid var(--card-border);
   border-radius: 20px;
   background: var(--card-bg);
@@ -74,6 +75,7 @@
   font-size: 13px;
   transition: all 0.2s;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .filter-btn:hover {

@@ -67,18 +67,20 @@ export const createChat = async (chatData) => {
 /**
  * Send a message in a chat
  * @param {string} chatId - The chat ID
- * @param {Object} messageData - Message content (content, userId, attachments, replyTo)
+ * @param {Object} messageData - Message content (content, userId, imageLink, replyTo)
  * @returns {Promise<Object>} Created message
  */
 export const sendMessage = async (chatId, messageData) => {
   try {
-    // Build payload: omit replyTo if null/undefined (backend rejects null)
+    // Build payload: omit replyTo/imageLink if null/undefined (backend rejects null)
     const payload = {
       content: messageData.content ?? '',
       userId: messageData.userId,
       timestamp: messageData.timestamp,
-      attachments: messageData.attachments ?? [],
     };
+    if (messageData.imageLink) {
+      payload.imageLink = messageData.imageLink;
+    }
     if (messageData.replyTo) {
       payload.replyTo = messageData.replyTo;
     }

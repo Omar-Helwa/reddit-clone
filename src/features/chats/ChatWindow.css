@@ -246,13 +246,31 @@
 .attachment-image { width: 100%; height: 120px; object-fit: cover; display: block; cursor: pointer; }
 .attachment-link { display: inline-block; padding: 8px; color: var(--blue); text-decoration: none; }
 
+/* Message image */
+.message-image-container { margin-top: 6px; border-radius: 8px; overflow: hidden; }
+.message-image { max-width: 100%; max-height: 300px; object-fit: contain; border-radius: 8px; cursor: pointer; display: block; }
+.message-image-error { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 20px; background: var(--hover); border-radius: 8px; color: var(--text-secondary); font-size: 12px; }
+.message-image-error span:first-child { font-size: 24px; opacity: 0.5; }
+
+/* Upload error */
+.upload-error-bar { background: rgba(255, 69, 0, 0.1); border: 1px solid #ff4500; color: #ff4500; border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+.upload-error-bar button { background: none; border: none; font-size: 18px; cursor: pointer; color: #ff4500; }
+
 .attach-btn { background: none; border: 1px solid var(--card-border); border-radius: 50%; width: 40px; height: 40px; cursor: pointer; color: var(--text-primary); }
+.attach-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .selected-files { display: flex; gap: 8px; flex-wrap: wrap; }
 .selected-file-item { position: relative; border: 1px solid var(--card-border); border-radius: 8px; padding: 6px; background: var(--hover); display: flex; align-items: center; gap: 8px; }
-.selected-file-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
+.selected-file-item.uploading { opacity: 0.7; }
+.selected-file-item.error { border-color: #ff4500; background: rgba(255, 69, 0, 0.05); }
+.selected-file-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; }
 .selected-file-name { font-size: 12px; color: var(--text-primary); }
-.remove-file { background: none; border: none; font-size: 16px; cursor: pointer; color: var(--text-secondary); }
+.remove-file { background: none; border: none; font-size: 16px; cursor: pointer; color: var(--text-secondary); position: absolute; top: -6px; right: -6px; background: var(--card-bg); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border); }
+.upload-progress { position: absolute; bottom: 6px; left: 6px; right: 6px; background: rgba(0, 0, 0, 0.7); color: white; font-size: 10px; padding: 4px 6px; border-radius: 4px; display: flex; align-items: center; gap: 4px; }
+.upload-spinner { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.upload-error { position: absolute; bottom: 6px; left: 6px; right: 6px; background: rgba(255, 69, 0, 0.9); color: white; font-size: 10px; padding: 4px 6px; border-radius: 4px; }
+.upload-success { position: absolute; bottom: 6px; right: 6px; background: #22c55e; color: white; font-size: 12px; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
 /* Drag overlay */
 .drag-overlay {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useMyProfileData } from '../hooks/useMyProfileData';
 import './ProfilePage.css';
-import { getCurrentUser, getCurrentUserId } from '../utils/auth';
+import { getCurrentUser, getCurrentUserId, getAvatarSettings } from '../utils/auth';
 import { 
   getUser, 
   followUser, 
@@ -141,6 +141,12 @@ function ProfilePage({ onNavigate }) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const [avatarSettings, setAvatarSettings] = useState({ emoji: '👽', bgColor: null });
+
+  // Load avatar settings - refresh when path changes (returning from edit avatar)
+  useEffect(() => {
+    setAvatarSettings(getAvatarSettings());
+  }, [currentPath]);
 
   // Update currentPath when location changes
   useEffect(() => {
@@ -615,6 +621,13 @@ function ProfilePage({ onNavigate }) {
             <div className="profile-header-avatar">
               {user.avatar ? (
                 <img src={user.avatar} alt={user.username} className="header-avatar-img" />
+              ) : isOwnProfile ? (
+                <div 
+                  className="header-avatar-emoji"
+                  style={{ backgroundColor: avatarSettings.bgColor || '#ff4500' }}
+                >
+                  {avatarSettings.emoji || '👽'}
+                </div>
               ) : (
                 <div className="header-avatar-default">
                   <svg viewBox="0 0 20 20" width="60" height="60">
@@ -622,12 +635,14 @@ function ProfilePage({ onNavigate }) {
                   </svg>
                 </div>
               )}
-              <button className="avatar-edit-btn" title="Edit avatar">
-                <svg viewBox="0 0 20 20" width="12" height="12" fill="currentColor">
-                  <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"/>
-                  <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd"/>
-                </svg>
-              </button>
+              {isOwnProfile && (
+                <button className="avatar-edit-btn" title="Edit avatar" onClick={() => onNavigate('edit-avatar', '/edit-avatar')}>
+                  <svg viewBox="0 0 20 20" width="12" height="12" fill="currentColor">
+                    <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"/>
+                    <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd"/>
+                  </svg>
+                </button>
+              )}
             </div>
             <div className="profile-header-info">
               <div className="profile-name-row">
@@ -949,7 +964,12 @@ function ProfilePage({ onNavigate }) {
                       {user.avatar ? (
                         <img src={user.avatar} alt="" className="settings-avatar" />
                       ) : (
-                        <div className="settings-avatar-default">👽</div>
+                        <div 
+                          className="settings-avatar-emoji"
+                          style={{ backgroundColor: avatarSettings.bgColor || '#ff4500' }}
+                        >
+                          {avatarSettings.emoji || '👽'}
+                        </div>
                       )}
                     </div>
                     <div className="settings-item-content">

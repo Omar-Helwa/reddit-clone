@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './Navbar.css';
-import { getCurrentUser, clearCurrentUser } from '../utils/auth';
+import { getCurrentUser, clearCurrentUser, getAvatarSettings } from '../utils/auth';
 import { toggleTheme, getCurrentTheme } from '../utils/theme';
-import { getUnreadCount, getNotifications } from '../utils/notifications';
+import { getUnreadCount, getNotifications, markAsRead } from '../utils/notifications';
 import { universalSearch } from '../utils/search';
 import CreateCommunityModal from '../components/CreateCommunityModal';
 
@@ -17,6 +17,7 @@ function AppNavbar({ onNavigate }) {
   const [theme, setTheme] = useState('light');
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
+  const [avatarSettings, setAvatarSettings] = useState({ emoji: '👽', bgColor: null });
 
   useEffect(() => {
     const user = getCurrentUser();
@@ -24,12 +25,14 @@ function AppNavbar({ onNavigate }) {
     setTheme(getCurrentTheme());
     setUnreadCount(getUnreadCount());
     setNotifications(getNotifications().slice(0, 5));
+    setAvatarSettings(getAvatarSettings());
   }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setUnreadCount(getUnreadCount());
       setNotifications(getNotifications().slice(0, 5));
+      setAvatarSettings(getAvatarSettings());
     }, 1500);
     return () => clearInterval(interval);
   }, []);
@@ -129,9 +132,20 @@ function AppNavbar({ onNavigate }) {
 
         {/* Center Section: Search */}
         <div className="navbar-center">
-          <div className="search-container">
+          <div 
+            className="search-container"
+            style={{
+              borderColor: avatarSettings.bgColor || '#ff4500'
+            }}
+          >
             <div className="search-left">
-              <span className="search-mascot" aria-hidden="true">👽</span>
+              <span 
+                className="search-mascot" 
+                aria-hidden="true"
+                style={{ backgroundColor: avatarSettings.bgColor || '#ff4500' }}
+              >
+                {avatarSettings.emoji || '👽'}
+              </span>
             </div>
             <form className="search-form" onSubmit={handleSearch}>
               <input
@@ -262,7 +276,23 @@ function AppNavbar({ onNavigate }) {
                     <div className="notifications-empty">No notifications</div>
                   ) : (
                     notifications.map((n) => (
-                      <div key={n.id} className={`notifications-item ${n.read ? '' : 'unread'}`}>
+                      <div 
+                        key={n.id} 
+                        className={`notifications-item ${n.read ? '' : 'unread'}`}
+                        onClick={() => {
+                          if (!n.read) markAsRead(n.id);
+                          if (n.link) {
+                            // Determine page type based on link
+                            let page = 'home';
+                            if (n.link.startsWith('/r/') && n.link.includes('/comments/')) page = 'post';
+                            else if (n.link.startsWith('/r/')) page = 'community';
+                            else if (n.link.startsWith('/user/') || n.link.startsWith('/u/')) page = 'profile';
+                            else if (n.link === '/chats' || n.link.startsWith('/chat')) page = 'chat';
+                            handleNavClick(page, n.link);
+                          }
+                        }}
+                        style={{ cursor: n.link ? 'pointer' : 'default' }}
+                      >
                         <div className="notifications-icon">{getNotifIcon(n.type)}</div>
                         <div className="notifications-text">
                           <div className="notifications-title">{n.title}</div>
@@ -270,15 +300,7 @@ function AppNavbar({ onNavigate }) {
                           <div className="notifications-time">{formatRelativeTime(n.timestamp)}</div>
                         </div>
                         {n.link && (
-                          <button
-                            type="button"
-                            className="notifications-open"
-                            onClick={() => handleNavClick('notifications', n.link)}
-                            aria-label="Open"
-                            title="Open"
-                          >
-                            →
-                          </button>
+                          <span className="notifications-arrow">→</span>
                         )}
                       </div>
                     ))
@@ -293,11 +315,25 @@ function AppNavbar({ onNavigate }) {
               title="Profile" 
               aria-label="Profile"
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+              style={avatarSettings.emoji && !currentUser?.image ? { 
+                backgroundColor: avatarSettings.bgColor || '#ff4500',
+                borderColor: avatarSettings.bgColor || '#ff4500',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px'
+              } : {
+                borderColor: avatarSettings.bgColor || '#ff4500'
+              }}
             >
-              <img 
-                src={(currentUser && currentUser.image) ? currentUser.image : "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png"} 
-                alt="avatar" 
-              />
+              {currentUser?.image ? (
+                <img 
+                  src={currentUser.image} 
+                  alt="avatar" 
+                />
+              ) : (
+                <span className="emoji-avatar">{avatarSettings.emoji || '👽'}</span>
+              )}
             </button>
             
             {showProfileDropdown && (
@@ -311,11 +347,20 @@ function AppNavbar({ onNavigate }) {
                         className="dropdown-item profile-header-item" 
                         onClick={() => handleNavClick('profile', '/profile')}
                       >
-                        <img 
-                          src={currentUser.image || "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png"} 
-                          alt="avatar" 
-                          className="dropdown-profile-avatar"
-                        />
+                        {currentUser.image ? (
+                          <img 
+                            src={currentUser.image} 
+                            alt="avatar" 
+                            className="dropdown-profile-avatar"
+                          />
+                        ) : (
+                          <span 
+                            className="dropdown-profile-avatar emoji-avatar-large"
+                            style={{ backgroundColor: avatarSettings.bgColor || '#ff4500' }}
+                          >
+                            {avatarSettings.emoji || '👽'}
+                          </span>
+                        )}
                         <div className="dropdown-text-group">
                           <span className="dropdown-text-primary">View Profile</span>
                           <span className="dropdown-text-secondary">{currentUser.username ? `u/${currentUser.username}` : 'u/user'}</span>

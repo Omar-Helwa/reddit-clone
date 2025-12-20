@@ -19,7 +19,7 @@ function MyCommunityPage({ onNavigate }) {
     name: 'r/mynewcommunity',
     displayName: 'My New Community',
     description: 'A fresh community ready to grow!',
-    icon: 'https://via.placeholder.com/120/0079d3/ffffff?text=MNC',
+    icon: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_3.png',
     type: 'Public',
     nsfw: false,
     category: 'Technology',
