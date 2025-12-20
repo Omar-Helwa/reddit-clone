@@ -222,12 +222,14 @@ const Post = ({
     setLocalScore(optimisticScore);
     setUserVote(postId, nextVote); // Persist vote to localStorage
 
-    // Call the backend upvote endpoint to track the vote
+    // Call the backend upvote endpoint (API handles toggle)
     try {
-      if (nextVote === 'up') {
-        await postsAPI.upvote(postId);
-      }
+      await postsAPI.upvote(postId);
     } catch (err) {
+      // Revert on error
+      setLocalVote(prevVote);
+      setLocalScore(prevScore);
+      setUserVote(postId, prevVote);
     }
   };
 
@@ -264,12 +266,14 @@ const Post = ({
     setLocalScore(optimisticScore);
     setUserVote(postId, nextVote); // Persist vote to localStorage
 
-    // Call the backend downvote endpoint to track the vote
+    // Call the backend downvote endpoint (API handles toggle)
     try {
-      if (nextVote === 'down') {
-        await postsAPI.downvote(postId);
-      }
+      await postsAPI.downvote(postId);
     } catch (err) {
+      // Revert on error
+      setLocalVote(prevVote);
+      setLocalScore(prevScore);
+      setUserVote(postId, prevVote);
     }
   };
 

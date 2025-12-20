@@ -107,7 +107,7 @@ export const postsAPI = {
    * @returns {Promise<Object>} Updated post
    */
   update: (id, postData) => fetchAPI(`/posts/${id}`, {
-    method: 'PUT',
+    method: 'PATCH',
     body: JSON.stringify(postData),
   }),
   
