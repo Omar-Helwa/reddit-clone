@@ -202,6 +202,12 @@
   font-size: 14px;
   margin-right: 12px;
   flex-shrink: 0;
+  object-fit: cover;
+}
+
+.new-chat-user-avatar-img {
+  object-fit: cover;
+  border: none;
 }
 
 .new-chat-user-name {

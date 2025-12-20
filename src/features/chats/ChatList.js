@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './ChatList.css';
+import { getUser } from '../../api/usersApi';
 
 /**
  * ChatList Component
@@ -7,22 +8,57 @@ import './ChatList.css';
  */
 const ChatList = ({ chats, activeChat, onSelectChat, loading, currentUserId, onNewChat }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [usersData, setUsersData] = useState({}); // Cache for fetched user data by ID
 
-  const getOtherUser = (chat) => {
+  const getOtherUserInfo = (chat) => {
     const u1 = chat?.user1;
     const u2 = chat?.user2;
     const u1Id = u1?.id || u1?._id;
     const u2Id = u2?.id || u2?._id;
-    if (!currentUserId) return u2 || u1;
-    if (String(u1Id) === String(currentUserId)) return u2 || u1;
-    if (String(u2Id) === String(currentUserId)) return u1 || u2;
-    return u2 || u1;
+    if (!currentUserId) return { user: u2 || u1, oderId: u2Id || u1Id };
+    if (String(u1Id) === String(currentUserId)) return { user: u2 || u1, oderId: u2Id || u1Id };
+    if (String(u2Id) === String(currentUserId)) return { user: u1 || u2, oderId: u1Id || u2Id };
+    return { user: u2 || u1, oderId: u2Id || u1Id };
+  };
+
+  // Fetch user data for all other users in chats
+  useEffect(() => {
+    const fetchUsersData = async () => {
+      const userIds = chats
+        .map(chat => getOtherUserInfo(chat).oderId)
+        .filter(id => id && !usersData[id]);
+      
+      // Dedupe IDs
+      const uniqueIds = [...new Set(userIds)];
+      
+      for (const oderId of uniqueIds) {
+        try {
+          const userData = await getUser(oderId);
+          if (userData) {
+            setUsersData(prev => ({ ...prev, [oderId]: userData }));
+          }
+        } catch (err) {
+          console.error('Failed to fetch user:', oderId, err);
+        }
+      }
+    };
+    
+    if (chats.length > 0) {
+      fetchUsersData();
+    }
+  }, [chats]);
+
+  // Get other user with API data merged
+  const getOtherUser = (chat) => {
+    const { user, oderId } = getOtherUserInfo(chat);
+    const apiData = usersData[oderId];
+    return { user, apiData, oderId };
   };
 
   // Filter chats based on search query
   const filteredChats = chats.filter((chat) => {
-    const other = getOtherUser(chat);
-    const otherName = (other?.name || '').toLowerCase();
+    const { user, apiData } = getOtherUser(chat);
+    const otherName = (apiData?.username || apiData?.displayName || user?.name || '').toLowerCase();
     return otherName.includes(searchQuery.toLowerCase());
   });
 
@@ -50,6 +86,38 @@ const ChatList = ({ chats, activeChat, onSelectChat, loading, currentUserId, onN
       return names[0][0] + names[1][0];
     }
     return name.substring(0, 2);
+  };
+
+  // Render avatar for chat list item (same pattern as ProfilePage)
+  // API returns 'image' field, not 'avatar'
+  const renderChatAvatar = (user, apiData, name) => {
+    // Prioritize API data - check 'image' field (what API returns)
+    let avatarUrl = null;
+    if (apiData?.image) {
+      avatarUrl = typeof apiData.image === 'string' ? apiData.image : apiData.image?.link;
+    } else if (user?.image) {
+      avatarUrl = typeof user.image === 'string' ? user.image : user.image?.link;
+    }
+    
+    if (avatarUrl) {
+      return (
+        <img 
+          src={avatarUrl} 
+          alt={name}
+          className="chat-avatar chat-avatar-img"
+        />
+      );
+    }
+    
+    // Fallback to initials
+    return (
+      <div 
+        className="chat-avatar"
+        style={{ backgroundColor: '#0079D3' }}
+      >
+        {getInitials(name)}
+      </div>
+    );
   };
 
   return (
@@ -82,17 +150,15 @@ const ChatList = ({ chats, activeChat, onSelectChat, loading, currentUserId, onN
         ) : (
           filteredChats.map((chat) => (
             (() => {
-              const other = getOtherUser(chat);
-              const otherName = other?.name || 'User';
+              const { user, apiData } = getOtherUser(chat);
+              const otherName = apiData?.username || apiData?.displayName || user?.name || 'User';
               return (
             <div
               key={chat._id}
               className={`chat-item ${activeChat?._id === chat._id ? 'active' : ''}`}
               onClick={() => onSelectChat(chat)}
             >
-              <div className="chat-avatar">
-                {getInitials(otherName)}
-              </div>
+              {renderChatAvatar(user, apiData, otherName)}
               <div className="chat-item-content">
                 <div className="chat-item-header">
                   <span className="chat-user-name">{otherName}</span>

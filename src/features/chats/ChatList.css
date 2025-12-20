@@ -94,6 +94,16 @@
   font-size: 18px;
   margin-right: 12px;
   flex-shrink: 0;
+  object-fit: cover;
+}
+
+.chat-avatar-img {
+  object-fit: cover;
+  border: none;
+}
+
+.chat-avatar-fallback {
+  display: none;
 }
 
 .chat-item-content {

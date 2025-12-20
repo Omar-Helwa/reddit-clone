@@ -234,20 +234,48 @@ function ChatPage() {
                 ) : filteredUsers.length === 0 ? (
                   <div className="new-chat-empty">No users found</div>
                 ) : (
-                  filteredUsers.map(user => (
-                    <div 
-                      key={user._id || user.id} 
-                      className="new-chat-user-item"
-                      onClick={() => handleSelectUser(user)}
-                    >
-                      <div className="new-chat-user-avatar">
-                        {(user.username || user.name || 'U').substring(0, 2).toUpperCase()}
+                  filteredUsers.map(user => {
+                    const avatarUrl = user.avatar || user.image?.link || user.image;
+                    const avatarBgColor = user.avatarBgColor || user.bgColor || '#0079d3';
+                    const avatarEmoji = user.avatarEmoji || user.emoji;
+                    const userName = user.username || user.displayName || user.name || 'User';
+                    
+                    return (
+                      <div 
+                        key={user._id || user.id} 
+                        className="new-chat-user-item"
+                        onClick={() => handleSelectUser(user)}
+                      >
+                        {avatarUrl ? (
+                          <>
+                            <img 
+                              src={avatarUrl} 
+                              alt={userName}
+                              className="new-chat-user-avatar new-chat-user-avatar-img"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextSibling && (e.currentTarget.nextSibling.style.display = 'flex');
+                              }}
+                            />
+                            <div 
+                              className="new-chat-user-avatar"
+                              style={{ backgroundColor: avatarBgColor, display: 'none' }}
+                            >
+                              {avatarEmoji || userName.substring(0, 2).toUpperCase()}
+                            </div>
+                          </>
+                        ) : (
+                          <div 
+                            className="new-chat-user-avatar"
+                            style={{ backgroundColor: avatarBgColor }}
+                          >
+                            {avatarEmoji || userName.substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="new-chat-user-name">{userName}</span>
                       </div>
-                      <span className="new-chat-user-name">
-                        {user.username || user.displayName || user.name || 'User'}
-                      </span>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>

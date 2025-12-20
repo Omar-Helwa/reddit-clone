@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchChats, fetchChatsForUser, fetchChatMessages, sendMessage, createChat, deleteMessage as apiDeleteMessage } from '../api/chatsApi';
 import { addNotification } from '../utils/notifications';
+import { getCurrentUser } from '../utils/auth';
 
 /**
  * Custom hook for managing chat functionality
@@ -69,7 +70,11 @@ const useChats = (userId = null) => {
       // from someone else, create a notification.
       const newest = messagesArray[messagesArray.length - 1];
       if (newest?._id && newest._id !== lastSeenMessageIdRef.current) {
-        const isFromSomeoneElse = newest.userId && userId && newest.userId !== userId;
+        // Handle userId being either a string or an object with _id/id
+        const newestUserId = typeof newest.userId === 'object' 
+          ? (newest.userId?._id || newest.userId?.id) 
+          : newest.userId;
+        const isFromSomeoneElse = newestUserId && userId && String(newestUserId) !== String(userId);
         if (isFromSomeoneElse) {
           addNotification({
             type: 'message',
@@ -213,11 +218,12 @@ const useChats = (userId = null) => {
     setChatsLoading(true);
     setError(null);
     try {
+      const currentUser = getCurrentUser();
       const chatData = {
         user1: {
           id: userId,
-          name: 'Current User', // Should be replaced with actual user data
-          image: {},
+          name: currentUser?.username || 'User',
+          image: currentUser?.image ? { link: currentUser.image } : {},
         },
         user2: otherUser,
         lastMessage: '',

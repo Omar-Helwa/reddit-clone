@@ -37,6 +37,12 @@
   font-size: 16px;
   margin-right: 12px;
   flex-shrink: 0;
+  object-fit: cover;
+}
+
+.chat-window-avatar-img {
+  object-fit: cover;
+  border: none;
 }
 
 .chat-window-user-info h3 {
@@ -102,11 +108,20 @@
   font-weight: 600;
   font-size: 14px;
   flex-shrink: 0;
+  object-fit: cover;
+}
+
+.message-avatar-img {
+  object-fit: cover;
+  border: none;
+}
+
+.message-avatar-fallback {
+  display: none;
 }
 
 .chat-message.sent .message-avatar {
   margin-left: 8px;
-  background-color: var(--orange);
 }
 
 .chat-message.received .message-avatar {

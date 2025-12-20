@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './ChatWindow.css';
 import { uploadImage } from '../../api/uploadsApi';
+import { getUser } from '../../api/usersApi';
 
 /**
  * ChatWindow Component
@@ -22,8 +23,20 @@ const ChatWindow = ({
   const [isDragging, setIsDragging] = useState(false);
   const [contextMenu, setContextMenu] = useState(null); // {x, y, message}
   const [uploadError, setUploadError] = useState(null);
+  const [otherUserData, setOtherUserData] = useState(null); // Fetched user data from API
+  const [currentUserData, setCurrentUserData] = useState(null); // Fetched current user data from API
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+
+  // Helper to extract userId from message (handles various field names and formats)
+  const getMessageUserId = (message) => {
+    // Try multiple possible field names
+    const uid = message?.userId || message?.senderId || message?.sender || message?.user || message?.from;
+    if (!uid) return null;
+    if (typeof uid === 'string') return uid;
+    if (typeof uid === 'object') return uid._id || uid.id || uid.userId;
+    return String(uid);
+  };
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -143,6 +156,105 @@ const ChatWindow = ({
     });
   };
 
+  const getParticipants = (chat) => {
+    if (!chat) return { me: null, other: null, otherId: null };
+    const u1 = chat?.user1;
+    const u2 = chat?.user2;
+    const u1Id = u1?.id || u1?._id;
+    const u2Id = u2?.id || u2?._id;
+    
+    if (!currentUserId) {
+      return { me: u1, other: u2 || u1, otherId: u2Id || u1Id };
+    }
+    if (String(u1Id) === String(currentUserId)) return { me: u1, other: u2 || u1, otherId: u2Id || u1Id };
+    if (String(u2Id) === String(currentUserId)) return { me: u2, other: u1 || u2, otherId: u1Id || u2Id };
+    return { me: u1, other: u2 || u1, otherId: u2Id || u1Id };
+  };
+
+  const { me, other, otherId } = getParticipants(activeChat);
+
+  // Fetch other user's data from API when chat changes
+  useEffect(() => {
+    if (!otherId) {
+      setOtherUserData(null);
+      return;
+    }
+    
+    let cancelled = false;
+    const fetchUserData = async () => {
+      try {
+        const userData = await getUser(otherId);
+        if (!cancelled && userData) {
+          setOtherUserData(userData);
+        }
+      } catch (err) {
+        console.error('Failed to fetch user data:', err);
+        if (!cancelled) setOtherUserData(null);
+      }
+    };
+    
+    fetchUserData();
+    return () => { cancelled = true; };
+  }, [otherId]);
+
+  // Fetch current user's data from API to get profile picture
+  useEffect(() => {
+    if (!currentUserId) {
+      setCurrentUserData(null);
+      return;
+    }
+    
+    let cancelled = false;
+    const fetchCurrentUserData = async () => {
+      try {
+        const userData = await getUser(currentUserId);
+        if (!cancelled && userData) {
+          setCurrentUserData(userData);
+        }
+      } catch (err) {
+        console.error('Failed to fetch current user data:', err);
+        if (!cancelled) setCurrentUserData(null);
+      }
+    };
+    
+    fetchCurrentUserData();
+    return () => { cancelled = true; };
+  }, [currentUserId]);
+
+  // Get avatar settings from localStorage for current user (fallback)
+  const getMyAvatarSettings = () => {
+    try {
+      return {
+        emoji: localStorage.getItem('avatarEmoji') || '😀',
+        bgColor: localStorage.getItem('avatarBgColor') || '#0079D3',
+      };
+    } catch {
+      return { emoji: '😀', bgColor: '#0079D3' };
+    }
+  };
+
+  // Get avatar URL (same pattern as ProfilePage)
+  // API returns 'image' field, not 'avatar'
+  const getAvatarUrl = (user, apiData) => {
+    // Prioritize API data - check 'image' field (what API returns)
+    if (apiData?.image) {
+      if (typeof apiData.image === 'string') return apiData.image;
+      if (apiData.image?.link) return apiData.image.link;
+    }
+    // Then try chat user object's image field
+    if (user?.image) {
+      if (typeof user.image === 'string') return user.image;
+      if (user.image?.link) return user.image.link;
+    }
+    return null;
+  };
+
+  const otherName = otherUserData?.username || otherUserData?.displayName || other?.name || 'User';
+  const meName = me?.name || 'Me';
+  const otherAvatarUrl = getAvatarUrl(other, otherUserData);
+  const myAvatarUrl = getAvatarUrl(me, currentUserData); // Get current user's profile picture
+  const myAvatarSettings = getMyAvatarSettings();
+
   // If no chat is selected
   if (!activeChat) {
     return (
@@ -156,22 +268,62 @@ const ChatWindow = ({
     );
   }
 
-  const getParticipants = (chat) => {
-    const u1 = chat?.user1;
-    const u2 = chat?.user2;
-    const u1Id = u1?.id || u1?._id;
-    const u2Id = u2?.id || u2?._id;
-    if (!currentUserId) {
-      return { me: u1, other: u2 || u1 };
+  // Render avatar component (same pattern as ProfilePage)
+  const renderAvatar = (isSent, size = 32) => {
+    if (isSent) {
+      // Current user - check for profile picture first
+      if (myAvatarUrl) {
+        return (
+          <img 
+            src={myAvatarUrl} 
+            alt={meName}
+            className="message-avatar message-avatar-img"
+            style={{ width: size, height: size }}
+          />
+        );
+      }
+      // Fallback to localStorage emoji settings
+      return (
+        <div 
+          className="message-avatar"
+          style={{ 
+            width: size, 
+            height: size, 
+            backgroundColor: myAvatarSettings.bgColor,
+            fontSize: size * 0.5
+          }}
+        >
+          {myAvatarSettings.emoji}
+        </div>
+      );
+    } else {
+      // Other user - check for profile picture
+      if (otherAvatarUrl) {
+        return (
+          <img 
+            src={otherAvatarUrl} 
+            alt={otherName}
+            className="message-avatar message-avatar-img"
+            style={{ width: size, height: size }}
+          />
+        );
+      }
+      // Fallback to initials
+      return (
+        <div 
+          className="message-avatar"
+          style={{ 
+            width: size, 
+            height: size, 
+            backgroundColor: '#0079D3',
+            fontSize: size * 0.45
+          }}
+        >
+          {getInitials(otherName)}
+        </div>
+      );
     }
-    if (String(u1Id) === String(currentUserId)) return { me: u1, other: u2 || u1 };
-    if (String(u2Id) === String(currentUserId)) return { me: u2, other: u1 || u2 };
-    return { me: u1, other: u2 || u1 };
   };
-
-  const { me, other } = getParticipants(activeChat);
-  const otherName = other?.name || 'User';
-  const meName = me?.name || 'Me';
 
   return (
     <div className="chat-window-container">
@@ -182,9 +334,20 @@ const ChatWindow = ({
             ←
           </button>
         )}
-        <div className="chat-window-avatar">
-          {getInitials(otherName)}
-        </div>
+        {otherAvatarUrl ? (
+          <img 
+            src={otherAvatarUrl} 
+            alt={otherName}
+            className="chat-window-avatar chat-window-avatar-img"
+          />
+        ) : (
+          <div 
+            className="chat-window-avatar"
+            style={{ backgroundColor: '#0079D3' }}
+          >
+            {getInitials(otherName)}
+          </div>
+        )}
         <div className="chat-window-user-info">
           <h3>{otherName}</h3>
           <p>Active now</p>
@@ -216,7 +379,8 @@ const ChatWindow = ({
           </div>
         ) : (
           messages.map((message, index) => {
-            const isSent = String(message.userId) === String(currentUserId);
+            const messageUserId = getMessageUserId(message);
+            const isSent = messageUserId && String(messageUserId) === String(currentUserId);
             const replyMsg = message.replyTo ? messages.find(m => m._id === message.replyTo) : null;
             return (
               <div
@@ -227,13 +391,11 @@ const ChatWindow = ({
                   setContextMenu({ x: e.clientX, y: e.clientY, message });
                 }}
               >
-                <div className="message-avatar">
-                  {isSent 
-                    ? getInitials(meName)
-                    : getInitials(otherName)
-                  }
-                </div>
-                <div className="message-bubble">
+                {renderAvatar(isSent, 32)}
+                <div 
+                  className="message-bubble"
+                  style={isSent ? { backgroundColor: myAvatarSettings.bgColor } : undefined}
+                >
                   {replyMsg && (
                     <div className="message-reply-preview">
                       <span className="reply-icon">↩</span>
@@ -378,7 +540,7 @@ const ChatWindow = ({
           >
             Reply
           </button>
-          {contextMenu.message.userId === currentUserId && onDeleteMessage && (
+          {getMessageUserId(contextMenu.message) === currentUserId && onDeleteMessage && (
             <button
               className="context-item danger"
               onClick={(e) => { e.stopPropagation(); onDeleteMessage(contextMenu.message._id); setContextMenu(null); }}
