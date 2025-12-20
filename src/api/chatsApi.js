@@ -79,7 +79,12 @@ export const sendMessage = async (chatId, messageData) => {
       timestamp: messageData.timestamp,
     };
     if (messageData.imageLink) {
-      payload.imageLink = messageData.imageLink;
+      let imageLink = messageData.imageLink;
+      if (typeof imageLink === 'string') {
+        imageLink = imageLink.replace(/http:\/\/localhost:\d+\//g, 'http://20.19.32.50/');
+      }
+      payload.imageLink = imageLink;
+
     }
     if (messageData.replyTo) {
       payload.replyTo = messageData.replyTo;

@@ -58,7 +58,7 @@ const ChatList = ({ chats, activeChat, onSelectChat, loading, currentUserId, onN
         <h2>Messages</h2>
         {onNewChat && (
           <button className="new-chat-btn" onClick={onNewChat} title="New Chat">
-            ✏️
+            ＋
           </button>
         )}
       </div>

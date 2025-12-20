@@ -3,8 +3,8 @@ import ChatList from '../features/chats/ChatList';
 import ChatWindow from '../features/chats/ChatWindow';
 import useChats from '../hooks/useChats';
 import './ChatPage.css';
-import { getCurrentUserId, getCurrentUser } from '../utils/auth';
-import { searchUsers } from '../api/usersApi';
+import { getCurrentUserId } from '../utils/auth';
+import { listUsers } from '../api/usersApi';
 
 /**
  * ChatPage Component
@@ -13,11 +13,11 @@ import { searchUsers } from '../api/usersApi';
 function ChatPage() {
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [showNewChatModal, setShowNewChatModal] = useState(false);
-  const [newChatUsername, setNewChatUsername] = useState('');
-  const [newChatSearching, setNewChatSearching] = useState(false);
-  const [newChatError, setNewChatError] = useState('');
+  const [allUsers, setAllUsers] = useState([]);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [usersLoading, setUsersLoading] = useState(false);
   const currentUserId = getCurrentUserId();
-  const didAutoOpenRef = useRef(false);
+  const lastUrlRef = useRef('');
   
   // Using the custom useChats hook
   const {
@@ -36,24 +36,26 @@ function ChatPage() {
   } = useChats(currentUserId);
 
   useEffect(() => {
-    if (didAutoOpenRef.current) return;
     if (!currentUserId) return;
-    if (chatsLoading) return; // Wait for chats to load
+    if (chatsLoading || !chats || chats.length === 0) return;
+
+    const currentUrl = window.location.pathname + window.location.search;
+    if (lastUrlRef.current === currentUrl) return; // Already handled this URL
+    lastUrlRef.current = currentUrl;
 
     const path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
     
-    // Handle /chat/:chatId path
+    // Handle /chat/:chatId path (from profile page)
     const chatIdMatch = path.match(/\/chat\/([^/]+)/);
     if (chatIdMatch) {
       const chatId = chatIdMatch[1];
-      didAutoOpenRef.current = true;
       
       // Find and select the chat by ID
       const existingById = (Array.isArray(chats) ? chats : []).find((c) => {
         return String(c._id) === String(chatId) || String(c.id) === String(chatId);
       });
-      if (existingById) {
+      if (existingById && existingById._id !== activeChat?._id) {
         selectChat(existingById);
       }
       return;
@@ -64,8 +66,6 @@ function ChatPage() {
     const name = params.get('name') || 'User';
     if (!to || !startNewChat) return;
 
-    didAutoOpenRef.current = true;
-
     // Try to select existing chat with that user if present
     const existing = (Array.isArray(chats) ? chats : []).find((c) => {
       const u1 = c?.user1?.id || c?.user1?._id;
@@ -73,7 +73,9 @@ function ChatPage() {
       return String(u1) === String(to) || String(u2) === String(to);
     });
     if (existing) {
-      selectChat(existing);
+      if (existing._id !== activeChat?._id) {
+        selectChat(existing);
+      }
       return;
     }
 
@@ -81,7 +83,7 @@ function ChatPage() {
     startNewChat({ id: to, name, image: {} }).then((created) => {
       if (created) selectChat(created);
     });
-  }, [chats, chatsLoading, currentUserId, selectChat, startNewChat]);
+  }, [chats, chatsLoading, currentUserId, selectChat, startNewChat, activeChat]);
 
   // Handle selecting a chat
   const handleSelectChat = (chat) => {
@@ -115,62 +117,60 @@ function ChatPage() {
     }
   };
 
-  // Handle new chat creation
-  const handleStartNewChat = async () => {
-    if (!newChatUsername.trim()) {
-      setNewChatError('Please enter a username');
-      return;
+  // Open new chat modal and load all users
+  const handleOpenNewChat = async () => {
+    setShowNewChatModal(true);
+    setUserSearchQuery('');
+    if (allUsers.length === 0) {
+      setUsersLoading(true);
+      try {
+        const result = await listUsers({ limit: 100 });
+        const users = result?.items || result || [];
+        // Filter out current user
+        setAllUsers(users.filter(u => String(u._id || u.id) !== String(currentUserId)));
+      } catch (err) {
+        console.error('Failed to load users:', err);
+      } finally {
+        setUsersLoading(false);
+      }
     }
+  };
+
+  // Handle selecting a user to start chat
+  const handleSelectUser = async (user) => {
+    const userId = user._id || user.id;
+    const userName = user.username || user.displayName || user.name || 'User';
     
-    setNewChatSearching(true);
-    setNewChatError('');
-    
-    try {
-      // Search for user
-      const users = await searchUsers(newChatUsername.trim());
-      const targetUser = users.find(u => 
-        u.username?.toLowerCase() === newChatUsername.trim().toLowerCase()
-      );
-      
-      if (!targetUser) {
-        setNewChatError('User not found');
-        setNewChatSearching(false);
-        return;
-      }
+    // Check if chat already exists with this user
+    const existingChat = chats.find(c => {
+      const u1Id = c.user1?.id || c.user1?._id;
+      const u2Id = c.user2?.id || c.user2?._id;
+      return String(u1Id) === String(userId) || String(u2Id) === String(userId);
+    });
 
-      // Check if chat already exists
-      const existingChat = chats.find(c => {
-        const u1Id = c.user1?.id || c.user1?._id;
-        const u2Id = c.user2?.id || c.user2?._id;
-        const targetId = targetUser._id || targetUser.id;
-        return String(u1Id) === String(targetId) || String(u2Id) === String(targetId);
-      });
-
-      if (existingChat) {
-        selectChat(existingChat);
-        setShowNewChatModal(false);
-        setNewChatUsername('');
-        return;
-      }
-
+    if (existingChat) {
+      selectChat(existingChat);
+    } else {
       // Create new chat
       const newChat = await startNewChat({
-        id: targetUser._id || targetUser.id,
-        name: targetUser.username || targetUser.displayName || 'User',
-        image: targetUser.avatar ? { link: targetUser.avatar } : {}
+        id: userId,
+        name: userName,
+        image: user.avatar ? { link: user.avatar } : {}
       });
-      
       if (newChat) {
         selectChat(newChat);
       }
-      setShowNewChatModal(false);
-      setNewChatUsername('');
-    } catch (err) {
-      setNewChatError(err.message || 'Failed to start chat');
-    } finally {
-      setNewChatSearching(false);
     }
+    
+    setShowNewChatModal(false);
+    setUserSearchQuery('');
   };
+
+  // Filter users based on search query
+  const filteredUsers = allUsers.filter(user => {
+    const name = (user.username || user.displayName || user.name || '').toLowerCase();
+    return name.includes(userSearchQuery.toLowerCase());
+  });
 
   return (
     <div className="chat-page-container">
@@ -183,7 +183,7 @@ function ChatPage() {
           loading={chatsLoading}
           refreshing={chatsRefreshing}
           currentUserId={currentUserId || ''}
-          onNewChat={() => setShowNewChatModal(true)}
+          onNewChat={handleOpenNewChat}
         />
       </div>
 
@@ -222,31 +222,34 @@ function ChatPage() {
             <div className="new-chat-modal-body">
               <input
                 type="text"
-                className="new-chat-input"
-                placeholder="Enter username..."
-                value={newChatUsername}
-                onChange={(e) => setNewChatUsername(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleStartNewChat()}
+                className="new-chat-search"
+                placeholder="Search users..."
+                value={userSearchQuery}
+                onChange={(e) => setUserSearchQuery(e.target.value)}
                 autoFocus
               />
-              {newChatError && (
-                <div className="new-chat-error">{newChatError}</div>
-              )}
-            </div>
-            <div className="new-chat-modal-footer">
-              <button 
-                className="new-chat-cancel-btn"
-                onClick={() => setShowNewChatModal(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="new-chat-start-btn"
-                onClick={handleStartNewChat}
-                disabled={newChatSearching || !newChatUsername.trim()}
-              >
-                {newChatSearching ? 'Searching...' : 'Start Chat'}
-              </button>
+              <div className="new-chat-user-list">
+                {usersLoading ? (
+                  <div className="new-chat-loading">Loading users...</div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="new-chat-empty">No users found</div>
+                ) : (
+                  filteredUsers.map(user => (
+                    <div 
+                      key={user._id || user.id} 
+                      className="new-chat-user-item"
+                      onClick={() => handleSelectUser(user)}
+                    >
+                      <div className="new-chat-user-avatar">
+                        {(user.username || user.name || 'U').substring(0, 2).toUpperCase()}
+                      </div>
+                      <span className="new-chat-user-name">
+                        {user.username || user.displayName || user.name || 'User'}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>
