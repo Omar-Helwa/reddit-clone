@@ -11,24 +11,48 @@
   padding: 16px;
   border-bottom: 1px solid var(--card-border);
   background-color: var(--card-bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .chat-list-header h2 {
-  margin: 0 0 12px 0;
+  margin: 0;
   font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
+.new-chat-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--hover);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: background-color 0.2s;
+}
+
+.new-chat-btn:hover {
+  background-color: var(--card-border);
+}
+
 .chat-search {
   width: 100%;
   padding: 8px 12px;
+  margin: 0 16px 12px;
   border: 1px solid var(--card-border);
   border-radius: 20px;
   font-size: 14px;
   outline: none;
   background: transparent;
+  color: var(--text-primary);
   transition: border-color 0.2s;
+  box-sizing: border-box;
 }
 
 .chat-search:focus {

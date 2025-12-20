@@ -107,6 +107,33 @@ export async function listUsers({ limit = 25, skip = 0 } = {}) {
 }
 
 /**
+ * Search users by username
+ * @param {string} query - Search query (username)
+ * @param {Object} params - Query parameters
+ * @param {number} params.limit - Max number of results (default 25)
+ * @returns {Promise<Array>} Array of matching users
+ */
+export async function searchUsers(query, { limit = 25 } = {}) {
+  const params = new URLSearchParams({ q: query, limit: String(limit) });
+  try {
+    const result = await apiFetch(`/users/search?${params}`);
+    return result.items || result || [];
+  } catch (err) {
+    // Fallback: fetch all users and filter client-side if search endpoint doesn't exist
+    try {
+      const all = await listUsers({ limit: 100 });
+      const users = all.items || all || [];
+      return users.filter(u => 
+        u.username?.toLowerCase().includes(query.toLowerCase()) ||
+        u.displayName?.toLowerCase().includes(query.toLowerCase())
+      );
+    } catch {
+      return [];
+    }
+  }
+}
+
+/**
  * Get a single user by ID
  * @param {string} id - User ID
  * @returns {Promise<Object>} User object

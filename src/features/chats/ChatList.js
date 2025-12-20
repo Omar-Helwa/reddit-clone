@@ -5,7 +5,7 @@ import './ChatList.css';
  * ChatList Component
  * Displays list of chat conversations
  */
-const ChatList = ({ chats, activeChat, onSelectChat, loading, currentUserId }) => {
+const ChatList = ({ chats, activeChat, onSelectChat, loading, currentUserId, onNewChat }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const getOtherUser = (chat) => {
@@ -56,14 +56,19 @@ const ChatList = ({ chats, activeChat, onSelectChat, loading, currentUserId }) =
     <div className="chat-list-container">
       <div className="chat-list-header">
         <h2>Messages</h2>
-        <input
-          type="text"
-          className="chat-search"
-          placeholder="Search conversations..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        {onNewChat && (
+          <button className="new-chat-btn" onClick={onNewChat} title="New Chat">
+            ✏️
+          </button>
+        )}
       </div>
+      <input
+        type="text"
+        className="chat-search"
+        placeholder="Search conversations..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+      />
 
       <div className="chat-list-items">
         {loading && chats.length === 0 ? (
