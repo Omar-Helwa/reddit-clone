@@ -218,6 +218,7 @@ function AllPage() {
               score={post.score || 0}
               commentCount={post.commentCount || 0}
               textBody={post.textBody || post.body}
+              imageUrl={post.imageUrl}
               subredditIcon={post.subredditIcon}
               authorIcon={post.authorIcon}
               onCommentClick={() => handlePostClick(post.postId || post._id, post.subreddit)}

@@ -710,6 +710,7 @@ function ProfilePage({ onNavigate }) {
                         score={post.score || 0}
                         commentCount={post.commentCount || 0}
                         textBody={post.textBody}
+                        imageUrl={post.imageUrl}
                         onCommentClick={() => navigate(`/r/${post.subreddit}/comments/${post._id}`)}
                         onSubredditClick={() => navigate(`/r/${post.subreddit}`)}
                         onRefresh={refreshProfileData}
@@ -740,6 +741,7 @@ function ProfilePage({ onNavigate }) {
                       score={post.score || 0}
                       commentCount={post.commentCount || 0}
                       textBody={post.textBody}
+                      imageUrl={post.imageUrl}
                       onCommentClick={() => navigate(`/r/${post.subreddit}/comments/${post._id}`)}
                       onSubredditClick={() => navigate(`/r/${post.subreddit}`)}
                       onRefresh={refreshProfileData}
@@ -775,6 +777,7 @@ function ProfilePage({ onNavigate }) {
                       score={post.score || 0}
                       commentCount={post.commentCount || 0}
                       textBody={post.textBody}
+                      imageUrl={post.imageUrl}
                       onCommentClick={() => navigate(`/r/${post.subreddit}/comments/${post._id}`)}
                       onSubredditClick={() => navigate(`/r/${post.subreddit}`)}
                       onRefresh={refreshProfileData}
@@ -798,6 +801,7 @@ function ProfilePage({ onNavigate }) {
                       score={post.score || 0}
                       commentCount={post.commentCount || 0}
                       textBody={post.textBody}
+                      imageUrl={post.imageUrl}
                       onCommentClick={() => navigate(`/r/${post.subreddit}/comments/${post._id}`)}
                       onSubredditClick={() => navigate(`/r/${post.subreddit}`)}
                       onRefresh={refreshProfileData}
@@ -820,6 +824,7 @@ function ProfilePage({ onNavigate }) {
                       score={post.score || 0}
                       commentCount={post.commentCount || 0}
                       textBody={post.textBody}
+                      imageUrl={post.imageUrl}
                       onCommentClick={() => navigate(`/r/${post.subreddit}/comments/${post._id}`)}
                       onSubredditClick={() => navigate(`/r/${post.subreddit}`)}
                       onRefresh={refreshProfileData}
@@ -842,6 +847,7 @@ function ProfilePage({ onNavigate }) {
                       score={post.score || 0}
                       commentCount={post.commentCount || 0}
                       textBody={post.textBody}
+                      imageUrl={post.imageUrl}
                       onCommentClick={() => navigate(`/r/${post.subreddit}/comments/${post._id}`)}
                       onSubredditClick={() => navigate(`/r/${post.subreddit}`)}
                       onRefresh={refreshProfileData}

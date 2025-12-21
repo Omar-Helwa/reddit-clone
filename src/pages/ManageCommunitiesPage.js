@@ -7,7 +7,7 @@ import { toggleFavoriteCommunity, isFavoriteCommunity } from '../utils/favorites
 import { DEFAULT_COMMUNITY_ICON } from '../utils/placeholders';
 
 function ManageCommunitiesPage() {
-  const { communities, loading, error } = useCommunities();
+  const { communities, loading, error } = useCommunities(200);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

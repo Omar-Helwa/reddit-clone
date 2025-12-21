@@ -50,7 +50,8 @@ const Post = ({
   timestamp, 
   score, 
   commentCount, 
-  textBody, 
+  textBody,
+  imageUrl,
   authorIcon,
   subredditIcon,
   onCommentClick,
@@ -572,6 +573,19 @@ const Post = ({
           <div className="post-text-body">
             <p>{textBody}</p>
           </div>
+        )}
+
+        {/* Post Image */}
+        {imageUrl && (
+          <a href={`/r/${derivedCommunityKey}/comments/${postId}`} className="post-image-link">
+            <img 
+              src={imageUrl} 
+              alt={title} 
+              className="post-image"
+              loading="lazy"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          </a>
         )}
 
         {awardEntries.length > 0 && (

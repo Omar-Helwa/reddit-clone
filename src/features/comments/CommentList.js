@@ -191,10 +191,35 @@ const CommentList = ({ postId, comments = [], onSubmitNewComment, onSubmitReply,
       setLocalScores((prev) => ({ ...prev, [commentId]: optimisticScore }));
       setUserCommentVote(commentId, nextVote); // Persist vote to localStorage
 
-      // Try to update backend (fire and forget)
+      // Call the proper upvote/downvote API endpoint
       try {
-        await commentsAPI.update(commentId, { score: optimisticScore });
+        let result;
+        if (direction === 'up') {
+          result = await commentsAPI.upvote(commentId);
+        } else {
+          result = await commentsAPI.downvote(commentId);
+        }
+        // Update local score with the actual value from backend
+        if (result && typeof result.score === 'number') {
+          setLocalScores((prev) => ({ ...prev, [commentId]: result.score }));
+        }
       } catch (err) {
+        // If upvote/downvote endpoints return 404, try fallback update method
+        const is404 = /404|not found/i.test(String(err?.message || ''));
+        if (is404) {
+          // Fallback: try updating score directly (keeps UI working until backend is deployed)
+          try {
+            await commentsAPI.update(commentId, { score: optimisticScore });
+            // Success - vote is persisted locally, score updated on backend
+          } catch (fallbackErr) {
+            // Silent fail - optimistic UI stays, vote persisted in localStorage
+          }
+        } else {
+          // Revert optimistic update on non-404 errors
+          setLocalVotes((prev) => ({ ...prev, [commentId]: prevVote }));
+          setLocalScores((prev) => ({ ...prev, [commentId]: prevScore }));
+          setUserCommentVote(commentId, prevVote);
+        }
       }
     };
     
