@@ -107,6 +107,21 @@ function PostPage() {
     }
   }, [communityName]);
 
+  // Listen for join/leave events from other components
+  useEffect(() => {
+    const handleJoinChange = (event) => {
+      const { community, joined } = event.detail;
+      
+      // Update this page's join state if it's for the same community
+      if (community === communityName) {
+        setIsJoined(joined);
+      }
+    };
+
+    window.addEventListener('communityJoinChange', handleJoinChange);
+    return () => window.removeEventListener('communityJoinChange', handleJoinChange);
+  }, [communityName]);
+
   const handleUpvote = async () => {
     if (!isLoggedIn() || !getUserToken()) {
       navigate('/login');
@@ -171,6 +186,11 @@ function PostPage() {
     const newJoined = !isJoined;
     setIsJoined(newJoined);
     localStorage.setItem(`joined_${communityName}`, String(newJoined));
+    
+    // Dispatch event to notify other components
+    window.dispatchEvent(new CustomEvent('communityJoinChange', { 
+      detail: { community: communityName, joined: newJoined } 
+    }));
   };
 
   const handleSubmitNewComment = async (text) => {

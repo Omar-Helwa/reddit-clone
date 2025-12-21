@@ -12,6 +12,16 @@ function PopularPage() {
   const [joinedCommunities, setJoinedCommunities] = useState(getJoinedCommunities());
   const carouselRef = useRef(null);
   
+  // Listen for join/leave events to update the list
+  React.useEffect(() => {
+    const handleJoinChange = () => {
+      setJoinedCommunities(getJoinedCommunities());
+    };
+
+    window.addEventListener('communityJoinChange', handleJoinChange);
+    return () => window.removeEventListener('communityJoinChange', handleJoinChange);
+  }, []);
+  
   // Vote state - stored locally with postId as key
   const [postVotes, setPostVotes] = useState(() => {
     try {

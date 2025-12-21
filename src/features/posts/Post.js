@@ -359,6 +359,22 @@ const Post = ({
     setIsJoined(joined.includes(communitySlug));
   }, [derivedCommunityKey]);
 
+  // Listen for join/leave events from other posts
+  useEffect(() => {
+    const handleJoinChange = (event) => {
+      const { community, joined } = event.detail;
+      const communitySlug = derivedCommunityKey;
+      
+      // Update this post's join state if it's for the same community
+      if (community === communitySlug) {
+        setIsJoined(joined);
+      }
+    };
+
+    window.addEventListener('communityJoinChange', handleJoinChange);
+    return () => window.removeEventListener('communityJoinChange', handleJoinChange);
+  }, [derivedCommunityKey]);
+
   // Join/Leave community handler
   const handleJoinToggle = () => {
     if (!isLoggedIn()) {
