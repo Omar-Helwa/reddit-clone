@@ -13,6 +13,16 @@ function ExplorePage() {
 
   const { communities, loading, error } = useCommunities(100);
 
+  // Listen for join/leave events to update the list
+  React.useEffect(() => {
+    const handleJoinChange = () => {
+      setJoinedCommunities(getJoinedCommunities());
+    };
+
+    window.addEventListener('communityJoinChange', handleJoinChange);
+    return () => window.removeEventListener('communityJoinChange', handleJoinChange);
+  }, []);
+
   const categories = [
     { id: 'all', label: 'All' },
     { id: 'most-visited', label: 'Most Visited' },

@@ -245,6 +245,14 @@
   display: none;
 }
 
+.all-posts-feed.compact .post-image-link {
+  display: none;
+}
+
+.all-posts-feed.compact .post-image {
+  display: none;
+}
+
 /* Loading/Error/Empty States */
 .all-loading,
 .all-error,

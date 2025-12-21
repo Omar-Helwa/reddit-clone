@@ -29,6 +29,8 @@ export const joinCommunity = (communityName) => {
 		if (!list.includes(slug)) {
 			const updated = [...list, slug];
 			localStorage.setItem('joinedCommunities', JSON.stringify(updated));
+			// Dispatch custom event to notify all components
+			window.dispatchEvent(new CustomEvent('communityJoinChange', { detail: { community: slug, joined: true } }));
 		}
 	} catch (e) {}
 };
@@ -40,6 +42,8 @@ export const leaveCommunity = (communityName) => {
 		const list = getJoinedCommunities();
 		const updated = list.filter((c) => c !== slug);
 		localStorage.setItem('joinedCommunities', JSON.stringify(updated));
+		// Dispatch custom event to notify all components
+		window.dispatchEvent(new CustomEvent('communityJoinChange', { detail: { community: slug, joined: false } }));
 	} catch (e) {}
 };
 
