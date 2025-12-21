@@ -186,6 +186,27 @@
   margin: 0;
 }
 
+.post-image-link {
+  display: block;
+  margin: 8px 0 10px 0;
+  border-radius: 4px;
+  overflow: hidden;
+  max-height: 500px;
+  background: var(--hover);
+}
+
+.post-image {
+  width: 100%;
+  height: auto;
+  max-height: 500px;
+  object-fit: cover;
+  display: block;
+}
+
+.post-image-link:hover .post-image {
+  opacity: 0.8;
+}
+
 .post-action-bar {
   display: flex;
   gap: 8px;

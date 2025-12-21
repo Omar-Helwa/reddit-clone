@@ -20,6 +20,7 @@ function transformPost(post) {
     originalPostId: post.postId,
     title: post.title,
     author: post.author,
+    authorId: post.userId,
     subreddit: post.subreddit || '',
     type: post.type || 'text',
     

@@ -43,7 +43,6 @@ export async function uploadImage(file, folder = 'general') {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
-      // Note: Don't set Content-Type - browser handles multipart boundary
     },
     body: formData,
   });

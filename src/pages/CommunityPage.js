@@ -295,6 +295,7 @@ function CommunityPage() {
                   score={post.score}
                   commentCount={post.commentCount}
                   textBody={post.textBody}
+                  imageUrl={post.imageUrl}
                   onCommentClick={() => navigate(`/r/${communityName}/comments/${post.postId}?comment=1`)}
                 />
               </div>

@@ -100,6 +100,7 @@ const PostList = ({ sortBy = 'BEST' }) => {
                 score={post?.score}
                 commentCount={post?.commentCount}
                 textBody={post?.textBody}
+                imageUrl={post?.imageUrl}
                 authorIcon={post?.authorIcon}
                 subredditIcon={post?.subredditIcon}
                 onCommentClick={() => handleCommentClick(post)}
