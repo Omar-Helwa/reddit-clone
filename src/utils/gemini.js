@@ -4,7 +4,6 @@
  * Routes through backend to avoid CORS issues
  */
 
-const HF_API_TOKEN = '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';
 const HF_MODEL = 'google/pegasus-xsum';
 
 /**
@@ -31,7 +30,6 @@ export async function summarizePost(title, content, retries = 3) {
       },
       body: JSON.stringify({
         text: fullText.substring(0, 1024),
-        token: HF_API_TOKEN,
         model: HF_MODEL,
         parameters: {
           min_length: 30,
@@ -90,7 +88,7 @@ function fallbackSummarize(title, content) {
  * Check if Hugging Face API is configured
  */
 export function isGeminiAvailable() {
-  return !!HF_API_TOKEN;
+  return true;
 }
 
 /**
